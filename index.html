@@ -1026,45 +1026,49 @@ function getFxValues() {
   };
 }
 
-// Gölge: ürün tabanına, ürün bounding box içinde
-function drawShadow(ctx, p, sx, sy) {
+// Ürünü gölge + brightness/contrast + vignette ile çizer.
+// Vignette: offscreen canvas + source-atop → sadece ürünün opak piksellerine uygulanır, şeffaflık korunur.
+// Gölge: canvas shadow API ile ürün şekline göre otomatik oluşur.
+function drawProductWithFx(ctx, p, sx, sy, fx) {
   sx = sx || 1; sy = sy || 1;
-  var cx = p.x*sx + (p.w*sx)/2;
-  var cy = p.y*sy + p.h*sy;
-  var rx = p.w*sx * 0.42;
-  var ry = p.w*sx * 0.09;
-  ctx.save();
-  // Ürün alanıyla sınırla
-  ctx.beginPath();
-  ctx.rect(p.x*sx, p.y*sy, p.w*sx, p.h*sy + ry*2);
-  ctx.clip();
-  ctx.globalAlpha = 0.45;
-  ctx.shadowColor  = 'rgba(0,0,0,0.7)';
-  ctx.shadowBlur   = 22 * sx;
-  ctx.fillStyle    = 'rgba(0,0,0,0.01)';
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
+  var dx = p.x * sx, dy = p.y * sy, dw = p.w * sx, dh = p.h * sy;
 
-// Vignette: sadece ürün bounding box'ına radyal gradyan
-function drawVignette(ctx, p, sx, sy, strength) {
-  sx = sx || 1; sy = sy || 1;
-  var x = p.x*sx, y = p.y*sy, w = p.w*sx, h = p.h*sy;
-  var cx = x + w/2, cy = y + h/2;
-  var innerR = Math.min(w, h) * 0.18;
-  var outerR = Math.max(w, h) * 0.72;
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(x, y, w, h);
-  ctx.clip();
-  var grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
-  grad.addColorStop(0, 'rgba(0,0,0,0)');
-  grad.addColorStop(1, 'rgba(0,0,0,' + strength + ')');
-  ctx.fillStyle = grad;
-  ctx.fillRect(x, y, w, h);
-  ctx.restore();
+  // Adım 1 – Gölge: canvas shadow API ile ürünü bir kez çiz (gölge arkaplanın üstüne düşer)
+  if (fx.shadow) {
+    ctx.save();
+    ctx.shadowColor   = 'rgba(0,0,0,0.55)';
+    ctx.shadowBlur    = 30 * sx;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 12 * sy;
+    ctx.drawImage(p.img, dx, dy, dw, dh);
+    ctx.restore();
+  }
+
+  // Adım 2 – Brightness/contrast + vignette: offscreen canvas'ta hesapla
+  var ow = Math.round(dw), oh = Math.round(dh);
+  var oc = document.createElement('canvas');
+  oc.width = ow; oc.height = oh;
+  var octx = oc.getContext('2d');
+
+  // Brightness/contrast filtresi ile ürünü offscreen'e çiz
+  octx.filter = 'brightness(' + fx.brightness + '%) contrast(' + fx.contrast + '%)';
+  octx.drawImage(p.img, 0, 0, ow, oh);
+  octx.filter = 'none';
+
+  // Vignette: source-atop → yalnızca var olan (opak) piksellerin üstüne uygulanır
+  if (fx.vignette) {
+    var cx = ow / 2, cy = oh / 2;
+    var grad = octx.createRadialGradient(cx, cy, Math.min(ow, oh) * 0.15, cx, cy, Math.max(ow, oh) * 0.72);
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, 'rgba(0,0,0,' + fx.vigStrength + ')');
+    octx.globalCompositeOperation = 'source-atop';
+    octx.fillStyle = grad;
+    octx.fillRect(0, 0, ow, oh);
+    octx.globalCompositeOperation = 'source-over';
+  }
+
+  // Offscreen sonucunu ana canvas'a aktar
+  ctx.drawImage(oc, dx, dy, dw, dh);
 }
 
 // ── CANVAS RENDER ─────────────────────────────────────────────────────────
@@ -1085,11 +1089,7 @@ function renderCanvas() {
 
   var p = objs.product;
   if (p.img && p.visible) {
-    if (fx.shadow) drawShadow(ctx, p, 1, 1);
-    ctx.filter = 'brightness(' + fx.brightness + '%) contrast(' + fx.contrast + '%)';
-    ctx.drawImage(p.img, p.x, p.y, p.w, p.h);
-    ctx.filter = 'none';
-    if (fx.vignette) drawVignette(ctx, p, 1, 1, fx.vigStrength);
+    drawProductWithFx(ctx, p, 1, 1, fx);
     if (activeObj === 'product') drawSelection(ctx, p);
   }
 
@@ -1223,11 +1223,7 @@ function saveComposition() {
   ctx.drawImage(bgImg, 0, 0, EW, EH);
   var p = objs.product;
   if (p.img && p.visible) {
-    if (fx.shadow) drawShadow(ctx, p, sx, sy);
-    ctx.filter = 'brightness(' + fx.brightness + '%) contrast(' + fx.contrast + '%)';
-    ctx.drawImage(p.img, p.x*sx, p.y*sy, p.w*sx, p.h*sy);
-    ctx.filter = 'none';
-    if (fx.vignette) drawVignette(ctx, p, sx, sy, fx.vigStrength);
+    drawProductWithFx(ctx, p, sx, sy, fx);
   }
   var l = objs.logo;
   if (l.img && l.visible) ctx.drawImage(l.img, l.x*sx, l.y*sy, l.w*sx, l.h*sy);
