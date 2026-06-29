@@ -137,16 +137,26 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
 
     <!-- Nobackground Galerisi -->
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <h3>Arka planı kaldırılmış görseller <span id="noBgCount" style="font-size:13px;color:#888"></span></h3>
-        <button class="btn" onclick="loadNoBgGallery()" style="font-size:13px;padding:6px 12px">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-          Galeriden yükle
-        </button>
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none" onclick="toggleSection('noBgSection','noBgChevron')">
+        <h3>Arka planı kaldırılmış görseller <span id="noBgCount" style="font-size:13px;color:#888;font-weight:400"></span></h3>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn" onclick="event.stopPropagation();loadNoBgGallery()" style="font-size:13px;padding:6px 12px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+            Yükle
+          </button>
+          <span id="noBgChevron" style="font-size:16px;color:#aaa;transition:transform .2s">▼</span>
+        </div>
       </div>
-      <p class="muted" style="margin-bottom:10px">Daha önce kaydedilmiş, arka planı kaldırılmış görseller — tıkla ve editöre yükle</p>
-      <div id="noBgSt"></div>
-      <div id="noBgGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px"></div>
+      <div id="noBgSection">
+        <p class="muted" style="margin:10px 0 6px">Daha önce kaydedilmiş, arka planı kaldırılmış görseller — tıkla ve editöre yükle</p>
+        <div id="noBgSt"></div>
+        <div id="noBgGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px"></div>
+        <div id="noBgPager" style="display:none;align-items:center;justify-content:center;gap:12px;margin-top:10px">
+          <button class="btn" id="noBgPrevBtn" onclick="noBgChangePage(-1)" style="font-size:13px;padding:4px 12px">&#8592;</button>
+          <span id="noBgPageInfo" style="font-size:12px;color:#888"></span>
+          <button class="btn" id="noBgNextBtn" onclick="noBgChangePage(1)"  style="font-size:13px;padding:4px 12px">&#8594;</button>
+        </div>
+      </div>
     </div>
 
     <!-- ROW 2: Editör -->
@@ -242,49 +252,73 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
 
       <!-- Arka plan kataloğu -->
       <div style="margin-top:16px;border-top:1px solid #f0f0f0;padding-top:14px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <p style="font-size:13px;font-weight:600;color:#444">Arka Planlar <span id="bgCount" style="font-size:12px;color:#aaa;font-weight:400"></span></p>
-          <button class="btn" onclick="loadBackgrounds()" style="font-size:12px;padding:5px 12px">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-            Yükle
-          </button>
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none" onclick="toggleSection('bgSection','bgChevron')">
+          <p style="font-size:13px;font-weight:600;color:#444;margin:0">Arka Planlar <span id="bgCount" style="font-size:12px;color:#aaa;font-weight:400"></span></p>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="btn" onclick="event.stopPropagation();loadBackgrounds()" style="font-size:12px;padding:5px 12px">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+              Yükle
+            </button>
+            <span id="bgChevron" style="font-size:16px;color:#aaa;transition:transform .2s">▼</span>
+          </div>
         </div>
-        <div id="bgLoadSt"></div>
-        <div id="bgList" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
-        <!-- Sayfalama -->
-        <div id="bgPager" style="display:none;align-items:center;justify-content:center;gap:12px;margin-top:10px">
-          <button class="btn" id="bgPrevBtn" onclick="bgChangePage(-1)" style="font-size:13px;padding:4px 12px">&#8592;</button>
-          <span id="bgPageInfo" style="font-size:12px;color:#888"></span>
-          <button class="btn" id="bgNextBtn" onclick="bgChangePage(1)"  style="font-size:13px;padding:4px 12px">&#8594;</button>
+        <div id="bgSection">
+          <div id="bgLoadSt"></div>
+          <div id="bgList" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px"></div>
+          <div id="bgPager" style="display:none;align-items:center;justify-content:center;gap:12px;margin-top:10px">
+            <button class="btn" id="bgPrevBtn" onclick="bgChangePage(-1)" style="font-size:13px;padding:4px 12px">&#8592;</button>
+            <span id="bgPageInfo" style="font-size:12px;color:#888"></span>
+            <button class="btn" id="bgNextBtn" onclick="bgChangePage(1)"  style="font-size:13px;padding:4px 12px">&#8594;</button>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- ROW 3: Kaydedilen görseller -->
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <h3>Hazırlanan görseller <span id="savedCount" style="font-size:13px;color:#888"></span></h3>
-        <button class="btn primary" onclick="uploadSaved()" id="uploadSavedBtn" style="display:none">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Tümünü Storage'a yükle
-        </button>
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none" onclick="toggleSection('savedSection','savedChevron')">
+        <h3>Hazırlanan görseller <span id="savedCount" style="font-size:13px;color:#888;font-weight:400"></span></h3>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn primary" onclick="event.stopPropagation();uploadSaved()" id="uploadSavedBtn" style="display:none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Tümünü yükle
+          </button>
+          <span id="savedChevron" style="font-size:16px;color:#aaa;transition:transform .2s">▼</span>
+        </div>
       </div>
-      <div id="savedGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div>
-      <div id="uploadSt" style="margin-top:8px"></div>
+      <div id="savedSection">
+        <div id="savedGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px"></div>
+        <div id="savedPager" style="display:none;align-items:center;justify-content:center;gap:12px;margin-top:10px">
+          <button class="btn" id="savedPrevBtn" onclick="savedChangePage(-1)" style="font-size:13px;padding:4px 12px">&#8592;</button>
+          <span id="savedPageInfo" style="font-size:12px;color:#888"></span>
+          <button class="btn" id="savedNextBtn" onclick="savedChangePage(1)"  style="font-size:13px;padding:4px 12px">&#8594;</button>
+        </div>
+        <div id="uploadSt" style="margin-top:8px"></div>
+      </div>
     </div>
 
     <!-- Hazır Görsel Galerisi -->
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3>Hazır Görseller <span id="galleryCount" style="font-size:13px;color:#888"></span></h3>
-        <button class="btn" onclick="loadGallery()" style="font-size:13px;padding:6px 12px">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-          Galeriden yükle
-        </button>
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none" onclick="toggleSection('gallerySection','galleryChevron')">
+        <h3>Hazır Görseller <span id="galleryCount" style="font-size:13px;color:#888;font-weight:400"></span></h3>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn" onclick="event.stopPropagation();loadGallery()" style="font-size:13px;padding:6px 12px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+            Yükle
+          </button>
+          <span id="galleryChevron" style="font-size:16px;color:#aaa;transition:transform .2s">▼</span>
+        </div>
       </div>
-      <p class="muted" style="margin-bottom:12px">Daha önce hazırlanmış görseller — tıklayarak bu ürüne ekle</p>
-      <div id="gallerySt"></div>
-      <div id="galleryGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px"></div>
+      <div id="gallerySection">
+        <p class="muted" style="margin:10px 0 6px">Daha önce hazırlanmış görseller — tıklayarak bu ürüne ekle</p>
+        <div id="gallerySt"></div>
+        <div id="galleryGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px"></div>
+        <div id="galleryPager" style="display:none;align-items:center;justify-content:center;gap:12px;margin-top:10px">
+          <button class="btn" id="galleryPrevBtn" onclick="galleryChangePage(-1)" style="font-size:13px;padding:4px 12px">&#8592;</button>
+          <span id="galleryPageInfo" style="font-size:12px;color:#888"></span>
+          <button class="btn" id="galleryNextBtn" onclick="galleryChangePage(1)"  style="font-size:13px;padding:4px 12px">&#8594;</button>
+        </div>
+      </div>
     </div>
 
     <div class="btn-row">
@@ -468,63 +502,88 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
 // ── HAZIR GÖRSEL GALERİSİ ─────────────────────────────────────────────────
 var gallerySelected = {}; // path -> true
 
+var galleryAllFiles = [];
+var galleryCurrentPage = 0;
+var GALLERY_PER_PAGE = 8;
+
 function loadGallery() {
   setSt('gallerySt','load','<span class="spin">&#x27F3;</span> Yükleniyor...');
   fetch(SUPA+'/storage/v1/object/list/trendyol', {
     method:'POST',
     headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
-    body: JSON.stringify({prefix:'products/', limit:100, offset:0, sortBy:{column:'created_at',order:'desc'}})
+    body: JSON.stringify({prefix:'products/', limit:200, offset:0, sortBy:{column:'created_at',order:'desc'}})
   })
   .then(function(r){return r.json();})
   .then(function(files){
     document.getElementById('gallerySt').innerHTML='';
-    var imgs = (files||[]).filter(function(f){
-      return f.name && /\.(jpg|jpeg|png|webp)$/i.test(f.name);
-    });
-    if (!imgs.length){
-      setSt('gallerySt','info','Henüz hazır görsel yok — editörden görseller kaydet');
-      return;
-    }
-    document.getElementById('galleryCount').textContent = '('+imgs.length+' görsel)';
-    var grid = document.getElementById('galleryGrid');
-    grid.innerHTML = '';
-    imgs.forEach(function(f) {
-      var url = SUPA+'/storage/v1/object/public/trendyol/products/'+f.name;
-      var isSelected = s.urls.indexOf(url) !== -1;
-      var wrap = document.createElement('div');
-      wrap.style.cssText = 'position:relative;cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid '+(isSelected?'#111':'#e5e5e5')+';aspect-ratio:2/3;background:#f5f5f5';
-      wrap.id = 'gal_'+f.name.replace(/[^a-z0-9]/gi,'_');
-
-      var img = document.createElement('img');
-      img.src = url;
-      img.alt = f.name;
-      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
-      wrap.appendChild(img);
-
-      // Seçili işareti
-      var badge = document.createElement('div');
-      badge.style.cssText = 'position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:'+(isSelected?'#111':'rgba(0,0,0,0.3)')+';display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:bold';
-      badge.textContent = isSelected ? '✓' : '+';
-      badge.id = 'gal_badge_'+f.name.replace(/[^a-z0-9]/gi,'_');
-      wrap.appendChild(badge);
-
-      // Alt bilgi — tarih
-      if (f.created_at) {
-        var info = document.createElement('div');
-        info.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.5);color:#fff;font-size:10px;padding:3px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-        info.textContent = new Date(f.created_at).toLocaleDateString('tr-TR');
-        wrap.appendChild(info);
-      }
-
-      wrap.onclick = (function(imgUrl, fname) {
-        return function() { toggleGalleryImage(imgUrl, fname); };
-      })(url, f.name);
-
-      grid.appendChild(wrap);
-    });
-    setSt('gallerySt','ok','&#x2713; '+imgs.length+' görsel — seçmek için tıkla, tekrar tıkla deseç');
+    galleryAllFiles = (files||[]).filter(function(f){ return f.name && /\.(jpg|jpeg|png|webp)$/i.test(f.name); });
+    if (!galleryAllFiles.length){ setSt('gallerySt','info','Henüz hazır görsel yok — editörden görseller kaydet'); return; }
+    document.getElementById('galleryCount').textContent = '('+galleryAllFiles.length+' görsel)';
+    galleryCurrentPage = 0;
+    renderGalleryPage();
+    setSt('gallerySt','ok','&#x2713; '+galleryAllFiles.length+' görsel — seçmek için tıkla, tekrar tıkla deseç');
   })
   .catch(function(e){ setSt('gallerySt','err','Hata: '+e.message); });
+}
+
+function galleryChangePage(dir) {
+  var total = Math.ceil(galleryAllFiles.length / GALLERY_PER_PAGE);
+  galleryCurrentPage = Math.max(0, Math.min(galleryCurrentPage + dir, total - 1));
+  renderGalleryPage();
+}
+
+function renderGalleryPage() {
+  var grid = document.getElementById('galleryGrid');
+  var pager = document.getElementById('galleryPager');
+  var pageInfo = document.getElementById('galleryPageInfo');
+  var prevBtn = document.getElementById('galleryPrevBtn');
+  var nextBtn = document.getElementById('galleryNextBtn');
+  grid.innerHTML = '';
+
+  var total = Math.ceil(galleryAllFiles.length / GALLERY_PER_PAGE);
+  var start = galleryCurrentPage * GALLERY_PER_PAGE;
+  var pageFiles = galleryAllFiles.slice(start, start + GALLERY_PER_PAGE);
+
+  pageFiles.forEach(function(f) {
+    var url = SUPA+'/storage/v1/object/public/trendyol/products/'+f.name;
+    var isSelected = s.urls.indexOf(url) !== -1;
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid '+(isSelected?'#111':'#e5e5e5')+';aspect-ratio:2/3;background:#f5f5f5';
+    wrap.id = 'gal_'+f.name.replace(/[^a-z0-9]/gi,'_');
+
+    var img = document.createElement('img');
+    img.src = url; img.alt = f.name;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+    wrap.appendChild(img);
+
+    var badge = document.createElement('div');
+    badge.style.cssText = 'position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:'+(isSelected?'#111':'rgba(0,0,0,0.3)')+';display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:bold';
+    badge.textContent = isSelected ? '✓' : '+';
+    badge.id = 'gal_badge_'+f.name.replace(/[^a-z0-9]/gi,'_');
+    wrap.appendChild(badge);
+
+    if (f.created_at) {
+      var info = document.createElement('div');
+      info.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.5);color:#fff;font-size:10px;padding:3px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+      info.textContent = new Date(f.created_at).toLocaleDateString('tr-TR');
+      wrap.appendChild(info);
+    }
+
+    wrap.onclick = (function(imgUrl, fname) {
+      return function() { toggleGalleryImage(imgUrl, fname); };
+    })(url, f.name);
+
+    grid.appendChild(wrap);
+  });
+
+  if (total > 1) {
+    pager.style.display = 'flex';
+    pageInfo.textContent = (galleryCurrentPage + 1) + ' / ' + total;
+    prevBtn.disabled = galleryCurrentPage === 0;
+    nextBtn.disabled = galleryCurrentPage === total - 1;
+  } else {
+    pager.style.display = 'none';
+  }
 }
 
 function toggleGalleryImage(url, fname) {
@@ -881,86 +940,121 @@ function saveNoBgToStorage() {
 }
 
 // ── NOBACKGROUND GALERİSİ ─────────────────────────────────────────────────
+var noBgAllFiles = [];
+var noBgCurrentPage = 0;
+var NOBG_PER_PAGE = 8;
+
 function loadNoBgGallery() {
   setSt('noBgSt','load','<span class="spin">&#x27F3;</span> Yükleniyor...');
   fetch(SUPA+'/storage/v1/object/list/trendyol', {
     method:'POST',
     headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
-    body: JSON.stringify({ prefix:'nobackground/', limit:100, offset:0, sortBy:{column:'created_at',order:'desc'} })
+    body: JSON.stringify({ prefix:'nobackground/', limit:200, offset:0, sortBy:{column:'created_at',order:'desc'} })
   })
   .then(function(r){ return r.json(); })
   .then(function(files){
     document.getElementById('noBgSt').innerHTML = '';
-    var imgs = (files||[]).filter(function(f){ return f.name && /\.(png|jpg|jpeg|webp)$/i.test(f.name); });
-    if (!imgs.length){ setSt('noBgSt','info','Henüz kaydedilmiş görsel yok'); return; }
+    noBgAllFiles = (files||[]).filter(function(f){ return f.name && /\.(png|jpg|jpeg|webp)$/i.test(f.name); });
+    if (!noBgAllFiles.length){ setSt('noBgSt','info','Henüz kaydedilmiş görsel yok'); return; }
     var countEl = document.getElementById('noBgCount');
-    if (countEl) countEl.textContent = '('+imgs.length+')';
-    var grid = document.getElementById('noBgGrid');
-    grid.innerHTML = '';
-    imgs.forEach(function(f){
-      var url = SUPA+'/storage/v1/object/public/trendyol/nobackground/'+f.name;
-      var wrap = document.createElement('div');
-      wrap.style.cssText = 'position:relative;cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid #e5e5e5;aspect-ratio:2/3;background:repeating-conic-gradient(#e5e5e5 0% 25%,#f5f5f5 0% 50%) 0 0/16px 16px';
-      wrap.title = f.name;
-
-      var img = document.createElement('img');
-      img.src = url;
-      img.loading = 'lazy';
-      img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block';
-      wrap.appendChild(img);
-
-      // Seçili işareti
-      var badge = document.createElement('div');
-      badge.style.cssText = 'position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:bold';
-      badge.textContent = '+';
-      wrap.appendChild(badge);
-
-      // Tarih
-      if (f.created_at) {
-        var info = document.createElement('div');
-        info.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.5);color:#fff;font-size:10px;padding:3px 6px';
-        info.textContent = new Date(f.created_at).toLocaleDateString('tr-TR');
-        wrap.appendChild(info);
-      }
-
-      wrap.onclick = (function(imgUrl, imgEl, badgeEl, wrapEl){
-        return function(){
-          // Önceki seçimi kaldır
-          document.querySelectorAll('#noBgGrid > div').forEach(function(d){
-            d.style.borderColor='#e5e5e5';
-            var b = d.querySelector('div');
-            if (b){ b.textContent='+'; b.style.background='rgba(0,0,0,0.3)'; }
-          });
-          wrapEl.style.borderColor = '#111';
-          badgeEl.textContent = '✓'; badgeEl.style.background = '#111';
-          // Editöre yükle
-          var pngImg = new Image(); pngImg.crossOrigin='anonymous';
-          pngImg.onload = function(){
-            objs.product.img = pngImg;
-            var ratio = pngImg.width / pngImg.height;
-            objs.product.h = Math.round(CH * 0.72);
-            objs.product.w = Math.round(objs.product.h * ratio);
-            objs.product.x = Math.round((CW - objs.product.w) / 2);
-            objs.product.y = Math.round(CH * 0.12);
-            // Önizlemeye de göster
-            var prevEl = document.getElementById('removedPreview');
-            prevEl.innerHTML = '';
-            var prevImg = document.createElement('img');
-            prevImg.src = imgUrl;
-            prevImg.style.cssText = 'max-width:100%;max-height:120px;object-fit:contain';
-            prevEl.appendChild(prevImg);
-            setSt('noBgSt','ok','&#x2713; Editöre yüklendi');
-            renderCanvas();
-          };
-          pngImg.src = imgUrl + '?t=' + Date.now();
-        };
-      })(url, img, badge, wrap);
-
-      grid.appendChild(wrap);
-    });
-    setSt('noBgSt','ok','&#x2713; '+imgs.length+' görsel — editöre yüklemek için tıkla');
+    if (countEl) countEl.textContent = '('+noBgAllFiles.length+')';
+    noBgCurrentPage = 0;
+    renderNoBgPage();
+    setSt('noBgSt','ok','&#x2713; '+noBgAllFiles.length+' görsel — editöre yüklemek için tıkla');
   })
   .catch(function(e){ setSt('noBgSt','err','Hata: '+e.message); });
+}
+
+function noBgChangePage(dir) {
+  var total = Math.ceil(noBgAllFiles.length / NOBG_PER_PAGE);
+  noBgCurrentPage = Math.max(0, Math.min(noBgCurrentPage + dir, total - 1));
+  renderNoBgPage();
+}
+
+function renderNoBgPage() {
+  var grid = document.getElementById('noBgGrid');
+  var pager = document.getElementById('noBgPager');
+  var pageInfo = document.getElementById('noBgPageInfo');
+  var prevBtn = document.getElementById('noBgPrevBtn');
+  var nextBtn = document.getElementById('noBgNextBtn');
+  grid.innerHTML = '';
+
+  var total = Math.ceil(noBgAllFiles.length / NOBG_PER_PAGE);
+  var start = noBgCurrentPage * NOBG_PER_PAGE;
+  var pageFiles = noBgAllFiles.slice(start, start + NOBG_PER_PAGE);
+
+  pageFiles.forEach(function(f){
+    var url = SUPA+'/storage/v1/object/public/trendyol/nobackground/'+f.name;
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid #e5e5e5;aspect-ratio:2/3;background:repeating-conic-gradient(#e5e5e5 0% 25%,#f5f5f5 0% 50%) 0 0/16px 16px';
+    wrap.title = f.name;
+
+    var img = document.createElement('img');
+    img.src = url; img.loading = 'lazy';
+    img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block';
+    wrap.appendChild(img);
+
+    var badge = document.createElement('div');
+    badge.style.cssText = 'position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:bold';
+    badge.textContent = '+';
+    wrap.appendChild(badge);
+
+    if (f.created_at) {
+      var info = document.createElement('div');
+      info.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.5);color:#fff;font-size:10px;padding:3px 6px';
+      info.textContent = new Date(f.created_at).toLocaleDateString('tr-TR');
+      wrap.appendChild(info);
+    }
+
+    wrap.onclick = (function(imgUrl, badgeEl, wrapEl){
+      return function(){
+        document.querySelectorAll('#noBgGrid > div').forEach(function(d){
+          d.style.borderColor='#e5e5e5';
+          var b = d.querySelector('div'); if (b){ b.textContent='+'; b.style.background='rgba(0,0,0,0.3)'; }
+        });
+        wrapEl.style.borderColor = '#111';
+        badgeEl.textContent = '✓'; badgeEl.style.background = '#111';
+        var pngImg = new Image(); pngImg.crossOrigin='anonymous';
+        pngImg.onload = function(){
+          objs.product.img = pngImg;
+          var ratio = pngImg.width / pngImg.height;
+          objs.product.h = Math.round(CH * 0.72);
+          objs.product.w = Math.round(objs.product.h * ratio);
+          objs.product.x = Math.round((CW - objs.product.w) / 2);
+          objs.product.y = Math.round(CH * 0.12);
+          var prevEl = document.getElementById('removedPreview');
+          prevEl.innerHTML = '';
+          var prevImg = document.createElement('img');
+          prevImg.src = imgUrl; prevImg.style.cssText = 'max-width:100%;max-height:120px;object-fit:contain';
+          prevEl.appendChild(prevImg);
+          setSt('noBgSt','ok','&#x2713; Editöre yüklendi');
+          renderCanvas();
+        };
+        pngImg.src = imgUrl + '?t=' + Date.now();
+      };
+    })(url, badge, wrap);
+
+    grid.appendChild(wrap);
+  });
+
+  if (total > 1) {
+    pager.style.display = 'flex';
+    pageInfo.textContent = (noBgCurrentPage + 1) + ' / ' + total;
+    prevBtn.disabled = noBgCurrentPage === 0;
+    nextBtn.disabled = noBgCurrentPage === total - 1;
+  } else {
+    pager.style.display = 'none';
+  }
+}
+
+// ── COLLAPSIBLE SECTIONS ──────────────────────────────────────────────────
+function toggleSection(sectionId, chevronId) {
+  var sec = document.getElementById(sectionId);
+  var chev = document.getElementById(chevronId);
+  if (!sec) return;
+  var hidden = sec.style.display === 'none';
+  sec.style.display = hidden ? '' : 'none';
+  if (chev) chev.style.transform = hidden ? '' : 'rotate(-90deg)';
 }
 
 // ── BACKGROUNDS ───────────────────────────────────────────────────────────
@@ -1299,16 +1393,42 @@ function saveComposition() {
   updateSavedGrid();
 }
 
+var savedCurrentPage = 0;
+var SAVED_PER_PAGE = 8;
+
 function updateSavedGrid() {
-  var el  = document.getElementById('savedGrid');
   var cnt = document.getElementById('savedCount');
   var btn = document.getElementById('uploadSavedBtn');
   if (cnt) cnt.textContent = savedImages.length ? '('+savedImages.length+')' : '';
   if (btn) btn.style.display = savedImages.length ? 'inline-flex' : 'none';
+  // Sayfa sınırını kontrol et
+  var totalPages = Math.max(1, Math.ceil(savedImages.length / SAVED_PER_PAGE));
+  if (savedCurrentPage >= totalPages) savedCurrentPage = totalPages - 1;
+  renderSavedPage();
+}
+
+function savedChangePage(dir) {
+  var total = Math.ceil(savedImages.length / SAVED_PER_PAGE);
+  savedCurrentPage = Math.max(0, Math.min(savedCurrentPage + dir, total - 1));
+  renderSavedPage();
+}
+
+function renderSavedPage() {
+  var el = document.getElementById('savedGrid');
+  var pager = document.getElementById('savedPager');
+  var pageInfo = document.getElementById('savedPageInfo');
+  var prevBtn = document.getElementById('savedPrevBtn');
+  var nextBtn = document.getElementById('savedNextBtn');
   if (!el) return;
   el.innerHTML = '';
-  savedImages.forEach(function(item, i) {
-    var dataUrl = item.dataUrl || item; // geriye dönük uyum
+
+  var total = Math.ceil(savedImages.length / SAVED_PER_PAGE);
+  var start = savedCurrentPage * SAVED_PER_PAGE;
+  var pageItems = savedImages.slice(start, start + SAVED_PER_PAGE);
+
+  pageItems.forEach(function(item, pi) {
+    var i = start + pi; // gerçek index
+    var dataUrl = item.dataUrl || item;
     var wrap = document.createElement('div');
     wrap.style.cssText = 'position:relative;border-radius:6px;overflow:hidden';
 
@@ -1317,14 +1437,12 @@ function updateSavedGrid() {
     img.style.cssText = 'width:100%;border-radius:6px;border:1px solid #e5e5e5;aspect-ratio:2/3;object-fit:cover;display:block';
     wrap.appendChild(img);
 
-    // Sil
     var del = document.createElement('button');
     del.textContent = '×';
     del.style.cssText = 'position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:12px;border:none;cursor:pointer';
     del.onclick = (function(idx) { return function() { removeSaved(idx); }; })(i);
     wrap.appendChild(del);
 
-    // İndir
     var dl = document.createElement('a');
     dl.href = dataUrl;
     dl.download = 'gorsel-' + (i + 1) + '.jpg';
@@ -1333,7 +1451,6 @@ function updateSavedGrid() {
     dl.textContent = '↓';
     wrap.appendChild(dl);
 
-    // Düzenle
     if (item.snap) {
       var ed = document.createElement('button');
       ed.textContent = '✎';
@@ -1345,6 +1462,15 @@ function updateSavedGrid() {
 
     el.appendChild(wrap);
   });
+
+  if (total > 1) {
+    pager.style.display = 'flex';
+    pageInfo.textContent = (savedCurrentPage + 1) + ' / ' + total;
+    prevBtn.disabled = savedCurrentPage === 0;
+    nextBtn.disabled = savedCurrentPage === total - 1;
+  } else {
+    pager.style.display = 'none';
+  }
 }
 
 function removeSaved(i) { savedImages.splice(i,1); updateSavedGrid(); }
