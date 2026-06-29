@@ -1776,6 +1776,60 @@ function renderTyProducts(products) {
       right.appendChild(batchBtn);
     }
 
+    // Onay bekliyor ise "Yenile" butonu
+    if (st === 'WAITING' && p.barcode) {
+      var refreshBtn = document.createElement('button');
+      refreshBtn.className = 'btn';
+      refreshBtn.innerHTML = '&#x21BB; Durumu yenile';
+      refreshBtn.style.cssText = 'font-size:11px;padding:4px 8px;color:#d97706;border-color:#fde68a';
+      var statusBadgeRef = badge;
+      var reasonRef = null;
+      refreshBtn.onclick = (function(barcode, badgeEl, rightEl, btn) {
+        return function() {
+          btn.textContent = '...';
+          btn.disabled = true;
+          fetch(PROXY + '?action=list-products&page=0&size=1&barcode=' + encodeURIComponent(barcode))
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            var items = d.content || d.items || [];
+            if (!items.length) { btn.innerHTML = '&#x21BB; Durumu yenile'; btn.disabled = false; return; }
+            var prod = items[0];
+            var newSt;
+            if (prod.blacklisted)            newSt = 'PASSIVE';
+            else if (prod.rejected)          newSt = 'REJECTED';
+            else if (prod.approved || prod.onSale) newSt = 'APPROVED';
+            else                             newSt = 'WAITING';
+            var stMap = {
+              'WAITING':  {label:'Onay Bekliyor', bg:'#fffbeb', color:'#d97706', border:'#fde68a'},
+              'APPROVED': {label:'Satışta',       bg:'#f0fdf4', color:'#16a34a', border:'#bbf7d0'},
+              'REJECTED': {label:'Reddedildi',    bg:'#fef2f2', color:'#dc2626', border:'#fecaca'},
+              'PASSIVE':  {label:'Pasif',         bg:'#f5f5f5', color:'#666',    border:'#e5e5e5'}
+            };
+            var info = stMap[newSt] || {label:newSt, bg:'#f5f5f5', color:'#666', border:'#e5e5e5'};
+            badgeEl.textContent = info.label;
+            badgeEl.style.background = info.bg;
+            badgeEl.style.color = info.color;
+            badgeEl.style.border = '1px solid ' + info.border;
+            // Red sebebi güncelle
+            var existingReason = rightEl.querySelector('.reject-reason');
+            if (existingReason) existingReason.remove();
+            var reasons = prod.rejectReasonDetails || prod.rejectReasons || [];
+            if (newSt === 'REJECTED' && reasons.length) {
+              var r = document.createElement('div');
+              r.className = 'reject-reason';
+              r.style.cssText = 'font-size:11px;color:#dc2626;text-align:right;max-width:140px;line-height:1.4';
+              r.textContent = reasons.map(function(x){ return x.reason || x.message || x; }).join(' / ');
+              badgeEl.insertAdjacentElement('afterend', r);
+            }
+            if (newSt !== 'WAITING') btn.remove();
+            else { btn.innerHTML = '&#x21BB; Durumu yenile'; btn.disabled = false; }
+          })
+          .catch(function() { btn.innerHTML = '&#x21BB; Durumu yenile'; btn.disabled = false; });
+        };
+      })(p.barcode, badge, right, refreshBtn);
+      right.appendChild(refreshBtn);
+    }
+
     row.appendChild(right);
     el.appendChild(row);
   });
