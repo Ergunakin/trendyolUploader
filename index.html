@@ -1741,15 +1741,27 @@ function renderTyProducts(products) {
       'REJECTED': {label:'Reddedildi',    bg:'#fef2f2', color:'#dc2626', border:'#fecaca'},
       'PASSIVE':  {label:'Pasif',         bg:'#f5f5f5', color:'#666',    border:'#e5e5e5'}
     };
-    var st = p.approved === true ? 'APPROVED' : p.approved === false ? 'REJECTED' : (p.onSale ? 'APPROVED' : 'WAITING');
-    // API'den gelen status alanı
-    if (p.blacklisted) st = 'PASSIVE';
+    // Doğru durum tespiti: rejected ayrı bir alan, approved:false sadece "henüz onaylanmadı" demek
+    var st;
+    if (p.blacklisted)       st = 'PASSIVE';
+    else if (p.rejected)     st = 'REJECTED';
+    else if (p.approved || p.onSale) st = 'APPROVED';
+    else                     st = 'WAITING';
     var stInfo = statusMap[st] || {label: st||'—', bg:'#f5f5f5', color:'#666', border:'#e5e5e5'};
 
     var badge = document.createElement('span');
     badge.textContent = stInfo.label;
     badge.style.cssText = 'font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;background:'+stInfo.bg+';color:'+stInfo.color+';border:1px solid '+stInfo.border;
     right.appendChild(badge);
+
+    // Red sebepleri
+    var rejectReasons = p.rejectReasonDetails || p.rejectReasons || [];
+    if (st === 'REJECTED' && rejectReasons.length) {
+      var reasonEl = document.createElement('div');
+      reasonEl.style.cssText = 'font-size:11px;color:#dc2626;text-align:right;max-width:140px;line-height:1.4';
+      reasonEl.textContent = rejectReasons.map(function(r){ return r.reason || r.message || r; }).join(' / ');
+      right.appendChild(reasonEl);
+    }
 
     // Batch kontrolü butonu
     if (p.batchRequestId || p.lastBatchRequestId) {
