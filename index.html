@@ -11,7 +11,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .topbar h1{font-size:16px;font-weight:600}
 .topbar .sub{font-size:13px;color:#888;margin-left:4px}
 .badge{font-size:11px;padding:3px 8px;border-radius:6px;background:#f0f0f0;color:#555}
-.container{max-width:800px;margin:0 auto;padding:24px 16px}
+.container{max-width:1440px;margin:0 auto;padding:24px 20px}
+.narrow{max-width:800px;margin:0 auto}
 .stepper{display:flex;background:#fff;border:1px solid #e5e5e5;border-radius:10px;overflow:hidden;margin-bottom:20px}
 .step{flex:1;padding:10px 8px;font-size:13px;text-align:center;cursor:pointer;color:#999;background:#fff;border-right:1px solid #e5e5e5;transition:all .15s;user-select:none}
 .step:last-child{border-right:none}
@@ -90,6 +91,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
 </div>
 
 <div class="container">
+  <div class="narrow">
   <div class="stepper">
     <div class="step active" onclick="goStep(1)" id="s1">1 · Görsel</div>
     <div class="step" onclick="goStep(2)" id="s2">2 · Kategori</div>
@@ -98,196 +100,194 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
     <div class="step" onclick="goStep(5)" id="s5">5 · Katalog</div>
     <div class="step" onclick="goStep(6)" id="s6">6 · Trendyol</div>
   </div>
+  </div><!-- /narrow stepper -->
 
   <!-- STEP 1 -->
   <div class="panel active" id="p1">
 
-    <!-- ROW 1: Ürün fotoğrafı + remove.bg -->
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <h3>Ürün fotoğrafı</h3>
-        <button class="btn" onclick="removeBgClick()" id="removeBgBtn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-          Arka planı kaldır
-        </button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div>
-          <div class="upload-zone" onclick="document.getElementById('fi').click()" id="dz" style="padding:1.2rem">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:28px;height:28px"><path d="M12 16v-8m0 0-3 3m3-3 3 3M20 16.7A4 4 0 0 0 17 9h-1.26A8 8 0 1 0 4 16.7"/></svg>
-            <p style="font-size:13px;color:#555;margin-top:6px">Ham fotoğraf seç</p>
+    <!-- 3 KOLON ANA LAYOUT -->
+    <div style="display:grid;grid-template-columns:260px 1fr 260px;gap:14px;align-items:start">
+
+      <!-- ── SOL KOLON: Görsel yükleme + NoBg galerisi ── -->
+      <div style="display:flex;flex-direction:column;gap:12px">
+
+        <!-- Ürün görseli -->
+        <div class="card" style="padding:14px">
+          <p style="font-size:12px;font-weight:600;color:#444;margin-bottom:10px">Ürün Görseli</p>
+
+          <!-- Compact butonlar -->
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <button class="btn" onclick="document.getElementById('fi').click()" id="dz"
+              style="flex:1;font-size:12px;padding:7px 6px;justify-content:center">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16v-8m0 0-3 3m3-3 3 3M20 16.7A4 4 0 0 0 17 9h-1.26A8 8 0 1 0 4 16.7"/></svg>
+              Fotoğraf Seç
+            </button>
+            <button class="btn" onclick="removeBgClick()" id="removeBgBtn"
+              style="flex:1;font-size:12px;padding:7px 6px;justify-content:center">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              BG Kaldır
+            </button>
           </div>
           <input type="file" id="fi" multiple accept="image/*" style="display:none">
-          <div class="img-grid" id="imgGrid" style="grid-template-columns:repeat(3,1fr)"></div>
-        </div>
-        <div>
-          <p style="font-size:12px;color:#888;margin-bottom:8px">Arka planı kaldırılmış:</p>
-          <div id="removedPreview" style="border:1px dashed #ddd;border-radius:8px;min-height:120px;display:flex;align-items:center;justify-content:center;background:#f9f9f9">
-            <span style="font-size:12px;color:#bbb">Henüz işlenmedi</span>
+
+          <!-- Yan yana preview -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div>
+              <p style="font-size:10px;color:#999;margin-bottom:4px;text-align:center">Ham Fotoğraf</p>
+              <div class="img-grid" id="imgGrid" style="grid-template-columns:1fr;margin-top:0"></div>
+            </div>
+            <div>
+              <p style="font-size:10px;color:#999;margin-bottom:4px;text-align:center">Arka Plan Kaldırılmış</p>
+              <div id="removedPreview"
+                style="border:1px dashed #ddd;border-radius:8px;min-height:100px;display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#e8e8e8 0% 25%,#f8f8f8 0% 50%) 0 0/12px 12px">
+                <span style="font-size:10px;color:#bbb">Henüz işlenmedi</span>
+              </div>
+            </div>
           </div>
+
           <div id="removeBgSt" style="margin-top:6px"></div>
-          <button class="btn" id="saveNoBgBtn" onclick="saveNoBgToStorage()" style="display:none;width:100%;margin-top:8px;font-size:12px">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            Depoya kaydet
+          <button class="btn" id="saveNoBgBtn" onclick="saveNoBgToStorage()"
+            style="display:none;width:100%;margin-top:8px;font-size:12px;padding:6px;justify-content:center">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            Depoya Kaydet
           </button>
           <div id="saveNoBgSt" style="margin-top:4px"></div>
         </div>
-      </div>
-    </div>
 
-    <!-- Nobackground Galerisi -->
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none" onclick="toggleSection('noBgSection','noBgChevron')">
-        <h3>Arka planı kaldırılmış görseller <span id="noBgCount" style="font-size:13px;color:#888;font-weight:400"></span></h3>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button class="btn" onclick="event.stopPropagation();loadNoBgGallery()" style="font-size:13px;padding:6px 12px">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-            Yükle
-          </button>
-          <span id="noBgChevron" style="font-size:16px;color:#aaa;transition:transform .2s">▼</span>
-        </div>
-      </div>
-      <div id="noBgSection">
-        <p class="muted" style="margin:10px 0 6px">Daha önce kaydedilmiş, arka planı kaldırılmış görseller — tıkla ve editöre yükle</p>
-        <div id="noBgSt"></div>
-        <div id="noBgGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px"></div>
-        <div id="noBgPager" style="display:none;align-items:center;justify-content:center;gap:12px;margin-top:10px">
-          <button class="btn" id="noBgPrevBtn" onclick="noBgChangePage(-1)" style="font-size:13px;padding:4px 12px">&#8592;</button>
-          <span id="noBgPageInfo" style="font-size:12px;color:#888"></span>
-          <button class="btn" id="noBgNextBtn" onclick="noBgChangePage(1)"  style="font-size:13px;padding:4px 12px">&#8594;</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ROW 2: Editör -->
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3>Kompozisyon editörü</h3>
-        <button class="btn" onclick="saveComposition()" style="padding:6px 14px;font-size:13px;background:#111;color:#fff;border-color:#111">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-          Kaydet
-        </button>
-      </div>
-
-      <div style="display:grid;grid-template-columns:160px 1fr;gap:16px">
-
-        <!-- Sol: Logo seçici -->
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <div>
-            <p style="font-size:12px;font-weight:600;color:#444;margin-bottom:6px">Logo</p>
-            <div id="logoSt"></div>
-            <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
-              <button class="btn" onclick="selectObj('logo')" style="font-size:12px;padding:5px 8px">Seç</button>
-              <button class="btn" onclick="toggleObj('logo')" style="font-size:12px;padding:5px 8px">Gizle/Göster</button>
+        <!-- NoBg galerisi -->
+        <div class="card" style="padding:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;margin-bottom:0" onclick="toggleSection('noBgSection','noBgChevron')">
+            <p style="font-size:12px;font-weight:600;color:#444;margin:0">Depodaki Görseller <span id="noBgCount" style="font-size:11px;color:#aaa;font-weight:400"></span></p>
+            <div style="display:flex;align-items:center;gap:5px">
+              <button class="btn" onclick="event.stopPropagation();loadNoBgGallery()" style="font-size:11px;padding:4px 8px">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+                Yükle
+              </button>
+              <span id="noBgChevron" style="font-size:13px;color:#aaa;transition:transform .2s">▼</span>
+            </div>
+          </div>
+          <div id="noBgSection" style="margin-top:10px">
+            <div id="noBgSt"></div>
+            <div id="noBgGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>
+            <div id="noBgPager" style="display:none;align-items:center;justify-content:center;gap:8px;margin-top:8px">
+              <button class="btn" id="noBgPrevBtn" onclick="noBgChangePage(-1)" style="font-size:12px;padding:3px 10px">&#8592;</button>
+              <span id="noBgPageInfo" style="font-size:11px;color:#888"></span>
+              <button class="btn" id="noBgNextBtn" onclick="noBgChangePage(1)"  style="font-size:12px;padding:3px 10px">&#8594;</button>
             </div>
           </div>
         </div>
 
-        <!-- Sağ: Canvas -->
-        <div>
-          <canvas id="editCanvas" width="400" height="600"
-            style="display:block;max-width:100%;border:1px solid #e5e5e5;border-radius:8px;cursor:crosshair;touch-action:none"
-            onmousedown="onMouseDown(event)"
-            onmousemove="onMouseMove(event)"
-            onmouseup="onMouseUp(event)"
-            onmouseleave="onMouseUp(event)"
-            ontouchstart="onTouchStart(event)"
-            ontouchmove="onTouchMove(event)"
-            ontouchend="onMouseUp(event)">
-          </canvas>
+      </div><!-- /sol kolon -->
 
-          <!-- Obje seç + araçlar -->
-          <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-            <button class="btn" onclick="selectObj('product')" style="font-size:12px;padding:5px 8px;background:#f5f5f5">📦 Ürün</button>
-            <button class="btn" onclick="selectObj('logo')"    style="font-size:12px;padding:5px 8px;background:#f5f5f5">🔖 Logo</button>
-            <span style="width:1px;height:20px;background:#e5e5e5;margin:0 2px"></span>
-            <button class="btn" onclick="scaleActive(0.9)" style="font-size:12px;padding:5px 8px">− Küçült</button>
-            <button class="btn" onclick="scaleActive(1.1)" style="font-size:12px;padding:5px 8px">+ Büyüt</button>
-            <button class="btn" onclick="centerActive()"   style="font-size:12px;padding:5px 8px">⊕ Ortala</button>
-          </div>
-          <!-- Efekt kontrolleri -->
-          <div style="margin-top:10px;padding:10px 12px;background:#f8f8f8;border-radius:8px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12px;color:#444">
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
-              <input type="checkbox" id="showShadow" checked> Gölge
-            </label>
-            <label style="display:flex;align-items:center;gap:5px">
-              Yoğunluk
-              <input type="range" id="shadowStrength" min="0" max="100" value="55" style="width:60px;accent-color:#111">
-              <span id="shadowStrengthVal" style="min-width:24px;color:#888">55</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:5px">
-              X
-              <input type="range" id="shadowOffsetX" min="-40" max="40" value="8" style="width:60px;accent-color:#111">
-              <span id="shadowOffsetXVal" style="min-width:24px;color:#888">8</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:5px">
-              Y
-              <input type="range" id="shadowOffsetY" min="-40" max="40" value="10" style="width:60px;accent-color:#111">
-              <span id="shadowOffsetYVal" style="min-width:24px;color:#888">10</span>
-            </label>
-            <div style="width:1px;height:20px;background:#ddd;margin:0 2px"></div>
-            <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
-              <input type="checkbox" id="showVignette" checked> Vignette
-            </label>
-            <label style="display:flex;align-items:center;gap:5px">
-              Vignette
-              <input type="range" id="vignetteStrength" min="0" max="60" value="35" style="width:60px;accent-color:#111">
-              <span id="vignetteVal" style="min-width:28px;color:#888">0.35</span>
-            </label>
-            <div style="width:1px;height:20px;background:#ddd;margin:0 2px"></div>
-            <label style="display:flex;align-items:center;gap:5px">
-              Parlaklık
-              <input type="range" id="brightness" min="70" max="130" value="100" style="width:60px;accent-color:#111">
-              <span id="brightnessVal" style="min-width:28px;color:#888">100</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:5px">
-              Kontrast
-              <input type="range" id="contrast" min="80" max="130" value="100" style="width:60px;accent-color:#111">
-              <span id="contrastVal" style="min-width:28px;color:#888">100</span>
-            </label>
-          </div>
-          <p style="font-size:11px;color:#aaa;margin-top:6px" id="objInfo">Ürün veya logo'ya tıkla</p>
-        </div>
-      </div>
-
-      <!-- Arka plan kataloğu -->
-      <div style="margin-top:16px;border-top:1px solid #f0f0f0;padding-top:14px">
-        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none" onclick="toggleSection('bgSection','bgChevron')">
-          <p style="font-size:13px;font-weight:600;color:#444;margin:0">Arka Planlar <span id="bgCount" style="font-size:12px;color:#aaa;font-weight:400"></span></p>
-          <div style="display:flex;align-items:center;gap:8px">
-            <button class="btn" onclick="event.stopPropagation();loadBackgrounds()" style="font-size:12px;padding:5px 12px">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-              Yükle
+      <!-- ── ORTA KOLON: Canvas editörü ── -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3>Kompozisyon Editörü</h3>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div id="logoSt"></div>
+            <button class="btn" onclick="selectObj('logo')"  style="font-size:12px;padding:5px 8px">🔖 Logo</button>
+            <button class="btn" onclick="toggleObj('logo')"  style="font-size:12px;padding:5px 8px">Gizle/Göster</button>
+            <button class="btn" onclick="saveComposition()"  style="padding:6px 14px;font-size:13px;background:#111;color:#fff;border-color:#111">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Kaydet
             </button>
-            <span id="bgChevron" style="font-size:16px;color:#aaa;transition:transform .2s">▼</span>
           </div>
         </div>
-        <div id="bgSection">
-          <div id="bgLoadSt"></div>
-          <div id="bgList" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px"></div>
-          <div id="bgPager" style="display:none;align-items:center;justify-content:center;gap:12px;margin-top:10px">
-            <button class="btn" id="bgPrevBtn" onclick="bgChangePage(-1)" style="font-size:13px;padding:4px 12px">&#8592;</button>
-            <span id="bgPageInfo" style="font-size:12px;color:#888"></span>
-            <button class="btn" id="bgNextBtn" onclick="bgChangePage(1)"  style="font-size:13px;padding:4px 12px">&#8594;</button>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- ROW 3: Kaydedilen görseller -->
+        <!-- Canvas merkeze hizalı -->
+        <div style="display:flex;justify-content:center">
+          <div style="width:400px">
+            <canvas id="editCanvas" width="400" height="600"
+              style="display:block;width:400px;border:1px solid #e5e5e5;border-radius:8px;cursor:crosshair;touch-action:none"
+              onmousedown="onMouseDown(event)" onmousemove="onMouseMove(event)"
+              onmouseup="onMouseUp(event)"    onmouseleave="onMouseUp(event)"
+              ontouchstart="onTouchStart(event)" ontouchmove="onTouchMove(event)" ontouchend="onMouseUp(event)">
+            </canvas>
+
+            <!-- Araçlar -->
+            <div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+              <button class="btn" onclick="selectObj('product')" style="font-size:12px;padding:5px 8px;background:#f5f5f5">📦 Ürün</button>
+              <button class="btn" onclick="selectObj('logo')"    style="font-size:12px;padding:5px 8px;background:#f5f5f5">🔖 Logo</button>
+              <span style="width:1px;height:18px;background:#e5e5e5;margin:0 2px"></span>
+              <button class="btn" onclick="scaleActive(0.9)" style="font-size:12px;padding:5px 8px">− Küçült</button>
+              <button class="btn" onclick="scaleActive(1.1)" style="font-size:12px;padding:5px 8px">+ Büyüt</button>
+              <button class="btn" onclick="centerActive()"   style="font-size:12px;padding:5px 8px">⊕ Ortala</button>
+            </div>
+
+            <!-- Efekt kontrolleri -->
+            <div style="margin-top:8px;padding:9px 10px;background:#f8f8f8;border-radius:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:11px;color:#444">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
+                <input type="checkbox" id="showShadow" checked> Gölge
+              </label>
+              <label style="display:flex;align-items:center;gap:4px">
+                Yoğunluk <input type="range" id="shadowStrength" min="0" max="100" value="55" style="width:52px;accent-color:#111">
+                <span id="shadowStrengthVal" style="min-width:20px;color:#888">55</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:4px">
+                X <input type="range" id="shadowOffsetX" min="-40" max="40" value="8" style="width:52px;accent-color:#111">
+                <span id="shadowOffsetXVal" style="min-width:20px;color:#888">8</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:4px">
+                Y <input type="range" id="shadowOffsetY" min="-40" max="40" value="10" style="width:52px;accent-color:#111">
+                <span id="shadowOffsetYVal" style="min-width:20px;color:#888">10</span>
+              </label>
+              <div style="width:1px;height:16px;background:#ddd"></div>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
+                <input type="checkbox" id="showVignette" checked> Vignette
+              </label>
+              <label style="display:flex;align-items:center;gap:4px">
+                Güç <input type="range" id="vignetteStrength" min="0" max="60" value="35" style="width:52px;accent-color:#111">
+                <span id="vignetteVal" style="min-width:28px;color:#888">0.35</span>
+              </label>
+              <div style="width:1px;height:16px;background:#ddd"></div>
+              <label style="display:flex;align-items:center;gap:4px">
+                Parlaklık <input type="range" id="brightness" min="70" max="130" value="100" style="width:52px;accent-color:#111">
+                <span id="brightnessVal" style="min-width:24px;color:#888">100</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:4px">
+                Kontrast <input type="range" id="contrast" min="80" max="130" value="100" style="width:52px;accent-color:#111">
+                <span id="contrastVal" style="min-width:24px;color:#888">100</span>
+              </label>
+            </div>
+            <p style="font-size:11px;color:#aaa;margin-top:5px" id="objInfo">Ürün veya logo'ya tıkla</p>
+          </div>
+        </div>
+      </div><!-- /orta kolon -->
+
+      <!-- ── SAĞ KOLON: Arka plan seçici ── -->
+      <div class="card" style="padding:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <p style="font-size:12px;font-weight:600;color:#444;margin:0">Arka Planlar <span id="bgCount" style="font-size:11px;color:#aaa;font-weight:400"></span></p>
+          <button class="btn" onclick="loadBackgrounds()" style="font-size:11px;padding:4px 8px">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+            Yükle
+          </button>
+        </div>
+        <div id="bgLoadSt"></div>
+        <div id="bgList" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>
+        <div id="bgPager" style="display:none;align-items:center;justify-content:center;gap:8px;margin-top:8px">
+          <button class="btn" id="bgPrevBtn" onclick="bgChangePage(-1)" style="font-size:12px;padding:3px 10px">&#8592;</button>
+          <span id="bgPageInfo" style="font-size:11px;color:#888"></span>
+          <button class="btn" id="bgNextBtn" onclick="bgChangePage(1)"  style="font-size:12px;padding:3px 10px">&#8594;</button>
+        </div>
+      </div><!-- /sağ kolon -->
+
+    </div><!-- /3-col grid -->
+
+    <!-- ALT BÖLÜM: Hazırlanan görseller + Hazır Görseller (tam genişlik) -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none" onclick="toggleSection('savedSection','savedChevron')">
-        <h3>Hazırlanan görseller <span id="savedCount" style="font-size:13px;color:#888;font-weight:400"></span></h3>
+        <h3>Hazırlanan Görseller <span id="savedCount" style="font-size:13px;color:#888;font-weight:400"></span></h3>
         <div style="display:flex;align-items:center;gap:8px">
-          <button class="btn primary" onclick="event.stopPropagation();uploadSaved()" id="uploadSavedBtn" style="display:none">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Tümünü yükle
+          <button class="btn primary" onclick="event.stopPropagation();uploadSaved()" id="uploadSavedBtn" style="display:none;font-size:12px;padding:5px 12px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Tümünü Yükle
           </button>
           <span id="savedChevron" style="font-size:16px;color:#aaa;transition:transform .2s">▼</span>
         </div>
       </div>
       <div id="savedSection">
-        <div id="savedGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px;align-items:start"></div>
+        <div id="savedGrid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:10px;margin-top:10px;align-items:start"></div>
         <div id="savedPager" style="display:none;align-items:center;justify-content:center;gap:12px;margin-top:10px">
           <button class="btn" id="savedPrevBtn" onclick="savedChangePage(-1)" style="font-size:13px;padding:4px 12px">&#8592;</button>
           <span id="savedPageInfo" style="font-size:12px;color:#888"></span>
@@ -297,7 +297,6 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
       </div>
     </div>
 
-    <!-- Hazır Görsel Galerisi -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none" onclick="toggleSection('gallerySection','galleryChevron')">
         <h3>Hazır Görseller <span id="galleryCount" style="font-size:13px;color:#888;font-weight:400"></span></h3>
@@ -312,7 +311,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
       <div id="gallerySection">
         <p class="muted" style="margin:10px 0 6px">Daha önce hazırlanmış görseller — tıklayarak bu ürüne ekle</p>
         <div id="gallerySt"></div>
-        <div id="galleryGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px"></div>
+        <div id="galleryGrid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:10px;margin-top:10px"></div>
         <div id="galleryPager" style="display:none;align-items:center;justify-content:center;gap:12px;margin-top:10px">
           <button class="btn" id="galleryPrevBtn" onclick="galleryChangePage(-1)" style="font-size:13px;padding:4px 12px">&#8592;</button>
           <span id="galleryPageInfo" style="font-size:12px;color:#888"></span>
@@ -325,12 +324,12 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
       <button class="btn primary" onclick="goStep(2)">Kategori seç →</button>
     </div>
 
-    <!-- Gizli canvas (1200x1800 export için) -->
+    <!-- Gizli canvas -->
     <canvas id="workCanvas" style="display:none"></canvas>
   </div>
 
   <!-- STEP 2: KATEGORİ -->
-  <div class="panel" id="p2">
+  <div class="panel narrow" id="p2">
     <div class="card">
       <h3>Kategori seç</h3>
       <div style="display:flex;gap:8px;margin-bottom:0">
@@ -354,7 +353,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
   </div>
 
   <!-- STEP 3 -->
-  <div class="panel" id="p3">
+  <div class="panel narrow" id="p3">
     <!-- Görsel önizleme -->
     <div class="card" id="step3PreviewCard">
       <h3>Görsel önizleme</h3>
@@ -420,7 +419,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
   </div>
 
   <!-- STEP 4 -->
-  <div class="panel" id="p4">
+  <div class="panel narrow" id="p4">
     <div class="card">
       <h3>Payload önizleme</h3>
       <div class="mono" id="preview">—</div>
@@ -445,7 +444,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
   </div>
 
   <!-- STEP 5: KATALOG -->
-  <div class="panel" id="p5">
+  <div class="panel narrow" id="p5">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <h3>Ürün Kataloğu</h3>
@@ -467,7 +466,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
   </div>
 
   <!-- STEP 6: TRENDYOL ÜRÜNLERİM -->
-  <div class="panel" id="p6">
+  <div class="panel narrow" id="p6">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <h3>Trendyol Ürünlerim</h3>
@@ -504,7 +503,7 @@ var gallerySelected = {}; // path -> true
 
 var galleryAllFiles = [];
 var galleryCurrentPage = 0;
-var GALLERY_PER_PAGE = 8;
+var GALLERY_PER_PAGE = 8; // alt satır 8 kolon
 
 function loadGallery() {
   setSt('gallerySt','load','<span class="spin">&#x27F3;</span> Yükleniyor...');
@@ -952,7 +951,7 @@ function saveNoBgToStorage() {
 // ── NOBACKGROUND GALERİSİ ─────────────────────────────────────────────────
 var noBgAllFiles = [];
 var noBgCurrentPage = 0;
-var NOBG_PER_PAGE = 8;
+var NOBG_PER_PAGE = 4; // sol kolon 2×2
 
 function loadNoBgGallery() {
   setSt('noBgSt','load','<span class="spin">&#x27F3;</span> Yükleniyor...');
@@ -1070,7 +1069,7 @@ function toggleSection(sectionId, chevronId) {
 // ── BACKGROUNDS ───────────────────────────────────────────────────────────
 var bgAllFiles = [];
 var bgCurrentPage = 0;
-var BG_PER_PAGE = 8;
+var BG_PER_PAGE = 4; // sağ kolon 2×2
 
 function loadBackgrounds() {
   setSt('bgLoadSt','load','<span class="spin">&#x27F3;</span> Arka planlar yükleniyor...');
@@ -1404,7 +1403,7 @@ function saveComposition() {
 }
 
 var savedCurrentPage = 0;
-var SAVED_PER_PAGE = 8;
+var SAVED_PER_PAGE = 8; // alt satır 8 kolon
 
 function updateSavedGrid() {
   var cnt = document.getElementById('savedCount');
