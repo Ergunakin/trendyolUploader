@@ -1434,31 +1434,43 @@ function renderSavedPage() {
 
     var img = document.createElement('img');
     img.src = dataUrl;
-    img.style.cssText = 'width:100%;border-radius:6px;border:1px solid #e5e5e5;aspect-ratio:2/3;object-fit:cover;display:block';
+    img.style.cssText = 'width:100%;aspect-ratio:2/3;object-fit:cover;display:block';
     wrap.appendChild(img);
 
-    var del = document.createElement('button');
-    del.textContent = '×';
-    del.style.cssText = 'position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:12px;border:none;cursor:pointer';
-    del.onclick = (function(idx) { return function() { removeSaved(idx); }; })(i);
-    wrap.appendChild(del);
+    // Aksiyonlar — altta her zaman görünür çubuk
+    var bar = document.createElement('div');
+    bar.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:space-between;padding:4px 6px;z-index:2';
 
+    // Düzenle
+    var ed = document.createElement('button');
+    ed.title = 'Düzenle';
+    ed.style.cssText = 'background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:11px;padding:2px 7px;border-radius:4px;cursor:pointer;white-space:nowrap';
+    ed.textContent = '✎ Düzenle';
+    ed.onclick = (function(idx) { return function() { loadSavedComposition(idx); }; })(i);
+    bar.appendChild(ed);
+
+    var right = document.createElement('div');
+    right.style.cssText = 'display:flex;gap:4px;align-items:center';
+
+    // İndir
     var dl = document.createElement('a');
     dl.href = dataUrl;
     dl.download = 'gorsel-' + (i + 1) + '.jpg';
     dl.title = 'İndir';
-    dl.style.cssText = 'position:absolute;bottom:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;text-decoration:none;line-height:1';
+    dl.style.cssText = 'background:rgba(255,255,255,0.15);color:#fff;font-size:13px;width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;text-decoration:none';
     dl.textContent = '↓';
-    wrap.appendChild(dl);
+    right.appendChild(dl);
 
-    if (item.snap) {
-      var ed = document.createElement('button');
-      ed.textContent = '✎';
-      ed.title = 'Düzenle';
-      ed.style.cssText = 'position:absolute;bottom:4px;left:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,100,255,.8);color:#fff;font-size:13px;border:none;cursor:pointer';
-      ed.onclick = (function(idx) { return function() { loadSavedComposition(idx); }; })(i);
-      wrap.appendChild(ed);
-    }
+    // Sil
+    var del = document.createElement('button');
+    del.title = 'Sil';
+    del.style.cssText = 'background:rgba(255,60,60,0.7);border:none;color:#fff;font-size:13px;width:22px;height:22px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center';
+    del.textContent = '×';
+    del.onclick = (function(idx) { return function() { removeSaved(idx); }; })(i);
+    right.appendChild(del);
+
+    bar.appendChild(right);
+    wrap.appendChild(bar);
 
     el.appendChild(wrap);
   });
