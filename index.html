@@ -225,14 +225,6 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
   <!-- STEP 2: KATEGORİ -->
   <div class="panel" id="p2">
     <div class="card">
-      <h3>Marka ID</h3>
-      <div id="brandSt"></div>
-      <button class="btn" style="margin-top:10px" onclick="fetchBrand()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-        MAAT SERAMİK ID'sini çek
-      </button>
-    </div>
-    <div class="card">
       <h3>Kategori seç</h3>
       <div style="display:flex;gap:8px;margin-bottom:0">
         <input type="text" id="catQ" placeholder="Ara: vazo, kase, seramik..." style="flex:1;padding:9px 12px;font-size:14px;border:1px solid #ddd;border-radius:8px;font-family:inherit;outline:none" oninput="filterCats()">
@@ -542,6 +534,10 @@ let activeObj   = null;
 let dragMode    = null;
 let dragOX      = 0, dragOY = 0;
 let savedImages = [];
+
+// Marka ID hardcoded
+s.brandId = 2922973; s.brandName = 'MAAT SERAMİK';
+document.getElementById('brandBadge').textContent = 'Marka ID: 2922973';
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────
 
