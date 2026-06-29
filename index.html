@@ -1248,7 +1248,15 @@ function saveComposition() {
   }
   var l = objs.logo;
   if (l.img && l.visible) ctx.drawImage(l.img, l.x*sx, l.y*sy, l.w*sx, l.h*sy);
-  savedImages.push(wc.toDataURL('image/jpeg', 0.93));
+  // State snapshot: arka plan, ürün, logo, efektler
+  function imgSrc(img) { return img ? img.src : null; }
+  var snap = {
+    bgSrc:  imgSrc(bgImg),
+    product: { src: imgSrc(objs.product.img), x: objs.product.x, y: objs.product.y, w: objs.product.w, h: objs.product.h, visible: objs.product.visible },
+    logo:    { src: imgSrc(objs.logo.img),    x: objs.logo.x,    y: objs.logo.y,    w: objs.logo.w,    h: objs.logo.h,    visible: objs.logo.visible },
+    fx: fx
+  };
+  savedImages.push({ dataUrl: wc.toDataURL('image/jpeg', 0.93), snap: snap });
   updateSavedGrid();
 }
 
@@ -1260,21 +1268,24 @@ function updateSavedGrid() {
   if (btn) btn.style.display = savedImages.length ? 'inline-flex' : 'none';
   if (!el) return;
   el.innerHTML = '';
-  savedImages.forEach(function(dataUrl, i) {
+  savedImages.forEach(function(item, i) {
+    var dataUrl = item.dataUrl || item; // geriye dönük uyum
     var wrap = document.createElement('div');
-    wrap.style.position = 'relative';
+    wrap.style.cssText = 'position:relative;border-radius:6px;overflow:hidden';
 
     var img = document.createElement('img');
     img.src = dataUrl;
     img.style.cssText = 'width:100%;border-radius:6px;border:1px solid #e5e5e5;aspect-ratio:2/3;object-fit:cover;display:block';
     wrap.appendChild(img);
 
+    // Sil
     var del = document.createElement('button');
     del.textContent = '×';
     del.style.cssText = 'position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:12px;border:none;cursor:pointer';
     del.onclick = (function(idx) { return function() { removeSaved(idx); }; })(i);
     wrap.appendChild(del);
 
+    // İndir
     var dl = document.createElement('a');
     dl.href = dataUrl;
     dl.download = 'gorsel-' + (i + 1) + '.jpg';
@@ -1283,18 +1294,78 @@ function updateSavedGrid() {
     dl.textContent = '↓';
     wrap.appendChild(dl);
 
+    // Düzenle
+    if (item.snap) {
+      var ed = document.createElement('button');
+      ed.textContent = '✎';
+      ed.title = 'Düzenle';
+      ed.style.cssText = 'position:absolute;bottom:4px;left:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,100,255,.8);color:#fff;font-size:13px;border:none;cursor:pointer';
+      ed.onclick = (function(idx) { return function() { loadSavedComposition(idx); }; })(i);
+      wrap.appendChild(ed);
+    }
+
     el.appendChild(wrap);
   });
 }
 
 function removeSaved(i) { savedImages.splice(i,1); updateSavedGrid(); }
 
+function loadSavedComposition(i) {
+  var item = savedImages[i];
+  if (!item || !item.snap) return;
+  var snap = item.snap;
+
+  function loadImg(src, cb) {
+    if (!src) { cb(null); return; }
+    var img = new Image();
+    img.onload = function() { cb(img); };
+    img.onerror = function() { cb(null); };
+    img.src = src;
+  }
+
+  loadImg(snap.bgSrc, function(bg) {
+    bgImg = bg;
+    loadImg(snap.product.src, function(pi) {
+      objs.product.img = pi;
+      objs.product.x = snap.product.x; objs.product.y = snap.product.y;
+      objs.product.w = snap.product.w; objs.product.h = snap.product.h;
+      objs.product.visible = snap.product.visible;
+      loadImg(snap.logo.src, function(li) {
+        objs.logo.img = li;
+        objs.logo.x = snap.logo.x; objs.logo.y = snap.logo.y;
+        objs.logo.w = snap.logo.w; objs.logo.h = snap.logo.h;
+        objs.logo.visible = snap.logo.visible;
+
+        // Efekt slider değerlerini geri yükle
+        var fx = snap.fx;
+        function setSlider(id, val) { var e=document.getElementById(id); if(e) e.value=val; }
+        function setCheck(id, val)  { var e=document.getElementById(id); if(e) e.checked=val; }
+        function setSpan(id, txt)   { var e=document.getElementById(id); if(e) e.textContent=txt; }
+        setCheck('showShadow',    fx.shadow);
+        setCheck('showVignette',  fx.vignette);
+        setSlider('brightness',       fx.brightness);     setSpan('brightnessVal', fx.brightness);
+        setSlider('contrast',         fx.contrast);       setSpan('contrastVal',   fx.contrast);
+        setSlider('vignetteStrength', Math.round(fx.vigStrength*100)); setSpan('vignetteVal', fx.vigStrength.toFixed(2));
+        setSlider('shadowStrength',   Math.round(fx.shadowStrength*100)); setSpan('shadowStrengthVal', Math.round(fx.shadowStrength*100));
+        setSlider('shadowOffsetX',    fx.shadowOffsetX);  setSpan('shadowOffsetXVal', fx.shadowOffsetX);
+        setSlider('shadowOffsetY',    fx.shadowOffsetY);  setSpan('shadowOffsetYVal', fx.shadowOffsetY);
+
+        activeObj = null;
+        renderCanvas();
+        // Canvas sekmesine kaydır
+        document.getElementById('editCanvas').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    });
+  });
+}
+
 // ── UPLOAD SAVED ──────────────────────────────────────────────────────────
 function uploadSaved() {
   if (!savedImages.length) { setSt('uploadSt','err','Kaydedilmis gorsel yok'); return; }
   setSt('uploadSt','load','<span class="spin">&#x27F3;</span> Yukleniyor...');
   s.urls = [];
-  var promises = savedImages.map(function(dataUrl, i) {
+  var promises = savedImages.map(function(item, i) {
+    var dataUrl = item.dataUrl || item;
     var b64   = dataUrl.split(',')[1];
     var bytes = Uint8Array.from(atob(b64), function(c) { return c.charCodeAt(0); });
     var blob  = new Blob([bytes], {type:'image/jpeg'});
