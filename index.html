@@ -251,6 +251,12 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
         </div>
         <div id="bgLoadSt"></div>
         <div id="bgList" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
+        <!-- Sayfalama -->
+        <div id="bgPager" style="display:none;align-items:center;justify-content:center;gap:12px;margin-top:10px">
+          <button class="btn" id="bgPrevBtn" onclick="bgChangePage(-1)" style="font-size:13px;padding:4px 12px">&#8592;</button>
+          <span id="bgPageInfo" style="font-size:12px;color:#888"></span>
+          <button class="btn" id="bgNextBtn" onclick="bgChangePage(1)"  style="font-size:13px;padding:4px 12px">&#8594;</button>
+        </div>
       </div>
     </div>
 
@@ -958,50 +964,83 @@ function loadNoBgGallery() {
 }
 
 // ── BACKGROUNDS ───────────────────────────────────────────────────────────
+var bgAllFiles = [];
+var bgCurrentPage = 0;
+var BG_PER_PAGE = 8;
+
 function loadBackgrounds() {
   setSt('bgLoadSt','load','<span class="spin">&#x27F3;</span> Arka planlar yükleniyor...');
   fetch(SUPA+'/storage/v1/object/list/trendyol', {
     method:'POST',
     headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
-    body: JSON.stringify({ prefix:'backgrounds/', limit:100, offset:0 })
+    body: JSON.stringify({ prefix:'backgrounds/', limit:200, offset:0 })
   })
   .then(function(r) { return r.json(); })
   .then(function(files) {
     document.getElementById('bgLoadSt').innerHTML = '';
-    var imgs = files.filter(function(f) { return f.name && /\.(jpg|jpeg|png|webp)$/i.test(f.name); });
-    if (!imgs.length) { setSt('bgLoadSt','info','backgrounds/ klasörü boş'); return; }
+    bgAllFiles = files.filter(function(f) { return f.name && /\.(jpg|jpeg|png|webp)$/i.test(f.name); });
+    if (!bgAllFiles.length) { setSt('bgLoadSt','info','backgrounds/ klasörü boş'); return; }
     var countEl = document.getElementById('bgCount');
-    if (countEl) countEl.textContent = '(' + imgs.length + ')';
-    var grid = document.getElementById('bgList');
-    grid.innerHTML = '';
-    imgs.forEach(function(f) {
-      var url = SUPA+'/storage/v1/object/public/trendyol/backgrounds/'+f.name;
-      var wrap = document.createElement('div');
-      wrap.style.cssText = 'cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid transparent;transition:border-color .15s;position:relative;aspect-ratio:2/3;background:#f0f0f0';
-      wrap.title = f.name;
-
-      var img = document.createElement('img');
-      img.src = url;
-      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
-      img.loading = 'lazy';
-      wrap.appendChild(img);
-
-      // Hover'da isim etiketi
-      var label = document.createElement('div');
-      label.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);color:#fff;font-size:9px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .15s';
-      label.textContent = f.name;
-      wrap.appendChild(label);
-      wrap.onmouseenter = function() { label.style.opacity='1'; };
-      wrap.onmouseleave = function() { label.style.opacity='0'; };
-
-      wrap.onclick = (function(u, el) {
-        return function() { selectBg(u, el); };
-      })(url, wrap);
-
-      grid.appendChild(wrap);
-    });
+    if (countEl) countEl.textContent = '(' + bgAllFiles.length + ')';
+    bgCurrentPage = 0;
+    renderBgPage();
   })
   .catch(function(e) { setSt('bgLoadSt','err','Hata: '+e.message); });
+}
+
+function bgChangePage(dir) {
+  var totalPages = Math.ceil(bgAllFiles.length / BG_PER_PAGE);
+  bgCurrentPage = Math.max(0, Math.min(bgCurrentPage + dir, totalPages - 1));
+  renderBgPage();
+}
+
+function renderBgPage() {
+  var grid = document.getElementById('bgList');
+  var pager = document.getElementById('bgPager');
+  var pageInfo = document.getElementById('bgPageInfo');
+  var prevBtn = document.getElementById('bgPrevBtn');
+  var nextBtn = document.getElementById('bgNextBtn');
+  grid.innerHTML = '';
+
+  var totalPages = Math.ceil(bgAllFiles.length / BG_PER_PAGE);
+  var start = bgCurrentPage * BG_PER_PAGE;
+  var pageFiles = bgAllFiles.slice(start, start + BG_PER_PAGE);
+
+  pageFiles.forEach(function(f) {
+    var url = SUPA+'/storage/v1/object/public/trendyol/backgrounds/'+f.name;
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid transparent;transition:border-color .15s;position:relative;aspect-ratio:2/3;background:#f0f0f0';
+    wrap.title = f.name;
+
+    var img = document.createElement('img');
+    img.src = url;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+    img.loading = 'lazy';
+    wrap.appendChild(img);
+
+    var label = document.createElement('div');
+    label.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);color:#fff;font-size:9px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .15s';
+    label.textContent = f.name;
+    wrap.appendChild(label);
+    wrap.onmouseenter = function() { label.style.opacity='1'; };
+    wrap.onmouseleave = function() { label.style.opacity='0'; };
+
+    wrap.onclick = (function(u, el) {
+      return function() { selectBg(u, el); };
+    })(url, wrap);
+
+    grid.appendChild(wrap);
+  });
+
+  // Sayfalama kontrolü
+  if (totalPages > 1) {
+    pager.style.display = 'flex';
+    pageInfo.textContent = (bgCurrentPage + 1) + ' / ' + totalPages;
+    prevBtn.disabled = bgCurrentPage === 0;
+    nextBtn.disabled = bgCurrentPage === totalPages - 1;
+  } else {
+    pager.style.display = 'none';
+  }
 }
 
 function selectBg(url, el) {
