@@ -287,7 +287,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
         </div>
       </div>
       <div id="savedSection">
-        <div id="savedGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px"></div>
+        <div id="savedGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px;align-items:start"></div>
         <div id="savedPager" style="display:none;align-items:center;justify-content:center;gap:12px;margin-top:10px">
           <button class="btn" id="savedPrevBtn" onclick="savedChangePage(-1)" style="font-size:13px;padding:4px 12px">&#8592;</button>
           <span id="savedPageInfo" style="font-size:12px;color:#888"></span>
@@ -1432,7 +1432,7 @@ function renderSavedPage() {
 
     // Kart: görsel + aksiyonlar üst üste, normal akış
     var card = document.createElement('div');
-    card.style.cssText = 'border-radius:6px;border:1px solid #e5e5e5;overflow:hidden;background:#fff';
+    card.style.cssText = 'border-radius:6px;border:1px solid #e5e5e5;background:#fff';
 
     var img = document.createElement('img');
     img.src = dataUrl;
