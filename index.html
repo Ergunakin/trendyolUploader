@@ -205,16 +205,19 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
             </canvas>
 
             <!-- Araçlar -->
-            <div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;align-items:center">
-              <button class="btn" onclick="selectObj('product')"   style="font-size:12px;padding:5px 8px;background:#f5f5f5">📦 Ürün</button>
-              <button class="btn" onclick="selectObj('accessory')" style="font-size:12px;padding:5px 8px;background:#f5f5f5">✨ Süsleme</button>
-              <button class="btn" onclick="selectObj('logo')"      style="font-size:12px;padding:5px 8px;background:#f5f5f5">🔖 Logo</button>
-              <span style="width:1px;height:18px;background:#e5e5e5;margin:0 2px"></span>
-              <button class="btn" onclick="scaleActive(0.9)" style="font-size:12px;padding:5px 8px">− Küçült</button>
-              <button class="btn" onclick="scaleActive(1.1)" style="font-size:12px;padding:5px 8px">+ Büyüt</button>
-              <button class="btn" onclick="centerActive()"   style="font-size:12px;padding:5px 8px">⊕ Ortala</button>
-              <button class="btn" onclick="bringForward()"   style="font-size:12px;padding:5px 8px">▲ Öne</button>
-              <button class="btn" onclick="sendBackward()"   style="font-size:12px;padding:5px 8px">▼ Arkaya</button>
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+                <button class="btn" onclick="selectObj('product')"   style="font-size:12px;padding:5px 8px;background:#f5f5f5">📦 Ürün</button>
+                <button class="btn" onclick="selectObj('accessory')" style="font-size:12px;padding:5px 8px;background:#f5f5f5">✨ Süsleme</button>
+                <button class="btn" onclick="selectObj('logo')"      style="font-size:12px;padding:5px 8px;background:#f5f5f5">🔖 Logo</button>
+                <span style="width:1px;height:18px;background:#e5e5e5;margin:0 2px"></span>
+                <button class="btn" onclick="scaleActive(0.9)" style="font-size:12px;padding:5px 8px">− Küçült</button>
+                <button class="btn" onclick="scaleActive(1.1)" style="font-size:12px;padding:5px 8px">+ Büyüt</button>
+                <button class="btn" onclick="centerActive()"   style="font-size:12px;padding:5px 8px">⊕ Ortala</button>
+                <span style="width:1px;height:18px;background:#e5e5e5;margin:0 2px"></span>
+                <button class="btn" onclick="bringForward()"   style="font-size:12px;padding:5px 8px">▲ Öne Getir</button>
+                <button class="btn" onclick="sendBackward()"   style="font-size:12px;padding:5px 8px">▼ Arkaya Gönder</button>
+              </div>
             </div>
 
             <!-- Efekt kontrolleri -->
