@@ -196,27 +196,44 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
             <button class="btn" onclick="centerActive()"   style="font-size:12px;padding:5px 8px">⊕ Ortala</button>
           </div>
           <!-- Efekt kontrolleri -->
-          <div style="margin-top:10px;padding:10px 12px;background:#f8f8f8;border-radius:8px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12px;color:#444">
+          <div style="margin-top:10px;padding:10px 12px;background:#f8f8f8;border-radius:8px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12px;color:#444">
             <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
               <input type="checkbox" id="showShadow" checked> Gölge
             </label>
+            <label style="display:flex;align-items:center;gap:5px">
+              Yoğunluk
+              <input type="range" id="shadowStrength" min="0" max="100" value="55" style="width:60px;accent-color:#111">
+              <span id="shadowStrengthVal" style="min-width:24px;color:#888">55</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:5px">
+              Açı
+              <input type="range" id="shadowAngle" min="0" max="359" value="135" style="width:60px;accent-color:#111">
+              <span id="shadowAngleVal" style="min-width:28px;color:#888">135°</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:5px">
+              Mesafe
+              <input type="range" id="shadowDistance" min="0" max="40" value="12" style="width:60px;accent-color:#111">
+              <span id="shadowDistanceVal" style="min-width:24px;color:#888">12</span>
+            </label>
+            <div style="width:1px;height:20px;background:#ddd;margin:0 2px"></div>
             <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
               <input type="checkbox" id="showVignette" checked> Vignette
             </label>
             <label style="display:flex;align-items:center;gap:5px">
+              Vignette
+              <input type="range" id="vignetteStrength" min="0" max="60" value="35" style="width:60px;accent-color:#111">
+              <span id="vignetteVal" style="min-width:28px;color:#888">0.35</span>
+            </label>
+            <div style="width:1px;height:20px;background:#ddd;margin:0 2px"></div>
+            <label style="display:flex;align-items:center;gap:5px">
               Parlaklık
-              <input type="range" id="brightness" min="70" max="130" value="100" style="width:72px;accent-color:#111">
+              <input type="range" id="brightness" min="70" max="130" value="100" style="width:60px;accent-color:#111">
               <span id="brightnessVal" style="min-width:28px;color:#888">100</span>
             </label>
             <label style="display:flex;align-items:center;gap:5px">
               Kontrast
-              <input type="range" id="contrast" min="80" max="130" value="100" style="width:72px;accent-color:#111">
+              <input type="range" id="contrast" min="80" max="130" value="100" style="width:60px;accent-color:#111">
               <span id="contrastVal" style="min-width:28px;color:#888">100</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:5px">
-              Vignette
-              <input type="range" id="vignetteStrength" min="0" max="60" value="35" style="width:72px;accent-color:#111">
-              <span id="vignetteVal" style="min-width:28px;color:#888">0.35</span>
             </label>
           </div>
           <p style="font-size:11px;color:#aaa;margin-top:6px" id="objInfo">Ürün veya logo'ya tıkla</p>
@@ -609,9 +626,12 @@ document.getElementById('brandBadge').textContent = 'Marka ID: 2922973';
   if (el) el.addEventListener('change', renderCanvas);
 });
 [
-  {id:'brightness', valId:'brightnessVal', fmt: function(v){ return v; }},
-  {id:'contrast',   valId:'contrastVal',   fmt: function(v){ return v; }},
-  {id:'vignetteStrength', valId:'vignetteVal', fmt: function(v){ return (v/100).toFixed(2); }}
+  {id:'brightness',      valId:'brightnessVal',      fmt: function(v){ return v; }},
+  {id:'contrast',        valId:'contrastVal',         fmt: function(v){ return v; }},
+  {id:'vignetteStrength',valId:'vignetteVal',         fmt: function(v){ return (v/100).toFixed(2); }},
+  {id:'shadowStrength',  valId:'shadowStrengthVal',   fmt: function(v){ return v; }},
+  {id:'shadowAngle',     valId:'shadowAngleVal',      fmt: function(v){ return v + '°'; }},
+  {id:'shadowDistance',  valId:'shadowDistanceVal',   fmt: function(v){ return v; }}
 ].forEach(function(cfg) {
   var el  = document.getElementById(cfg.id);
   var val = document.getElementById(cfg.valId);
@@ -1012,17 +1032,18 @@ function selectBg(url, el) {
 
 // ── EFEKT YARDIMCILARI ────────────────────────────────────────────────────
 function getFxValues() {
-  var shadow   = document.getElementById('showShadow');
-  var vignette = document.getElementById('showVignette');
-  var bright   = document.getElementById('brightness');
-  var cont     = document.getElementById('contrast');
-  var vigStr   = document.getElementById('vignetteStrength');
+  function el(id) { return document.getElementById(id); }
+  function chk(id, def) { var e=el(id); return e ? e.checked : def; }
+  function num(id, def) { var e=el(id); return e ? parseInt(e.value) : def; }
   return {
-    shadow:   shadow   ? shadow.checked   : true,
-    vignette: vignette ? vignette.checked : true,
-    brightness: bright  ? parseInt(bright.value)  : 100,
-    contrast:   cont    ? parseInt(cont.value)    : 100,
-    vigStrength: vigStr ? parseInt(vigStr.value) / 100 : 0.35
+    shadow:         chk('showShadow', true),
+    vignette:       chk('showVignette', true),
+    brightness:     num('brightness', 100),
+    contrast:       num('contrast', 100),
+    vigStrength:    num('vignetteStrength', 35) / 100,
+    shadowStrength: num('shadowStrength', 55) / 100,
+    shadowAngle:    num('shadowAngle', 135),
+    shadowDistance: num('shadowDistance', 12)
   };
 }
 
@@ -1033,13 +1054,15 @@ function drawProductWithFx(ctx, p, sx, sy, fx) {
   sx = sx || 1; sy = sy || 1;
   var dx = p.x * sx, dy = p.y * sy, dw = p.w * sx, dh = p.h * sy;
 
-  // Adım 1 – Gölge: canvas shadow API ile ürünü bir kez çiz (gölge arkaplanın üstüne düşer)
+  // Adım 1 – Gölge: açı ve mesafeden offset hesapla, canvas shadow API ile çiz
   if (fx.shadow) {
+    var rad = (fx.shadowAngle - 90) * Math.PI / 180;
+    var dist = fx.shadowDistance;
     ctx.save();
-    ctx.shadowColor   = 'rgba(0,0,0,0.55)';
-    ctx.shadowBlur    = 30 * sx;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 12 * sy;
+    ctx.shadowColor   = 'rgba(0,0,0,' + fx.shadowStrength + ')';
+    ctx.shadowBlur    = 20 * sx;
+    ctx.shadowOffsetX = Math.cos(rad) * dist * sx;
+    ctx.shadowOffsetY = Math.sin(rad) * dist * sy;
     ctx.drawImage(p.img, dx, dy, dw, dh);
     ctx.restore();
   }
