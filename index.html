@@ -1429,50 +1429,41 @@ function renderSavedPage() {
   pageItems.forEach(function(item, pi) {
     var i = start + pi; // gerçek index
     var dataUrl = item.dataUrl || item;
-    var wrap = document.createElement('div');
-    wrap.style.cssText = 'position:relative;border-radius:6px;overflow:hidden';
+
+    // Kart: görsel + aksiyonlar üst üste, normal akış
+    var card = document.createElement('div');
+    card.style.cssText = 'border-radius:6px;border:1px solid #e5e5e5;overflow:hidden;background:#fff';
 
     var img = document.createElement('img');
     img.src = dataUrl;
     img.style.cssText = 'width:100%;aspect-ratio:2/3;object-fit:cover;display:block';
-    wrap.appendChild(img);
+    card.appendChild(img);
 
-    // Aksiyonlar — altta her zaman görünür çubuk
+    // Aksiyonlar — görselin ALTINDA, normal akışta
     var bar = document.createElement('div');
-    bar.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:space-between;padding:4px 6px;z-index:2';
+    bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:5px 6px;background:#f5f5f5;border-top:1px solid #e5e5e5;gap:4px';
 
-    // Düzenle
     var ed = document.createElement('button');
-    ed.title = 'Düzenle';
-    ed.style.cssText = 'background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:11px;padding:2px 7px;border-radius:4px;cursor:pointer;white-space:nowrap';
+    ed.style.cssText = 'flex:1;background:#111;border:none;color:#fff;font-size:11px;padding:4px 4px;border-radius:4px;cursor:pointer;white-space:nowrap';
     ed.textContent = '✎ Düzenle';
     ed.onclick = (function(idx) { return function() { loadSavedComposition(idx); }; })(i);
     bar.appendChild(ed);
 
-    var right = document.createElement('div');
-    right.style.cssText = 'display:flex;gap:4px;align-items:center';
-
-    // İndir
     var dl = document.createElement('a');
     dl.href = dataUrl;
     dl.download = 'gorsel-' + (i + 1) + '.jpg';
-    dl.title = 'İndir';
-    dl.style.cssText = 'background:rgba(255,255,255,0.15);color:#fff;font-size:13px;width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;text-decoration:none';
+    dl.style.cssText = 'background:#444;color:#fff;font-size:13px;width:26px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0';
     dl.textContent = '↓';
-    right.appendChild(dl);
+    bar.appendChild(dl);
 
-    // Sil
     var del = document.createElement('button');
-    del.title = 'Sil';
-    del.style.cssText = 'background:rgba(255,60,60,0.7);border:none;color:#fff;font-size:13px;width:22px;height:22px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center';
+    del.style.cssText = 'background:#e33;border:none;color:#fff;font-size:13px;width:26px;height:26px;border-radius:4px;cursor:pointer;flex-shrink:0';
     del.textContent = '×';
     del.onclick = (function(idx) { return function() { removeSaved(idx); }; })(i);
-    right.appendChild(del);
+    bar.appendChild(del);
 
-    bar.appendChild(right);
-    wrap.appendChild(bar);
-
-    el.appendChild(wrap);
+    card.appendChild(bar);
+    el.appendChild(card);
   });
 
   if (total > 1) {
