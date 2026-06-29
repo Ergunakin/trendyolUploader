@@ -1,0 +1,1787 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trendyol Ürün Yükleme — MAAT SERAMİK</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#1a1a1a;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #e5e5e5;padding:14px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.topbar h1{font-size:16px;font-weight:600}
+.topbar .sub{font-size:13px;color:#888;margin-left:4px}
+.badge{font-size:11px;padding:3px 8px;border-radius:6px;background:#f0f0f0;color:#555}
+.container{max-width:800px;margin:0 auto;padding:24px 16px}
+.stepper{display:flex;background:#fff;border:1px solid #e5e5e5;border-radius:10px;overflow:hidden;margin-bottom:20px}
+.step{flex:1;padding:10px 8px;font-size:13px;text-align:center;cursor:pointer;color:#999;background:#fff;border-right:1px solid #e5e5e5;transition:all .15s;user-select:none}
+.step:last-child{border-right:none}
+.step.active{color:#111;font-weight:600;border-bottom:3px solid #111}
+.step.done{color:#16a34a}
+.panel{display:none;flex-direction:column;gap:16px}
+.panel.active{display:flex}
+.card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:18px 20px}
+h3{font-size:15px;font-weight:600;margin-bottom:10px}
+.muted{font-size:13px;color:#888}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:13px;font-weight:500;color:#444}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;font-size:14px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#111;font-family:inherit;transition:border .15s;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#111}
+.field textarea{min-height:100px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.btn{padding:9px 18px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;border:1px solid #ddd;background:#fff;color:#111;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:#f5f5f5;border-color:#bbb}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:#111;border-color:#111;color:#fff}
+.btn.primary:hover{background:#333}
+.btn.success{background:#16a34a;border-color:#16a34a;color:#fff}
+.btn.success:hover{background:#15803d}
+.btn.excel{background:#1d6f42;border-color:#1d6f42;color:#fff}
+.btn.excel:hover{background:#155534}
+.btn-row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.tag{font-size:11px;padding:2px 7px;border-radius:5px;font-weight:500}
+.tag.req{background:#fee2e2;color:#dc2626}
+.sbar{padding:10px 14px;border-radius:8px;font-size:13px;display:flex;align-items:flex-start;gap:8px;margin-top:8px;line-height:1.5}
+.sbar.ok{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.sbar.err{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.sbar.load{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+.sbar.info{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.upload-zone{border:2px dashed #ddd;border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:#fafafa}
+.upload-zone:hover,.upload-zone.drag{border-color:#111;background:#f5f5f5}
+.upload-zone svg{width:36px;height:36px;color:#bbb;margin-bottom:10px}
+.img-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.img-thumb{position:relative;aspect-ratio:2/3;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;background:#f5f5f5}
+.img-thumb img{width:100%;height:100%;object-fit:cover}
+.del{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;line-height:1}
+.ok-badge{position:absolute;bottom:5px;left:5px;font-size:10px;padding:2px 6px;border-radius:4px;background:#16a34a;color:#fff;font-weight:600}
+.cat-results{max-height:200px;overflow-y:auto;border:1px solid #e5e5e5;border-radius:8px;background:#fff;margin-top:8px}
+.cat-item{padding:9px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid #f0f0f0;transition:background .1s}
+.cat-item:last-child{border-bottom:none}
+.cat-item:hover{background:#f5f5f5}
+.cat-item.sel{background:#f0fdf4;color:#15803d;font-weight:500}
+.attr-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f0f0f0}
+.attr-row:last-child{border-bottom:none}
+.attr-name{flex:0 0 170px;font-size:13px;color:#555}
+.attr-row input{flex:1;padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit;outline:none}
+.attr-row input:focus{border-color:#111}
+.mono{font-family:'Menlo','Consolas',monospace;font-size:12px;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto;background:#f8f8f8;border:1px solid #e5e5e5;border-radius:8px;padding:14px;color:#111;line-height:1.6}
+.spin{display:inline-block;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;background:#4f46e5;color:#fff;font-size:13px;font-weight:500;border:none;cursor:pointer;font-family:inherit}
+.ai-btn:hover{background:#4338ca}
+.catalog-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+.catalog-table th{background:#f5f5f5;padding:8px 10px;text-align:left;font-weight:600;border-bottom:2px solid #e5e5e5;color:#444}
+.catalog-table td{padding:7px 10px;border-bottom:1px solid #f0f0f0;color:#222}
+.catalog-table tr:hover td{background:#fafafa}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.pill.taslak{background:#fef9c3;color:#854d0e}
+.pill.yuklendi{background:#dbeafe;color:#1e40af}
+.pill.onaylandi{background:#dcfce7;color:#166534}
+.pill.reddedildi{background:#fee2e2;color:#991b1b}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>Trendyol Ürün Yükleme</h1>
+  <span class="sub">·</span>
+  <span class="badge">MAAT SERAMİK</span>
+  <span class="badge">MAAT SERAMİK</span>
+  <span class="badge" id="brandBadge">Marka ID: —</span>
+</div>
+
+<div class="container">
+  <div class="stepper">
+    <div class="step active" onclick="goStep(1)" id="s1">1 · Görsel</div>
+    <div class="step" onclick="goStep(2)" id="s2">2 · Kategori</div>
+    <div class="step" onclick="goStep(3)" id="s3">3 · Ürün Bilgisi</div>
+    <div class="step" onclick="goStep(4)" id="s4">4 · Gönder</div>
+    <div class="step" onclick="goStep(5)" id="s5">5 · Katalog</div>
+    <div class="step" onclick="goStep(6)" id="s6">6 · Trendyol</div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="panel active" id="p1">
+
+    <!-- ROW 1: Ürün fotoğrafı + remove.bg -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h3>Ürün fotoğrafı</h3>
+        <button class="btn" onclick="removeBgClick()" id="removeBgBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          Arka planı kaldır
+        </button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div class="upload-zone" onclick="document.getElementById('fi').click()" id="dz" style="padding:1.2rem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:28px;height:28px"><path d="M12 16v-8m0 0-3 3m3-3 3 3M20 16.7A4 4 0 0 0 17 9h-1.26A8 8 0 1 0 4 16.7"/></svg>
+            <p style="font-size:13px;color:#555;margin-top:6px">Ham fotoğraf seç</p>
+          </div>
+          <input type="file" id="fi" multiple accept="image/*" style="display:none">
+          <div class="img-grid" id="imgGrid" style="grid-template-columns:repeat(3,1fr)"></div>
+        </div>
+        <div>
+          <p style="font-size:12px;color:#888;margin-bottom:8px">Arka planı kaldırılmış:</p>
+          <div id="removedPreview" style="border:1px dashed #ddd;border-radius:8px;min-height:120px;display:flex;align-items:center;justify-content:center;background:#f9f9f9">
+            <span style="font-size:12px;color:#bbb">Henüz işlenmedi</span>
+          </div>
+          <div id="removeBgSt" style="margin-top:6px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 2: Editör -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3>Kompozisyon editörü</h3>
+        <button class="btn" onclick="saveComposition()" style="padding:6px 14px;font-size:13px;background:#111;color:#fff;border-color:#111">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Kaydet
+        </button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:160px 1fr;gap:16px">
+
+        <!-- Sol: Arka plan + logo seçici -->
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <p style="font-size:12px;font-weight:600;color:#444;margin-bottom:6px">Arka planlar</p>
+            <div id="bgLoadSt"></div>
+            <button class="btn" onclick="loadBackgrounds()" style="width:100%;font-size:12px;margin-bottom:8px;padding:6px">↻ Yükle</button>
+            <div id="bgList" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto"></div>
+          </div>
+          <div style="border-top:1px solid #f0f0f0;padding-top:10px">
+            <p style="font-size:12px;font-weight:600;color:#444;margin-bottom:6px">Logo</p>
+            <div id="logoSt"></div>
+            <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+              <button class="btn" onclick="selectObj('logo')" style="font-size:12px;padding:5px 8px">Seç</button>
+              <button class="btn" onclick="toggleObj('logo')" style="font-size:12px;padding:5px 8px">Gizle/Göster</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sağ: Canvas -->
+        <div>
+          <canvas id="editCanvas" width="400" height="600"
+            style="display:block;max-width:100%;border:1px solid #e5e5e5;border-radius:8px;cursor:crosshair;touch-action:none"
+            onmousedown="onMouseDown(event)"
+            onmousemove="onMouseMove(event)"
+            onmouseup="onMouseUp(event)"
+            onmouseleave="onMouseUp(event)"
+            ontouchstart="onTouchStart(event)"
+            ontouchmove="onTouchMove(event)"
+            ontouchend="onMouseUp(event)">
+          </canvas>
+
+          <!-- Obje seç + araçlar -->
+          <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <button class="btn" onclick="selectObj('product')" style="font-size:12px;padding:5px 8px;background:#f5f5f5">📦 Ürün</button>
+            <button class="btn" onclick="selectObj('logo')"    style="font-size:12px;padding:5px 8px;background:#f5f5f5">🔖 Logo</button>
+            <span style="width:1px;height:20px;background:#e5e5e5;margin:0 2px"></span>
+            <button class="btn" onclick="scaleActive(0.9)" style="font-size:12px;padding:5px 8px">− Küçült</button>
+            <button class="btn" onclick="scaleActive(1.1)" style="font-size:12px;padding:5px 8px">+ Büyüt</button>
+            <button class="btn" onclick="centerActive()"   style="font-size:12px;padding:5px 8px">⊕ Ortala</button>
+          </div>
+          <p style="font-size:11px;color:#aaa;margin-top:6px" id="objInfo">Ürün veya logo'ya tıkla</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 3: Kaydedilen görseller -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h3>Hazırlanan görseller <span id="savedCount" style="font-size:13px;color:#888"></span></h3>
+        <button class="btn primary" onclick="uploadSaved()" id="uploadSavedBtn" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Tümünü Storage'a yükle
+        </button>
+      </div>
+      <div id="savedGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div>
+      <div id="uploadSt" style="margin-top:8px"></div>
+    </div>
+
+    <!-- Hazır Görsel Galerisi -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3>Hazır Görseller <span id="galleryCount" style="font-size:13px;color:#888"></span></h3>
+        <button class="btn" onclick="loadGallery()" style="font-size:13px;padding:6px 12px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+          Galeriden yükle
+        </button>
+      </div>
+      <p class="muted" style="margin-bottom:12px">Daha önce hazırlanmış görseller — tıklayarak bu ürüne ekle</p>
+      <div id="gallerySt"></div>
+      <div id="galleryGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn primary" onclick="goStep(2)">Kategori seç →</button>
+    </div>
+
+    <!-- Gizli canvas (1200x1800 export için) -->
+    <canvas id="workCanvas" style="display:none"></canvas>
+  </div>
+
+  <!-- STEP 2: KATEGORİ -->
+  <div class="panel" id="p2">
+    <div class="card">
+      <h3>Marka ID</h3>
+      <div id="brandSt"></div>
+      <button class="btn" style="margin-top:10px" onclick="fetchBrand()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+        MAAT SERAMİK ID'sini çek
+      </button>
+    </div>
+    <div class="card">
+      <h3>Kategori seç</h3>
+      <div style="display:flex;gap:8px;margin-bottom:0">
+        <input type="text" id="catQ" placeholder="Ara: vazo, kase, seramik..." style="flex:1;padding:9px 12px;font-size:14px;border:1px solid #ddd;border-radius:8px;font-family:inherit;outline:none" oninput="filterCats()">
+        <button class="btn" onclick="fetchCats()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+          Listele
+        </button>
+      </div>
+      <div class="cat-results" id="catList"><div style="padding:12px;color:#aaa;font-size:13px">Listele butonuna bas, sonra ara</div></div>
+      <div id="selCat"></div>
+    </div>
+    <div class="card">
+      <h3>Zorunlu özellikler</h3>
+      <div id="attrSt"><p class="muted">Kategori seçildikten sonra burası dolar</p></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="goStep(1)">&#8592; Geri</button>
+      <button class="btn primary" onclick="goStep(3)">Ürün bilgisi &#8594;</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="panel" id="p3">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3>Temel bilgiler</h3>
+        <button class="ai-btn" onclick="aiGenerate()">✦ AI ile doldur</button>
+      </div>
+      <div id="aiSt"></div>
+      <div style="display:flex;flex-direction:column;gap:13px;margin-top:12px">
+        <div class="field">
+          <label>Ürün adı <span class="tag req">zorunlu</span></label>
+          <input type="text" id="f_title" placeholder="El Yapımı Stoneware Vazo — MAAT SERAMİK" maxlength="100" oninput="document.getElementById('tc').textContent=this.value.length+'/100'">
+          <span style="font-size:12px;color:#aaa" id="tc">0/100</span>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Barkod <span class="tag req">zorunlu</span></label><input type="text" id="f_barcode" placeholder="NUN-001"></div>
+          <div class="field"><label>Model kodu <span class="tag req">zorunlu</span></label><input type="text" id="f_mainId" placeholder="MAAT-VAZE-001"></div>
+        </div>
+        <div class="grid3">
+          <div class="field"><label>Stok adedi <span class="tag req">zorunlu</span></label><input type="number" id="f_qty" value="1" min="0"></div>
+          <div class="field"><label>Liste fiyatı ₺ <span class="tag req">zorunlu</span></label><input type="number" id="f_list" placeholder="750"></div>
+          <div class="field"><label>Satış fiyatı ₺ <span class="tag req">zorunlu</span></label><input type="number" id="f_sale" placeholder="599"></div>
+        </div>
+        <div class="grid3">
+          <div class="field"><label>KDV <span class="tag req">zorunlu</span></label>
+            <select id="f_vat"><option value="10">%10</option><option value="20" selected>%20</option><option value="1">%1</option><option value="0">%0</option></select>
+          </div>
+          <div class="field"><label>Desi <span class="tag req">zorunlu</span></label><input type="number" id="f_desi" value="3" step="0.1"></div>
+          <div class="field"><label>Stok kodu</label><input type="text" id="f_stock" placeholder="NUN-STK-001"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Renk</label><input type="text" id="f_color" placeholder="Toprak Kırmızısı" oninput="renderAttrFields()"></div>
+          <div class="field"><label>Malzeme</label><input type="text" id="f_material" placeholder="Stoneware"></div>
+        </div>
+        <div class="grid3">
+          <div class="field"><label>Yükseklik (cm)</label><input type="number" id="f_height" placeholder="35" step="0.1"></div>
+          <div class="field"><label>Genişlik (cm)</label><input type="number" id="f_width" placeholder="18" step="0.1"></div>
+          <div class="field"><label>Ağırlık (gr)</label><input type="number" id="f_weight" placeholder="950"></div>
+        </div>
+        <div class="field"><label>Açıklama <span class="tag req">zorunlu</span></label><textarea id="f_desc" placeholder="Ürün açıklaması..."></textarea></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Kategori özellikleri</h3>
+      <div id="attrFields"><p class="muted">Önceki adımda kategori seç</p></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="goStep(2)">← Geri</button>
+      <button class="btn primary" onclick="prepareStep4()">Önizle ve yükle →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="panel" id="p4">
+    <div class="card">
+      <h3>Payload önizleme</h3>
+      <div class="mono" id="preview">—</div>
+    </div>
+    <div class="card">
+      <h3>İşlemler</h3>
+      <div id="sendSt"></div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn" onclick="goStep(3)">← Düzenle</button>
+        <button class="btn excel" onclick="addToCatalog()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          Kataloğa ekle
+        </button>
+        <button class="btn success" onclick="sendProduct()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Trendyol'a yükle
+        </button>
+      </div>
+      <div id="catalogSt"></div>
+      <div id="batchBox"></div>
+    </div>
+  </div>
+
+  <!-- STEP 5: KATALOG -->
+  <div class="panel" id="p5">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3>Ürün Kataloğu</h3>
+        <button class="btn" onclick="loadCatalog()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+          Yenile
+        </button>
+      </div>
+      <div id="catalogSt2"></div>
+      <div id="catalogTable"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="goStep(4)">← Geri</button>
+      <button class="btn excel" onclick="downloadCatalogExcel()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Excel olarak indir
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 6: TRENDYOL ÜRÜNLERİM -->
+  <div class="panel" id="p6">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3>Trendyol Ürünlerim</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="tyStatus" style="padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit">
+            <option value="">Tümü</option>
+            <option value="WAITING">Onay Bekliyor</option>
+            <option value="APPROVED">Satışta</option>
+            <option value="REJECTED">Reddedildi</option>
+            <option value="PASSIVE">Pasif</option>
+          </select>
+          <input type="text" id="tyBarcode" placeholder="Barkod ara..." style="padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit;width:140px">
+          <button class="btn primary" onclick="loadTrendyolProducts(0)" style="padding:7px 14px">Listele</button>
+        </div>
+      </div>
+      <div id="tySt"></div>
+    </div>
+    <div class="card" id="tyProductsCard" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div id="tyCount" style="font-size:13px;color:#888"></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn" id="tyPrevBtn" onclick="tyChangePage(-1)" style="padding:5px 10px;font-size:13px">&#8592; Önceki</button>
+          <span id="tyPageInfo" style="font-size:13px;color:#888;padding:0 4px"></span>
+          <button class="btn" id="tyNextBtn" onclick="tyChangePage(1)" style="padding:5px 10px;font-size:13px">Sonraki &#8594;</button>
+        </div>
+      </div>
+      <div id="tyProductList"></div>
+    </div>
+  </div>
+
+<script>
+// ── HAZIR GÖRSEL GALERİSİ ─────────────────────────────────────────────────
+var gallerySelected = {}; // path -> true
+
+function loadGallery() {
+  setSt('gallerySt','load','<span class="spin">&#x27F3;</span> Yükleniyor...');
+  fetch(SUPA+'/storage/v1/object/list/trendyol', {
+    method:'POST',
+    headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
+    body: JSON.stringify({prefix:'products/', limit:100, offset:0, sortBy:{column:'created_at',order:'desc'}})
+  })
+  .then(function(r){return r.json();})
+  .then(function(files){
+    document.getElementById('gallerySt').innerHTML='';
+    var imgs = (files||[]).filter(function(f){
+      return f.name && /\.(jpg|jpeg|png|webp)$/i.test(f.name);
+    });
+    if (!imgs.length){
+      setSt('gallerySt','info','Henüz hazır görsel yok — editörden görseller kaydet');
+      return;
+    }
+    document.getElementById('galleryCount').textContent = '('+imgs.length+' görsel)';
+    var grid = document.getElementById('galleryGrid');
+    grid.innerHTML = '';
+    imgs.forEach(function(f) {
+      var url = SUPA+'/storage/v1/object/public/trendyol/products/'+f.name;
+      var isSelected = s.urls.indexOf(url) !== -1;
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'position:relative;cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid '+(isSelected?'#111':'#e5e5e5')+';aspect-ratio:2/3;background:#f5f5f5';
+      wrap.id = 'gal_'+f.name.replace(/[^a-z0-9]/gi,'_');
+
+      var img = document.createElement('img');
+      img.src = url;
+      img.alt = f.name;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+      wrap.appendChild(img);
+
+      // Seçili işareti
+      var badge = document.createElement('div');
+      badge.style.cssText = 'position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:'+(isSelected?'#111':'rgba(0,0,0,0.3)')+';display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:bold';
+      badge.textContent = isSelected ? '✓' : '+';
+      badge.id = 'gal_badge_'+f.name.replace(/[^a-z0-9]/gi,'_');
+      wrap.appendChild(badge);
+
+      // Alt bilgi — tarih
+      if (f.created_at) {
+        var info = document.createElement('div');
+        info.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.5);color:#fff;font-size:10px;padding:3px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+        info.textContent = new Date(f.created_at).toLocaleDateString('tr-TR');
+        wrap.appendChild(info);
+      }
+
+      wrap.onclick = (function(imgUrl, fname) {
+        return function() { toggleGalleryImage(imgUrl, fname); };
+      })(url, f.name);
+
+      grid.appendChild(wrap);
+    });
+    setSt('gallerySt','ok','&#x2713; '+imgs.length+' görsel — seçmek için tıkla, tekrar tıkla deseç');
+  })
+  .catch(function(e){ setSt('gallerySt','err','Hata: '+e.message); });
+}
+
+function toggleGalleryImage(url, fname) {
+  var safeId = fname.replace(/[^a-z0-9]/gi,'_');
+  var wrap  = document.getElementById('gal_'+safeId);
+  var badge = document.getElementById('gal_badge_'+safeId);
+  var idx   = s.urls.indexOf(url);
+  if (idx === -1) {
+    // Ekle
+    if (s.urls.length >= 8) {
+      setSt('gallerySt','err','Maksimum 8 görsel seçilebilir');
+      return;
+    }
+    s.urls.push(url);
+    if (wrap)  wrap.style.borderColor  = '#111';
+    if (badge) { badge.textContent = '✓'; badge.style.background = '#111'; }
+  } else {
+    // Çıkar
+    s.urls.splice(idx, 1);
+    if (wrap)  wrap.style.borderColor  = '#e5e5e5';
+    if (badge) { badge.textContent = '+'; badge.style.background = 'rgba(0,0,0,0.3)'; }
+  }
+  document.getElementById('galleryCount').textContent = '('+s.urls.length+' seçili)';
+  setSt('gallerySt','ok','&#x2713; '+s.urls.length+'/8 görsel seçili');
+}
+
+
+// ── DİNAMİK ATTRIBUTE CACHE ──────────────────────────────────────────────
+// Yapı: ATTR_CACHE[categoryId][attributeId] = [{attributeValueId, attributeValue}, ...]
+var ATTR_CACHE = {};
+
+// Kategori seçilince tüm attribute değerlerini önceden çek
+function prefetchAttrValues(catId, attrs) {
+  if (!ATTR_CACHE[catId]) ATTR_CACHE[catId] = {};
+  attrs.forEach(function(a) {
+    if (a.allowCustom) return; // serbest metin — cache gerekmez
+    var attrId = a.attribute.id;
+    if (ATTR_CACHE[catId][attrId]) return; // zaten var
+    // Tüm sayfaları çek ve cache'e yaz
+    fetchAllAttrValues(catId, attrId);
+  });
+}
+
+function fetchAllAttrValues(catId, attrId) {
+  if (!ATTR_CACHE[catId]) ATTR_CACHE[catId] = {};
+  ATTR_CACHE[catId][attrId] = []; // yükleniyor işareti
+
+  function fetchPage(page) {
+    fetch(PROXY + '?action=attribute-values&categoryId=' + catId + '&attributeId=' + attrId + '&page=' + page)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var content = d.content || [];
+      ATTR_CACHE[catId][attrId] = ATTR_CACHE[catId][attrId].concat(content);
+      // Çok sayfalıysa sadece ilk 2 sayfayı çek (performans)
+      // Menşei gibi 200 değerli olanlar için arama yeterli
+      var totalPages = d.totalPages || 1;
+      if (page === 0 && totalPages > 1 && totalPages <= 3) {
+        for (var p = 1; p < totalPages; p++) fetchPage(p);
+      }
+    }).catch(function() {});
+  }
+  fetchPage(0);
+}
+
+function getAttrValuesLocal(attrId, query) {
+  var catId2 = s.catId;
+  if (!catId2 || !ATTR_CACHE[catId2]) return null;
+  var local = ATTR_CACHE[catId2][attrId];
+  if (!local) return null;
+  if (!query) return local;
+  var q = query.toLowerCase();
+  return local.filter(function(v) {
+    return v.attributeValue && v.attributeValue.toLowerCase().indexOf(q) !== -1;
+  });
+}
+
+const PROXY = 'https://rtmimijietesqluqefji.supabase.co/functions/v1/ty-proxy';
+const SUPA  = 'https://rtmimijietesqluqefji.supabase.co';
+const SKEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0bWltaWppZXRlc3FsdXFlZmppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MDI3NTIsImV4cCI6MjA5NzQ3ODc1Mn0.wXlHAHZ35PZlz9DVN71KlKQlgy7jrjDgLPDEKMDcQ8Y';
+
+// ── APP STATE ─────────────────────────────────────────────────────────────
+const s = { imgs:[], urls:[], brandId:null, brandName:'', catId:null, catName:'', attrs:[], cats:[], _selIdx:0 };
+
+// Canvas boyutlari
+const CW = 400, CH = 600, EW = 1200, EH = 1800;
+
+// Canvas nesneleri
+const objs = {
+  product: { img:null, x:50, y:60, w:300, h:400, visible:true },
+  logo:    { img:null, x:260, y:530, w:120, h:60, visible:true }
+};
+let bgImg       = null;
+let activeObj   = null;
+let dragMode    = null;
+let dragOX      = 0, dragOY = 0;
+let savedImages = [];
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────
+
+function markAttrFilled(input) {
+  var id = input.id;
+  var attrId = id.replace('attr_','');
+  var check = document.getElementById('attr_check_'+attrId);
+  if (check) check.style.display = input.value.trim() ? 'block' : 'none';
+  if (input.value.trim()) {
+    input.style.background  = '#f0fdf4';
+    input.style.borderColor = '#bbf7d0';
+  } else {
+    input.style.background  = '';
+    input.style.borderColor = '';
+  }
+}
+function goStep(n) {
+  [1,2,3,4,5,6].forEach(function(i) {
+    var el_s = document.getElementById('s'+i);
+    var el_p = document.getElementById('p'+i);
+    var cls = i < n ? 'done' : i === n ? 'active' : '';
+    if (el_s) el_s.className = 'step' + (cls ? ' '+cls : '');
+    if (el_p) el_p.className = 'panel' + (i === n ? ' active' : '');
+  });
+  if (n === 3) renderAttrFields();
+  if (n === 4) buildPreview();
+  if (n === 5) loadCatalog();
+  if (n === 6) loadTrendyolProducts(0);
+}
+
+// ── FILE INPUT ────────────────────────────────────────────────────────────
+document.getElementById('fi').addEventListener('change', function(e) {
+  Array.from(e.target.files).forEach(addImg);
+});
+
+var dz = document.getElementById('dz');
+dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', function() { dz.classList.remove('drag'); });
+dz.addEventListener('drop', function(e) {
+  e.preventDefault(); dz.classList.remove('drag');
+  Array.from(e.dataTransfer.files).forEach(addImg);
+});
+
+function addImg(f) {
+  if (s.imgs.length >= 8 || !f.type.startsWith('image/')) return;
+  var r = new FileReader();
+  r.onload = function(e) {
+    s.imgs.push({ file:f, dataUrl:e.target.result, done:false });
+    renderGrid();
+  };
+  r.readAsDataURL(f);
+}
+
+function renderGrid() {
+  var el = document.getElementById('imgGrid');
+  if (!el) return;
+  el.innerHTML = '';
+  s.imgs.forEach(function(img, i) {
+    var wrap = document.createElement('div');
+    wrap.className = 'img-thumb';
+    wrap.style.cursor = 'pointer';
+    if (s._selIdx === i) wrap.style.border = '2px solid #111';
+    wrap.onclick = (function(idx) { return function() { selectProductImg(idx); }; })(i);
+
+    var image = document.createElement('img');
+    image.src = img.dataUrl;
+    image.alt = String(i+1);
+    wrap.appendChild(image);
+
+    var btn = document.createElement('button');
+    btn.className = 'del';
+    btn.textContent = 'x';
+    btn.onclick = (function(idx) {
+      return function(e) { e.stopPropagation(); delImg(idx); };
+    })(i);
+    wrap.appendChild(btn);
+
+    el.appendChild(wrap);
+  });
+}
+function selectProductImg(i) { s._selIdx = i; renderGrid(); }
+function delImg(i) { s.imgs.splice(i,1); s.urls.splice(i,1); renderGrid(); }
+
+// ── REMOVE.BG ─────────────────────────────────────────────────────────────
+function removeBgClick() {
+  var idx = s._selIdx || 0;
+  if (!s.imgs.length) { setSt('removeBgSt','err','Once fotograf ekle'); return; }
+  var imgData = s.imgs[idx];
+  var btn = document.getElementById('removeBgBtn');
+  btn.textContent = 'Isleniyor...'; btn.disabled = true;
+  setSt('removeBgSt','load','<span class="spin">&#x27F3;</span> Arka plan kaldiriliyor...');
+  var b64  = imgData.dataUrl.split(',')[1];
+  var mime = imgData.dataUrl.split(';')[0].split(':')[1];
+  fetch(PROXY+'?action=remove-bg', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ imageBase64:b64, mimeType:mime })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (!d.ok) throw new Error(d.error || d.detail || 'Hata');
+    var pngUrl = 'data:image/png;base64,'+d.pngBase64;
+    var pngImg = new Image();
+    pngImg.onload = function() {
+      objs.product.img = pngImg;
+      var ratio = pngImg.width / pngImg.height;
+      objs.product.h = Math.round(CH * 0.72);
+      objs.product.w = Math.round(objs.product.h * ratio);
+      objs.product.x = Math.round((CW - objs.product.w) / 2);
+      objs.product.y = Math.round(CH * 0.12);
+      var prevEl = document.getElementById('removedPreview');
+      prevEl.innerHTML = '';
+      var prevImg = document.createElement('img');
+      prevImg.src = pngUrl;
+      prevImg.style.cssText = 'max-width:100%;max-height:120px;object-fit:contain';
+      prevEl.appendChild(prevImg);
+      setSt('removeBgSt','ok','Arka plan kaldirildi');
+      renderCanvas();
+    };
+    pngImg.src = pngUrl;
+  })
+  .catch(function(e) { setSt('removeBgSt','err','Hata: '+e.message); })
+  .finally(function() { btn.textContent='Arka plani kaldir'; btn.disabled=false; });
+}
+
+// ── BACKGROUNDS ───────────────────────────────────────────────────────────
+function loadBackgrounds() {
+  setSt('bgLoadSt','load','<span class="spin">&#x27F3;</span>');
+  fetch(SUPA+'/storage/v1/object/list/trendyol', {
+    method:'POST',
+    headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
+    body: JSON.stringify({ prefix:'backgrounds/', limit:50, offset:0 })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(files) {
+    document.getElementById('bgLoadSt').innerHTML = '';
+    var imgs = files.filter(function(f) { return f.name && /\.(jpg|jpeg|png|webp)$/i.test(f.name); });
+    if (!imgs.length) { setSt('bgLoadSt','info','backgrounds/ klasoru bos'); return; }
+    document.getElementById('bgList').innerHTML = imgs.map(function(f) {
+      var url = SUPA+'/storage/v1/object/public/trendyol/backgrounds/'+f.name;
+      return '<div onclick="selectBg(\''+url+'\',this)" style="cursor:pointer;border-radius:6px;overflow:hidden;border:2px solid transparent;transition:border .15s">'
+        + '<img src="'+url+'" style="width:100%;aspect-ratio:2/3;object-fit:cover;display:block">'
+        + '<p style="font-size:10px;color:#888;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+f.name+'</p>'
+        + '</div>';
+    }).join('');
+  })
+  .catch(function(e) { setSt('bgLoadSt','err','Hata: '+e.message); });
+}
+
+function selectBg(url, el) {
+  document.querySelectorAll('#bgList > div').forEach(function(d) { d.style.borderColor='transparent'; });
+  if (el) el.style.borderColor = '#111';
+  var img = new Image(); img.crossOrigin = 'anonymous';
+  img.onload = function() { bgImg = img; renderCanvas(); };
+  img.src = url + '?t=' + Date.now();
+}
+
+// ── LOGO ──────────────────────────────────────────────────────────────────
+(function loadLogo() {
+  var url = SUPA+'/storage/v1/object/public/trendyol/logos/maat_logo.png';
+  var img = new Image(); img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    objs.logo.img = img;
+    var ratio = img.width / img.height;
+    objs.logo.w = 120;
+    objs.logo.h = Math.round(120 / ratio);
+    objs.logo.x = CW - objs.logo.w - 16;
+    objs.logo.y = CH - objs.logo.h - 16;
+    renderCanvas();
+    setSt('logoSt','ok','Logo yuklendi');
+  };
+  img.onerror = function() { setSt('logoSt','err','Logo bulunamadi'); };
+  img.src = url + '?t=' + Date.now();
+})();
+
+// ── CANVAS RENDER ─────────────────────────────────────────────────────────
+function renderCanvas() {
+  var canvas = document.getElementById('editCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, CW, CH);
+
+  if (bgImg) {
+    ctx.drawImage(bgImg, 0, 0, CW, CH);
+  } else {
+    ctx.fillStyle = '#e8e8e8'; ctx.fillRect(0,0,CW,CH);
+    ctx.fillStyle = '#aaa'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Arka plan secin', CW/2, CH/2); ctx.textAlign = 'left';
+  }
+
+  var p = objs.product;
+  if (p.img && p.visible) {
+    ctx.drawImage(p.img, p.x, p.y, p.w, p.h);
+    if (activeObj === 'product') drawSelection(ctx, p);
+  }
+
+  var l = objs.logo;
+  if (l.img && l.visible) {
+    ctx.drawImage(l.img, l.x, l.y, l.w, l.h);
+    if (activeObj === 'logo') drawSelection(ctx, l);
+  }
+
+  updateInfo();
+}
+
+function drawSelection(ctx, o) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0,100,255,0.8)'; ctx.lineWidth = 1.5;
+  ctx.setLineDash([4,3]); ctx.strokeRect(o.x, o.y, o.w, o.h); ctx.setLineDash([]);
+  [[o.x,o.y],[o.x+o.w,o.y],[o.x,o.y+o.h],[o.x+o.w,o.y+o.h]].forEach(function(pt) {
+    ctx.fillStyle='#fff'; ctx.strokeStyle='#0064ff'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(pt[0],pt[1],5,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  });
+  ctx.restore();
+}
+
+function updateInfo() {
+  var el = document.getElementById('objInfo');
+  if (!el) return;
+  var o = activeObj ? objs[activeObj] : null;
+  el.textContent = o
+    ? (activeObj==='product'?'Urun':'Logo')+': '+Math.round(o.w)+'x'+Math.round(o.h)+'px  ('+Math.round(o.x)+', '+Math.round(o.y)+')'
+    : 'Urun veya logoya tikla';
+}
+
+// ── HIT TEST ──────────────────────────────────────────────────────────────
+function hitHandle(cx,cy,hx,hy) { return Math.hypot(cx-hx,cy-hy) < 9; }
+function hitObj(x,y,o) { return o.img && o.visible && x>=o.x && x<=o.x+o.w && y>=o.y && y<=o.y+o.h; }
+
+function getHandle(x,y,o) {
+  if (hitHandle(x,y,o.x+o.w,o.y+o.h)) return 'br';
+  if (hitHandle(x,y,o.x,o.y+o.h))     return 'bl';
+  if (hitHandle(x,y,o.x+o.w,o.y))     return 'tr';
+  if (hitHandle(x,y,o.x,o.y))         return 'tl';
+  return null;
+}
+
+function canvasXY(e) {
+  var rect = document.getElementById('editCanvas').getBoundingClientRect();
+  var sx = CW / rect.width, sy = CH / rect.height;
+  var src = e.touches ? e.touches[0] : e;
+  return { x:(src.clientX-rect.left)*sx, y:(src.clientY-rect.top)*sy };
+}
+
+// ── MOUSE / TOUCH ─────────────────────────────────────────────────────────
+function onMouseDown(e) {
+  var pt = canvasXY(e);
+  var x = pt.x, y = pt.y;
+  // logo once (usttte)
+  var keys = ['logo','product'];
+  for (var ki=0; ki<keys.length; ki++) {
+    var key = keys[ki];
+    var o = objs[key];
+    if (!o.img || !o.visible) continue;
+    if (activeObj === key) {
+      var h = getHandle(x,y,o);
+      if (h) { dragMode = h; return; }
+    }
+    if (hitObj(x,y,o)) {
+      activeObj = key; dragMode = 'move';
+      dragOX = x - o.x; dragOY = y - o.y;
+      renderCanvas(); return;
+    }
+  }
+  activeObj = null; dragMode = null; renderCanvas();
+}
+
+function onMouseMove(e) {
+  if (!dragMode || !activeObj) return;
+  e.preventDefault();
+  var pt = canvasXY(e);
+  var x = pt.x, y = pt.y;
+  var o = objs[activeObj];
+  var ratio = o.img.width / o.img.height;
+  if (dragMode === 'move') {
+    o.x = x - dragOX; o.y = y - dragOY;
+  } else if (dragMode === 'br') {
+    o.w = Math.max(20, x - o.x); o.h = Math.round(o.w / ratio);
+  } else if (dragMode === 'bl') {
+    var nw = Math.max(20, (o.x+o.w) - x);
+    o.x = o.x+o.w-nw; o.w = nw; o.h = Math.round(nw/ratio);
+  } else if (dragMode === 'tr') {
+    var nw2 = Math.max(20, x - o.x);
+    o.y = o.y+o.h-Math.round(nw2/ratio); o.h = Math.round(nw2/ratio); o.w = nw2;
+  } else if (dragMode === 'tl') {
+    var nw3 = Math.max(20, (o.x+o.w) - x);
+    o.y = o.y+o.h-Math.round(nw3/ratio); o.x = o.x+o.w-nw3; o.w = nw3; o.h = Math.round(nw3/ratio);
+  }
+  renderCanvas();
+}
+
+function onMouseUp() { dragMode = null; }
+function onTouchStart(e) { e.preventDefault(); onMouseDown(e); }
+function onTouchMove(e)  { e.preventDefault(); onMouseMove(e); }
+
+// ── TOOLBAR ───────────────────────────────────────────────────────────────
+function scaleActive(f) {
+  var key = activeObj || 'product';
+  var o = objs[key]; if (!o.img) return;
+  var cx = o.x+o.w/2, cy = o.y+o.h/2;
+  o.w = Math.round(o.w*f); o.h = Math.round(o.h*f);
+  o.x = Math.round(cx-o.w/2); o.y = Math.round(cy-o.h/2);
+  renderCanvas();
+}
+function centerActive() {
+  var key = activeObj || 'product';
+  var o = objs[key]; if (!o.img) return;
+  o.x = Math.round((CW-o.w)/2); o.y = Math.round((CH-o.h)/2);
+  renderCanvas();
+}
+function toggleObj(key) { objs[key].visible = !objs[key].visible; renderCanvas(); }
+function selectObj(key) { activeObj = key; renderCanvas(); }
+
+// ── SAVE COMPOSITION ─────────────────────────────────────────────────────
+function saveComposition() {
+  if (!bgImg) { alert('Arka plan secilmeli'); return; }
+  if (!objs.product.img) { alert('Urun gorseli secilmeli'); return; }
+  var wc = document.getElementById('workCanvas');
+  wc.width = EW; wc.height = EH;
+  var ctx = wc.getContext('2d');
+  var sx = EW/CW, sy = EH/CH;
+  ctx.clearRect(0,0,EW,EH);
+  ctx.drawImage(bgImg, 0, 0, EW, EH);
+  var p = objs.product;
+  if (p.img && p.visible) ctx.drawImage(p.img, p.x*sx, p.y*sy, p.w*sx, p.h*sy);
+  var l = objs.logo;
+  if (l.img && l.visible) ctx.drawImage(l.img, l.x*sx, l.y*sy, l.w*sx, l.h*sy);
+  savedImages.push(wc.toDataURL('image/jpeg', 0.93));
+  updateSavedGrid();
+}
+
+function updateSavedGrid() {
+  var el  = document.getElementById('savedGrid');
+  var cnt = document.getElementById('savedCount');
+  var btn = document.getElementById('uploadSavedBtn');
+  if (cnt) cnt.textContent = savedImages.length ? '('+savedImages.length+')' : '';
+  if (btn) btn.style.display = savedImages.length ? 'inline-flex' : 'none';
+  if (!el) return;
+  el.innerHTML = '';
+  savedImages.forEach(function(dataUrl, i) {
+    var wrap = document.createElement('div');
+    wrap.style.position = 'relative';
+
+    var img = document.createElement('img');
+    img.src = dataUrl;
+    img.style.cssText = 'width:100%;border-radius:6px;border:1px solid #e5e5e5;aspect-ratio:2/3;object-fit:cover;display:block';
+    wrap.appendChild(img);
+
+    var del = document.createElement('button');
+    del.textContent = 'x';
+    del.style.cssText = 'position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:12px;border:none;cursor:pointer';
+    del.onclick = (function(idx) { return function() { removeSaved(idx); }; })(i);
+    wrap.appendChild(del);
+
+    el.appendChild(wrap);
+  });
+}
+
+function removeSaved(i) { savedImages.splice(i,1); updateSavedGrid(); }
+
+// ── UPLOAD SAVED ──────────────────────────────────────────────────────────
+function uploadSaved() {
+  if (!savedImages.length) { setSt('uploadSt','err','Kaydedilmis gorsel yok'); return; }
+  setSt('uploadSt','load','<span class="spin">&#x27F3;</span> Yukleniyor...');
+  s.urls = [];
+  var promises = savedImages.map(function(dataUrl, i) {
+    var b64   = dataUrl.split(',')[1];
+    var bytes = Uint8Array.from(atob(b64), function(c) { return c.charCodeAt(0); });
+    var blob  = new Blob([bytes], {type:'image/jpeg'});
+    var path  = 'trendyol/products/'+Date.now()+'_'+i+'.jpg';
+    return fetch(SUPA+'/storage/v1/object/'+path, {
+      method:'POST',
+      headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'image/jpeg','x-upsert':'true'},
+      body: blob
+    }).then(function(res) {
+      if (res.ok) s.urls.push(SUPA+'/storage/v1/object/public/'+path);
+    }).catch(function(e) { console.error(e); });
+  });
+  Promise.all(promises).then(function() {
+    if (s.urls.length === savedImages.length)
+      setSt('uploadSt','ok','&#x2713; '+s.urls.length+' gorsel yuklendi');
+    else
+      setSt('uploadSt','err',s.urls.length+'/'+savedImages.length+' yuklendi');
+  });
+}
+
+// ── MARKA ─────────────────────────────────────────────────────────────────
+function fetchBrand() {
+  setSt('brandSt','load','<span class="spin">&#x27F3;</span> MAAT SERAMIK aranıyor...');
+  fetch(PROXY+'?action=brand&name=MAAT%20SERAM%C4%B0K')
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    var brand = d.brand;
+    if (brand && brand.id) {
+      s.brandId = brand.id; s.brandName = brand.name;
+      setSt('brandSt','ok','&#x2713; '+brand.name+' — ID: '+brand.id);
+      var bb = document.getElementById('brandBadge');
+      if (bb) bb.textContent = 'Marka ID: '+brand.id;
+    } else {
+      var raw = d.raw;
+      if (Array.isArray(raw) && raw.length) {
+        var opts = raw.slice(0,10).map(function(b) {
+          return '<button class="btn" style="margin:3px;font-size:12px" onclick="selectBrand('+b.id+',\''+b.name.replace(/'/g,"\\'")+'\')">'
+            + b.name+' ('+b.id+')</button>';
+        }).join('');
+        document.getElementById('brandSt').innerHTML = '<div class="sbar err">Tam eslesme yok. Sec:<br>'+opts+'</div>';
+      } else {
+        setSt('brandSt','err','Bulunamadi: '+JSON.stringify(d).slice(0,200));
+      }
+    }
+  })
+  .catch(function(e) { setSt('brandSt','err','Hata: '+e.message); });
+}
+
+function selectBrand(id,name) {
+  s.brandId=id; s.brandName=name;
+  setSt('brandSt','ok','&#x2713; '+name+' — ID: '+id);
+  var bb=document.getElementById('brandBadge'); if(bb) bb.textContent='Marka ID: '+id;
+}
+
+// ── KATEGORILER ────────────────────────────────────────────────────────────
+function fetchCats() {
+  document.getElementById('catList').innerHTML='<div style="padding:12px;color:#aaa;font-size:13px"><span class="spin">&#x27F3;</span> Yukleniyor...</div>';
+  fetch(PROXY+'?action=categories')
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    var cats=[];
+    function flat(arr,pre) {
+      if (!Array.isArray(arr)) return;
+      arr.forEach(function(c) {
+        var nm = pre ? pre+' > '+c.name : c.name;
+        if (!c.subCategories||!c.subCategories.length) cats.push({id:c.id,name:nm});
+        else flat(c.subCategories,nm);
+      });
+    }
+    flat(d.categories||d);
+    s.cats=cats; renderCats(cats);
+  })
+  .catch(function(e) {
+    document.getElementById('catList').innerHTML='<div style="padding:12px;color:#dc2626;font-size:13px">Hata: '+e.message+'</div>';
+  });
+}
+
+function renderCats(list) {
+  var q=(document.getElementById('catQ').value||'').toLowerCase();
+  var f=q?list.filter(function(c){return c.name.toLowerCase().indexOf(q)!==-1;}):list;
+  var el=document.getElementById('catList');
+  if (!f.length){el.innerHTML='<div style="padding:12px;color:#aaa;font-size:13px">Sonuc yok</div>';return;}
+  el.innerHTML=f.slice(0,80).map(function(c) {
+    return '<div class="cat-item'+(s.catId===c.id?' sel':'')+'" onclick="selectCat('+c.id+',\''+c.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')+'\')">'
+      +c.name+' <span style="color:#bbb;font-size:11px">#'+c.id+'</span></div>';
+  }).join('');
+}
+function filterCats() { if (s.cats.length) renderCats(s.cats); }
+
+function selectCat(id,name) {
+  s.catId=id; s.catName=name; renderCats(s.cats);
+  document.getElementById('selCat').innerHTML='<div class="sbar ok" style="margin-top:8px">&#x2713; '+name+' (#'+id+')</div>';
+  fetchAttrs(id);
+}
+
+function fetchAttrs(catId) {
+  setSt('attrSt','load','<span class="spin">&#x27F3;</span> Ozellikler yukleniyor...');
+  fetch(PROXY+'?action=attributes&categoryId='+catId)
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    s.attrs=d.categoryAttributes||[];
+    var req=s.attrs.filter(function(a){return a.required;});
+    var opt=s.attrs.filter(function(a){return !a.required;});
+    document.getElementById('attrSt').innerHTML=
+      '<div class="sbar ok">&#x2713; '+s.attrs.length+' ozellik — '+req.length+' zorunlu / '+opt.length+' opsiyonel</div>'
+      +'<div style="margin-top:6px;font-size:13px"><strong>Zorunlu:</strong> '
+      +req.map(function(a){return '<span class="tag req" style="margin:2px">'+a.attribute.name+'</span>';}).join('')+'</div>'
+      +(opt.length?'<div style="margin-top:4px;font-size:12px;color:#888"><strong>Opsiyonel:</strong> '
+      +opt.map(function(a){return a.attribute.name;}).join(', ')+'</div>':'');
+    // Tüm attribute değerlerini arka planda önceden çek
+    prefetchAttrValues(catId, s.attrs);
+  })
+  .catch(function(e){setSt('attrSt','err','Hata: '+e.message);});
+}
+
+// ── ATTR NORMALIZE ────────────────────────────────────────────────────────
+function normAttr(n) {
+  return n.toUpperCase()
+    .replace(/\s+/g,'')
+    .replace(/I/g,'I').replace(/i/g,'I')
+    .replace(/\u015e|\u015f/g,'S')
+    .replace(/\u011e|\u011f/g,'G')
+    .replace(/\xdc|\xfc/g,'U')
+    .replace(/\xd6|\xf6/g,'O')
+    .replace(/\xc7|\xe7/g,'C')
+    .replace(/\u0130/g,'I')
+    .replace(/\u0131/g,'I');
+}
+
+// Menşei hardcode değeri
+var MENSEI_VALUE = {attributeValueId: 10617344, attributeValue: 'TR'};
+
+// Materyal sabit seçenekler
+var MATERYAL_VALUES = [
+  {attributeValueId: 25212, attributeValue: 'Stoneware'},
+  {attributeValueId: 102,   attributeValue: 'Seramik'},
+  {attributeValueId: 1218703, attributeValue: 'Seramik Hamuru'}
+];
+
+function autoVal(a) {
+  var nm = normAttr(a.attribute.name);
+  if (nm.indexOf('MENSEI')!==-1||nm.indexOf('KOKEN')!==-1)     return '__HARDCODE_MENSEI__';
+  if (nm.indexOf('MATERYAL')!==-1||nm.indexOf('MALZEME')!==-1) return 'Seramik';
+  if (nm.indexOf('PARCASAY')!==-1||nm.indexOf('ADET')!==-1)    return '1 Parça';
+  if (nm==='RENK' && s._color) return s._color;
+  if ((nm.indexOf('RENK')!==-1 && nm.indexOf('WEB')===-1) && s._color) return s._color;
+  if (nm.indexOf('WEBCOLOR')!==-1||nm.indexOf('WEBRENK')!==-1) return mapWebColor(s._color||'');
+  if (nm.indexOf('URUNTIPI')!==-1||nm.indexOf('URUNTIP')!==-1) {
+    var catLower = (s.catName||'').toLowerCase();
+    if (catLower.indexOf('vazo')!==-1)   return 'Vazo';
+    if (catLower.indexOf('kase')!==-1)   return 'Kase';
+    if (catLower.indexOf('tabak')!==-1)  return 'Tabak';
+    if (catLower.indexOf('kupa')!==-1)   return 'Kupa';
+    if (catLower.indexOf('fincan')!==-1) return 'Fincan';
+    if (catLower.indexOf('saksi')!==-1)  return 'Saksı';
+  }
+  // Üretici bilgileri hardcode
+  if (nm.indexOf('URETICIMAILADRESI')!==-1||nm.indexOf('URETICIEMAIL')!==-1) return 'ergun.akin.1@hs01.kep.tr';
+  if (nm.indexOf('URETICIAD')!==-1 && nm.indexOf('MAIL')===-1 && nm.indexOf('ADRES')===-1) return 'MAAT SERAMIK';
+  if (nm.indexOf('URETICIADRES')!==-1) return 'ISTANBUL/TURKIYE';
+  return null;
+}
+
+function isMensei(a) {
+  var nm = normAttr(a.attribute.name);
+  return nm.indexOf('MENSEI')!==-1||nm.indexOf('KOKEN')!==-1;
+}
+function isMateryal(a) {
+  var nm = normAttr(a.attribute.name);
+  return nm.indexOf('MATERYAL')!==-1||nm.indexOf('MALZEME')!==-1;
+}
+
+function mapWebColor(c) {
+  var u=c.toUpperCase();
+  if (u.indexOf('KIRMIZI')!==-1||u.indexOf('RED')!==-1)    return 'Kirmizi';
+  if (u.indexOf('SIYAH')!==-1||u.indexOf('BLACK')!==-1)    return 'Siyah';
+  if (u.indexOf('BEYAZ')!==-1||u.indexOf('WHITE')!==-1)    return 'Beyaz';
+  if (u.indexOf('MAVI')!==-1||u.indexOf('BLUE')!==-1)      return 'Mavi';
+  if (u.indexOf('YESIL')!==-1||u.indexOf('GREEN')!==-1)    return 'Yesil';
+  if (u.indexOf('SARI')!==-1||u.indexOf('YELLOW')!==-1)    return 'Sari';
+  if (u.indexOf('GRI')!==-1||u.indexOf('GREY')!==-1)       return 'Gri';
+  if (u.indexOf('KREM')!==-1||u.indexOf('CREAM')!==-1)     return 'Krem';
+  if (u.indexOf('KAH')!==-1||u.indexOf('BROWN')!==-1)      return 'Kahverengi';
+  if (u.indexOf('BEJ')!==-1||u.indexOf('BEIGE')!==-1)      return 'Bej';
+  if (u.indexOf('TOPRAK')!==-1)                             return 'Kahverengi';
+  return c;
+}
+
+function renderAttrFields() {
+  var el = document.getElementById('attrFields');
+  var req = s.attrs.filter(function(a){return a.required;});
+  var opt = s.attrs.filter(function(a){return !a.required;});
+  if (!req.length) { el.innerHTML='<p class="muted">Onceki adimda kategori secin</p>'; return; }
+  var all = req.concat(opt); // tüm opsiyoneller
+
+  // Mevcut seçimleri kaydet
+  var savedValues = {};
+  all.forEach(function(a) {
+    var id = a.attribute.id;
+    var hidden = document.getElementById('attr_' + id);
+    var search = document.getElementById('attr_search_' + id);
+    if (hidden && hidden.value) savedValues[id] = {
+      valueId: hidden.value,
+      valueName: search ? search.value : ''
+    };
+  });
+
+  // Zorunlu ve opsiyonel gruplarını ayır
+  var reqHtml = req.map(function(a) { return buildAttrRow(a, savedValues); }).join('');
+  var optHtml = opt.map(function(a) { return buildAttrRow(a, savedValues); }).join('');
+  el.innerHTML = reqHtml
+    + (opt.length ? '<details style="margin-top:12px" id="optDetails">'
+      + '<summary style="cursor:pointer;font-size:13px;font-weight:600;color:#555;padding:8px 0;border-top:1px solid #f0f0f0;list-style:none;display:flex;align-items:center;gap:6px">'
+      + '<span id="optArrow" style="font-size:10px">&#9654;</span> Opsiyonel özellikler ('+opt.length+')</summary>'
+      + '<div style="margin-top:8px">' + optHtml + '</div>'
+      + '</details>' : '');
+  var det = document.getElementById('optDetails');
+  if (det) det.addEventListener('toggle', function() {
+    var arr = document.getElementById('optArrow');
+    if (arr) arr.textContent = det.open ? '&#9660;' : '&#9654;';
+  });
+
+
+  // Kaydedilmiş veya auto değerleri seç
+  all.forEach(function(a) {
+    if (a.allowCustom || isMensei(a) || isMateryal(a)) return;
+    var id = a.attribute.id;
+    // Önce kayıtlı değer var mı?
+    if (savedValues[id] && savedValues[id].valueId) {
+      selectAttrValue(id, parseInt(savedValues[id].valueId), savedValues[id].valueName);
+      return;
+    }
+    var auto = autoVal(a);
+    if (auto) searchAttrValuesAuto(id, s.catId, auto);
+  });
+
+  // Materyal butonlarını DOM ile oluştur
+  all.forEach(function(a) {
+    if (!isMateryal(a)) return;
+    var attrId = a.attribute.id;
+    var container = document.getElementById('mat_btns_' + attrId);
+    if (!container) return;
+    // Materyalleri cache'den çek — kategoriye göre dinamik
+    var matList = getAttrValuesLocal(attrId, '');
+    // Cache dolmadıysa API'den çek ve sonra render et
+    if (!matList || !matList.length) {
+      container.innerHTML = '<span style="font-size:12px;color:#aaa"><span class="spin">&#x27F3;</span> Yükleniyor...</span>';
+      fetchAllAttrValues(s.catId, attrId);
+      // 1.5 saniye sonra tekrar dene
+      (function(aid, cont, sv) {
+        setTimeout(function() {
+          var vals = getAttrValuesLocal(aid, '');
+          if (vals && vals.length) {
+            cont.innerHTML = '';
+            renderMateryalButtons(cont, aid, vals, sv);
+          }
+        }, 1500);
+      })(attrId, container, savedValues);
+    } else {
+      renderMateryalButtons(container, attrId, matList, savedValues);
+    }
+    // Kayıtlı değer varsa onu seç, yoksa Seramik
+    if (savedValues[attrId] && savedValues[attrId].valueId) {
+      var saved = savedValues[attrId];
+      selectAttrValue(attrId, parseInt(saved.valueId), saved.valueName);
+    } else {
+      // Seramik default — ama önce cache'den doğru ID'yi al
+      var matVals = getAttrValuesLocal(attrId, 'Seramik');
+      if (matVals && matVals.length) {
+        selectAttrValue(attrId, matVals[0].attributeValueId, matVals[0].attributeValue);
+      }
+    }
+  });
+}
+
+// Dropdown aç — yazmadan tüm değerleri göster
+function openAttrDropdown(attrId, catId) {
+  var searchEl = document.getElementById('attr_search_'+attrId);
+  var query = searchEl ? searchEl.value : '';
+  searchAttrValues(attrId, catId, query);
+}
+
+var _attrSearchTimer = {};
+function searchAttrValues(attrId, catId, query) {
+  clearTimeout(_attrSearchTimer[attrId]);
+  var dd = document.getElementById('attr_dd_' + attrId);
+  if (!dd) return;
+  if (!query || query.length < 1) {
+    // Boş sorgu — tüm local değerleri göster
+    var all = getAttrValuesLocal(attrId, '');
+    if (all && all.length) { renderAttrDropdown(dd, attrId, all); return; }
+    dd.style.display = 'none'; return;
+  }
+  // Önce local cache'e bak
+  var localResults = getAttrValuesLocal(attrId, query);
+  if (localResults !== null) {
+    renderAttrDropdown(dd, attrId, localResults);
+    return;
+  }
+  // Local yok — API'ye git
+  dd.style.display = 'block';
+  dd.innerHTML = '<div style="padding:8px;color:#aaa;font-size:12px">Aranıyor...</div>';
+  _attrSearchTimer[attrId] = setTimeout(function() {
+    fetch(PROXY + '?action=attribute-values&categoryId=' + catId + '&attributeId=' + attrId + '&page=0')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var all = d.content || [];
+      var q = query.toLowerCase();
+      var filtered = all.filter(function(v) {
+        return v.attributeValue && v.attributeValue.toLowerCase().indexOf(q) !== -1;
+      });
+      renderAttrDropdown(dd, attrId, filtered);
+    })
+    .catch(function() { dd.innerHTML = '<div style="padding:8px;color:#dc2626;font-size:12px">Hata</div>'; });
+  }, 300);
+}
+
+function renderAttrDropdown(dd, attrId, items) {
+  dd.style.display = 'block';
+  if (!items || !items.length) {
+    dd.innerHTML = '<div style="padding:8px;color:#aaa;font-size:12px">Sonuç yok</div>';
+    return;
+  }
+  dd.innerHTML = '';
+  items.slice(0, 30).forEach(function(v) {
+    var div = document.createElement('div');
+    div.textContent = v.attributeValue;
+    div.style.cssText = 'padding:8px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #f5f5f5';
+    div.onmouseover = function() { this.style.background = '#f5f5f5'; };
+    div.onmouseout  = function() { this.style.background = ''; };
+    div.onclick = function() { selectAttrValue(attrId, v.attributeValueId, v.attributeValue); };
+    dd.appendChild(div);
+  });
+}
+
+function searchAttrValuesAuto(attrId, catId, autoText) {
+  // Önce local cache'e bak
+  var localResults = getAttrValuesLocal(attrId, autoText);
+  if (localResults !== null && localResults.length) {
+    selectAttrValue(attrId, localResults[0].attributeValueId, localResults[0].attributeValue);
+    return;
+  }
+  // Local yok — tüm sayfaları tara
+  var found = false;
+  function tryPage(p) {
+    if (found) return;
+    fetch(PROXY + '?action=attribute-values&categoryId=' + catId + '&attributeId=' + attrId + '&page=' + p)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var all = d.content || [];
+      var q = autoText.toLowerCase();
+      for (var i = 0; i < all.length; i++) {
+        if (all[i].attributeValue && all[i].attributeValue.toLowerCase().indexOf(q) !== -1) {
+          found = true;
+          selectAttrValue(attrId, all[i].attributeValueId, all[i].attributeValue);
+          return;
+        }
+      }
+      if (!found && p < (d.totalPages||1)-1) tryPage(p+1);
+    }).catch(function() {});
+  }
+  tryPage(0);
+}
+
+
+function buildAttrRow(a, savedValues) {
+
+    var attrId = a.attribute.id;
+    var auto = autoVal(a);
+    var isAuto = auto !== null && auto !== '' && auto !== '__HARDCODE_MENSEI__';
+
+    // MENSEI — hardcode, sadece etiket göster, gizli input
+    if (isMensei(a)) {
+      return '<div class="attr-row">'
+        +'<span class="attr-name">'+a.attribute.name+' <span class="tag req" style="font-size:10px">zorunlu</span></span>'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<span style="font-size:13px;padding:7px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;color:#15803d;font-weight:500">TR — Türkiye 🇹🇷</span>'
+        +'<input type="hidden" id="attr_'+attrId+'" value="10617344">'
+        +'</div>'
+        +'</div>';
+    }
+
+    // MATERYAL — statik 3 seçenek (onclick inline yok — DOM ile sonra eklenir)
+    if (isMateryal(a)) {
+      return '<div class="attr-row" style="flex-direction:column;align-items:flex-start;gap:4px">'
+        +'<span class="attr-name">'+a.attribute.name+' <span class="tag req" style="font-size:10px">zorunlu</span></span>'
+        +'<div id="mat_btns_'+attrId+'" style="display:flex;gap:6px;flex-wrap:wrap"></div>'
+        +'<input type="hidden" id="attr_'+attrId+'" value="">'
+        +'<div id="attr_selected_'+attrId+'" style="font-size:12px;color:#16a34a;margin-top:2px"></div>'
+        +'</div>';
+    }
+
+    // SERBEST METİN
+    if (a.allowCustom) {
+      return '<div class="attr-row">'
+        +'<span class="attr-name">'+a.attribute.name+' '+(a.required?'<span class="tag req" style="font-size:10px">zorunlu</span>':'')+'</span>'
+        +'<div style="position:relative;flex:1">'
+        +'<input type="text" id="attr_'+attrId+'" value="'+(isAuto?auto:'')+'" placeholder="Serbest metin" '
+        +'style="width:100%;padding:7px 10px;font-size:13px;border:1px solid '+(isAuto?'#bbf7d0':'#ddd')+';border-radius:7px;font-family:inherit;background:'+(isAuto?'#f0fdf4':'#fff')+';padding-right:28px"'
+        +' oninput="markAttrFilled(this)">'
+        +'<span id="attr_check_'+attrId+'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);color:#16a34a;font-weight:bold;display:'+(isAuto&&auto?'block':'none')+'">&#x2713;</span>'
+        +'</div>'
+        +'</div>';
+    }
+
+    // COMBOBOX — açılır liste, yazmadan da görünür
+    return '<div class="attr-row" style="flex-direction:column;align-items:flex-start;gap:4px">'
+      +'<span class="attr-name">'+a.attribute.name+' '
+      +(a.required?'<span class="tag req" style="font-size:10px">zorunlu</span>':'')+' '
+      +(isAuto?'<span style="font-size:10px;color:#16a34a">● otomatik</span>':'')
+      +'</span>'
+      +'<div style="position:relative;width:100%">'
+      +'<input type="text" id="attr_search_'+attrId+'" '
+      +'value="'+(isAuto?auto:'')+'" '
+      +'placeholder="Tikla veya ara..." '
+      +'style="width:100%;padding:7px 30px 7px 10px;font-size:13px;border:1px solid '+(isAuto?'#bbf7d0':'#ddd')+';border-radius:7px;font-family:inherit;background:'+(isAuto?'#f0fdf4':'#fff')+';cursor:pointer"'
+      +' oninput="searchAttrValues('+attrId+','+s.catId+',this.value)"'
+      +' onclick="openAttrDropdown('+attrId+','+s.catId+')"'
+      +' onfocus="openAttrDropdown('+attrId+','+s.catId+')">'
+      +'<span id="attr_combo_icon_'+attrId+'" onclick="openAttrDropdown('+attrId+','+s.catId+')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:12px;pointer-events:auto;color:'+(isAuto?'#16a34a':'#aaa')+'">'+(isAuto?'&#x2713;':'&#9660;')+'</span>'
+      +'<input type="hidden" id="attr_'+attrId+'" value="">'
+      +'<div id="attr_dd_'+attrId+'" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ddd;border-radius:7px;max-height:200px;overflow-y:auto;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.12);margin-top:2px"></div>'
+      +'</div>'
+      +'</div>';
+}
+
+function renderMateryalButtons(container, attrId, matList, savedValues) {
+  // Yaygın seramik materyalleri filtrele veya tümünü göster
+  var seramikKeywords = ['seramik','stoneware','earthenware','porselen','toprak','kil'];
+  var filtered = matList.filter(function(v) {
+    var name = (v.attributeValue||'').toLowerCase();
+    return seramikKeywords.some(function(k){ return name.indexOf(k)!==-1; });
+  });
+  // Eşleşme yoksa ilk 8'i göster
+  var toShow = filtered.length ? filtered : matList.slice(0,8);
+  toShow.forEach(function(v) {
+    var btn = document.createElement('button');
+    btn.id = 'mat_btn_' + v.attributeValueId;
+    btn.textContent = v.attributeValue;
+    btn.style.cssText = 'padding:6px 14px;font-size:13px;border:1px solid #ddd;border-radius:7px;cursor:pointer;background:#fff;font-family:inherit;margin-bottom:4px';
+    btn.onmouseover = function() { if (this.style.background !== 'rgb(240, 253, 244)') this.style.borderColor = '#111'; };
+    btn.onmouseout  = function() { if (this.style.background !== 'rgb(240, 253, 244)') this.style.borderColor = '#ddd'; };
+    btn.onclick = (function(vid, vname) {
+      return function() { selectAttrValue(attrId, vid, vname); };
+    })(v.attributeValueId, v.attributeValue);
+    container.appendChild(btn);
+  });
+}
+
+function selectAttrValue(attrId, valueId, valueName) {
+  var hidden = document.getElementById('attr_' + attrId);
+  var search = document.getElementById('attr_search_' + attrId);
+  var dd     = document.getElementById('attr_dd_' + attrId);
+  if (hidden) hidden.value = valueId;
+  if (search) {
+    search.value = valueName;
+    search.style.background  = '#f0fdf4';
+    search.style.borderColor = '#bbf7d0';
+  }
+  // Combo icon -> check
+  var icon = document.getElementById('attr_combo_icon_' + attrId);
+  if (icon) { icon.textContent = '\u2713'; icon.style.color = '#16a34a'; }
+  if (dd) dd.style.display = 'none';
+  // Materyal seçildi etiketi
+  var selectedLabel = document.getElementById('attr_selected_' + attrId);
+  if (selectedLabel) selectedLabel.textContent = '';
+  // Materyal buton vurgusu — tüm mat_btn_* butonlarını kontrol et
+  document.querySelectorAll('[id^="mat_btn_"]').forEach(function(btn) {
+    var btnVid = parseInt(btn.id.replace('mat_btn_',''));
+    if (btnVid === valueId) {
+      btn.style.background  = '#f0fdf4';
+      btn.style.borderColor = '#16a34a';
+      btn.style.color       = '#15803d';
+      btn.style.fontWeight  = '600';
+    } else {
+      btn.style.background  = '#fff';
+      btn.style.borderColor = '#ddd';
+      btn.style.color       = '';
+      btn.style.fontWeight  = '';
+    }
+  });
+}
+
+document.addEventListener('click', function(e) {
+  var id = e.target.id || '';
+  if (id.indexOf('attr_search_') === -1) {
+    document.querySelectorAll('[id^="attr_dd_"]').forEach(function(d) { d.style.display = 'none'; });
+  }
+});
+
+
+// ── PAYLOAD ───────────────────────────────────────────────────────────────
+function buildPayload() {
+  return { items:[{
+    barcode:           gv('f_barcode'),
+    title:             gv('f_title'),
+    productMainId:     gv('f_mainId'),
+    brandId:           s.brandId||0,
+    categoryId:        s.catId||0,
+    quantity:          parseInt(gv('f_qty'))||1,
+    stockCode:         gv('f_stock')||gv('f_barcode'),
+    dimensionalWeight: parseFloat(gv('f_desi'))||3,
+    description:       gv('f_desc'),
+    listPrice:         parseFloat(gv('f_list'))||0,
+    salePrice:         parseFloat(gv('f_sale'))||0,
+    vatRate:           parseInt(gv('f_vat'))||10,
+    images:            s.urls.map(function(u){return {url:u};}),
+    attributes:        collectAttrs()
+  }]};
+}
+
+function buildPreview() {
+  var p = buildPayload();
+  document.getElementById('preview').textContent = JSON.stringify(p,null,2);
+  var item = p.items[0];
+  var warns=[];
+  if(!s.brandId)               warns.push('brandId eksik');
+  if(!s.catId)                 warns.push('categoryId eksik');
+  if(!s.urls.length)           warns.push('gorsel yok');
+  if(!item.title)              warns.push('urun adi bos');
+  if(!item.barcode)            warns.push('barkod bos');
+  if(!item.listPrice||!item.salePrice) warns.push('fiyat girilmedi');
+  if(item.listPrice<item.salePrice)    warns.push('liste fiyati satis fiyatindan kucuk');
+  if(warns.length) setSt('sendSt','err','&#x26A0; '+warns.join('<br>&#x26A0; '));
+  else             setSt('sendSt','ok','&#x2713; Payload hazir');
+}
+
+function prepareStep4() { buildPreview(); goStep(4); }
+
+// ── KATALOGA EKLE ─────────────────────────────────────────────────────────
+function addToCatalog() {
+  setSt('catalogSt','load','<span class="spin">&#x27F3;</span> Kataloğa ekleniyor...');
+  var entry = {
+    title:gv('f_title'), barcode:gv('f_barcode'), productMainId:gv('f_mainId'),
+    stockCode:gv('f_stock'), category:s.catName, categoryId:s.catId,
+    brandId:s.brandId, brandName:s.brandName,
+    color:gv('f_color'), material:gv('f_material'),
+    height:gv('f_height'), width:gv('f_width'), weight:gv('f_weight'),
+    quantity:parseInt(gv('f_qty'))||1,
+    listPrice:parseFloat(gv('f_list'))||0,
+    salePrice:parseFloat(gv('f_sale'))||0,
+    vatRate:parseInt(gv('f_vat'))||10,
+    desi:parseFloat(gv('f_desi'))||3,
+    status:'Taslak', images:s.urls
+  };
+  fetch(PROXY+'?action=catalog-add',{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)
+  })
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.ok) setSt('catalogSt','ok','&#x2713; Kataloğa eklendi — toplam '+d.total+' urun');
+    else if(d.error==='DUPLIKAT_BARKOD') setSt('catalogSt','err','&#x26A0; Bu barkod zaten katalogda: '+d.existing.title);
+    else setSt('catalogSt','err','Hata: '+JSON.stringify(d));
+  })
+  .catch(function(e){setSt('catalogSt','err','Hata: '+e.message);});
+}
+
+// ── TRENDYOL'A GONDER ────────────────────────────────────────────────────
+function sendProduct() {
+  var payload = buildPayload();
+  setSt('sendSt','load','<span class="spin">&#x27F3;</span> Trendyol a gonderiliyor...');
+  fetch(PROXY+'?action=create-product',{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
+  })
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.batchRequestId){
+      setSt('sendSt','ok','&#x2713; Yuklendi! Onay surecine alindi.');
+      document.getElementById('batchBox').innerHTML=
+        '<div style="margin-top:14px;background:#f8f8f8;border:1px solid #e5e5e5;border-radius:10px;padding:16px">'
+        +'<div style="font-size:12px;color:#888;margin-bottom:4px">Batch Request ID</div>'
+        +'<div style="font-family:monospace;font-size:14px;font-weight:600;margin-bottom:12px">'+d.batchRequestId+'</div>'
+        +'<button class="btn" onclick="checkBatch(\''+d.batchRequestId+'\')">Onay durumunu kontrol et</button>'
+        +'<div id="batchStatus" style="margin-top:10px"></div>'
+        +'</div>';
+    } else {
+      setSt('sendSt','err','Trendyol hatasi: '+JSON.stringify(d).slice(0,400));
+    }
+  })
+  .catch(function(e){setSt('sendSt','err','Hata: '+e.message);});
+}
+
+function checkBatch(id) {
+  fetch(PROXY+'?action=batch-status&batchId='+id)
+  .then(function(r){return r.json();})
+  .then(function(d){
+    var s2=d.summary||{};
+    var color=s2.status==='COMPLETED'?(s2.failed===0?'ok':'err'):'load';
+    var rows=(s2.items||[]).map(function(i){
+      return '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13px">'
+        +'<code style="flex:1">'+(i.barcode||'—')+'</code>'
+        +'<span style="color:'+(i.status==='SUCCESS'?'#16a34a':i.status==='FAILED'?'#dc2626':'#d97706')+';font-weight:600">'+i.status+'</span>'
+        +(i.reasons&&i.reasons.length?'<span style="color:#dc2626;font-size:12px">'+i.reasons.join(', ')+'</span>':'')
+        +'</div>';
+    }).join('');
+    document.getElementById('batchStatus').innerHTML=
+      '<div class="sbar '+color+'" style="flex-direction:column;align-items:flex-start">'
+      +'<div><strong>Durum:</strong> '+(s2.status||'—')+' &nbsp;|&nbsp; <strong>Toplam:</strong> '+(s2.total||0)+' &nbsp;|&nbsp; <strong>Basarisiz:</strong> '+(s2.failed||0)+'</div>'
+      +(rows?'<div style="margin-top:8px;width:100%">'+rows+'</div>':'')
+      +'</div>';
+  })
+  .catch(function(e){document.getElementById('batchStatus').innerHTML='<div class="sbar err">'+e.message+'</div>';});
+}
+
+// ── KATALOG ───────────────────────────────────────────────────────────────
+function loadCatalog() {
+  setSt('catalogSt2','load','<span class="spin">&#x27F3;</span> Yukleniyor...');
+  fetch(PROXY+'?action=catalog-list')
+  .then(function(r){return r.json();})
+  .then(function(catalog){
+    if(!catalog.length){
+      document.getElementById('catalogSt2').innerHTML='';
+      document.getElementById('catalogTable').innerHTML='<p class="muted">Katalogda urun yok</p>'; return;
+    }
+    setSt('catalogSt2','ok',catalog.length+' urun');
+    function pill(st){
+      var m={'Taslak':'taslak','Yuklendi':'yuklendi','Onaylandi':'onaylandi','Reddedildi':'reddedildi'};
+      return '<span class="pill '+(m[st]||'taslak')+'">'+(st||'Taslak')+'</span>';
+    }
+    document.getElementById('catalogTable').innerHTML=
+      '<div style="overflow-x:auto"><table class="catalog-table"><thead><tr>'
+      +'<th>#</th><th>Urun Adi</th><th>Barkod</th><th>Model Kodu</th>'
+      +'<th>Kategori</th><th>Satis</th><th>Stok</th><th>Durum</th>'
+      +'</tr></thead><tbody>'
+      +catalog.map(function(p,i){
+        return '<tr><td style="color:#aaa">'+(i+1)+'</td>'
+          +'<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(p.title||'—')+'</td>'
+          +'<td><code style="font-size:12px">'+(p.barcode||'—')+'</code></td>'
+          +'<td><code style="font-size:12px">'+(p.productMainId||'—')+'</code></td>'
+          +'<td style="font-size:12px;color:#666;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(p.category||'—')+'</td>'
+          +'<td style="text-align:right;font-weight:500">'+(p.salePrice?p.salePrice.toLocaleString('tr-TR')+'&#x20BA;':'—')+'</td>'
+          +'<td style="text-align:center">'+(p.quantity||0)+'</td>'
+          +'<td>'+pill(p.status)+'</td></tr>';
+      }).join('')
+      +'</tbody></table></div>';
+  })
+  .catch(function(e){setSt('catalogSt2','err','Hata: '+e.message);});
+}
+
+function downloadCatalogExcel() {
+  fetch(PROXY+'?action=catalog-list')
+  .then(function(r){return r.json();})
+  .then(function(catalog){
+    if(!catalog.length){alert('Katalog bos');return;}
+    var headers=['Urun Adi','Barkod','Model Kodu','Stok Kodu','Kategori','Kategori ID','Marka ID','Marka',
+      'Renk','Malzeme','Yukseklik','Genislik','Agirlik','Stok','Liste Fiyati','Satis Fiyati','KDV','Desi','Durum','Gorseller','Eklenme'];
+    var rows=catalog.map(function(p){return[
+      p.title,p.barcode,p.productMainId,p.stockCode,p.category,p.categoryId,
+      p.brandId,p.brandName,p.color,p.material,p.height,p.width,p.weight,
+      p.quantity,p.listPrice,p.salePrice,p.vatRate,p.desi,p.status,
+      (p.images||[]).join(' | '),p.created_at
+    ];});
+    var csv=[headers].concat(rows).map(function(r){
+      return r.map(function(v){
+        var sv=String(v||'').replace(/"/g,'""');
+        return (sv.indexOf(',')!==-1||sv.indexOf('\n')!==-1||sv.indexOf('"')!==-1)?'"'+sv+'"':sv;
+      }).join(',');
+    }).join('\n');
+    var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='MAAT_SERAMIK_Katalog_'+new Date().toISOString().slice(0,10)+'.csv';
+    a.click();
+  })
+  .catch(function(e){alert('Hata: '+e.message);});
+}
+
+// ── YARDIMCI ──────────────────────────────────────────────────────────────
+function gv(id) { var el=document.getElementById(id); return el?el.value:''; }
+function setSt(id,type,msg) { var el=document.getElementById(id); if(el) el.innerHTML='<div class="sbar '+type+'">'+msg+'</div>'; }
+
+// ── AI GENERATE ───────────────────────────────────────────────────────────
+function aiGenerate() {
+  var btn = document.querySelector('.ai-btn');
+  if (btn) { btn.textContent='Olusturuluyor...'; btn.disabled=true; }
+  setSt('aiSt','load','<span class="spin">&#x27F3;</span> AI ile bilgiler olusturuluyor...');
+  fetch(PROXY+'?action=ai-generate', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      category: s.catName||'seramik dekoratif obje',
+      requiredAttrs: s.attrs.filter(function(a){return a.required;}).map(function(a){return a.attribute.name;}).join(', ')
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(d) {
+    if (!d.ok) throw new Error(d.error||'Hata');
+    var j = d.result;
+    if (j.title)       { document.getElementById('f_title').value=j.title; document.getElementById('tc').textContent=j.title.length+'/100'; }
+    if (j.description)   document.getElementById('f_desc').value=j.description;
+    if (j.barcode)       document.getElementById('f_barcode').value=j.barcode;
+    if (j.productMainId) document.getElementById('f_mainId').value=j.productMainId;
+    if (j.stockCode)     document.getElementById('f_stock').value=j.stockCode;
+    setSt('aiSt','ok','&#x2713; AI doldurdu');
+  })
+  .catch(function(e){setSt('aiSt','err','Hata: '+e.message);})
+  .finally(function(){ if(btn){btn.textContent='&#x2726; AI ile doldur';btn.disabled=false;} });
+}
+
+// ── COLLECT ATTRS ─────────────────────────────────────────────────────────
+function collectAttrs() {
+  var result = [];
+  s.attrs.forEach(function(a) {
+    var id = a.attribute.id;
+    if (a.allowCustom) {
+      var el = document.getElementById('attr_'+id);
+      var val = el ? el.value.trim() : '';
+      if (!val) { var av=autoVal(a); if(av) val=av; }
+      if (val) result.push({attributeId:id, customAttributeValue:val});
+    } else {
+      var hidden = document.getElementById('attr_'+id);
+      var hval = hidden ? hidden.value.trim() : '';
+      if (hval) {
+        var n = parseInt(hval);
+        if (!isNaN(n)) result.push({attributeId:id, attributeValueId:n});
+      }
+    }
+  });
+  return result;
+}
+
+// ── TRENDYOL ÜRÜNLERİM ────────────────────────────────────────────────────
+var tyCurrentPage = 0;
+var tyTotalPages  = 0;
+var tyPageSize    = 50;
+
+function loadTrendyolProducts(page) {
+  tyCurrentPage = page;
+  var status  = document.getElementById('tyStatus').value;
+  var barcode = document.getElementById('tyBarcode').value.trim();
+  setSt('tySt','load','<span class="spin">&#x27F3;</span> Trendyol urunler yukleniyor...');
+  document.getElementById('tyProductsCard').style.display = 'none';
+
+  var qs = 'action=list-products&page='+page+'&size='+tyPageSize;
+  if (status)  qs += '&status='+status;
+  if (barcode) qs += '&barcode='+encodeURIComponent(barcode);
+
+  fetch(PROXY+'?'+qs)
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    if (d.error) { setSt('tySt','err','Hata: '+JSON.stringify(d).slice(0,500)); return; }
+
+    // Trendyol API yanıtı: { content: [...], totalElements, totalPages }
+    // ya da doğrudan dizi
+    var products = [];
+    if (Array.isArray(d))          products = d;
+    else if (Array.isArray(d.content)) products = d.content;
+    else if (Array.isArray(d.items))   products = d.items;
+    else {
+      // Tanımsız format — ham veriyi göster
+      setSt('tySt','err','Beklenmeyen yanıt formatı: '+JSON.stringify(d).slice(0,400));
+      return;
+    }
+
+    var total    = d.totalElements || products.length;
+    tyTotalPages = d.totalPages || 1;
+
+    setSt('tySt','ok','&#x2713; '+total+' ürün bulundu');
+    document.getElementById('tyProductsCard').style.display = 'block';
+    document.getElementById('tyCount').textContent = total+' ürün · Sayfa '+(page+1)+'/'+tyTotalPages;
+    document.getElementById('tyPageInfo').textContent = (page+1)+' / '+tyTotalPages;
+    document.getElementById('tyPrevBtn').disabled = page === 0;
+    document.getElementById('tyNextBtn').disabled = page >= tyTotalPages-1;
+
+    renderTyProducts(products);
+  })
+  .catch(function(e){ setSt('tySt','err','Fetch hatası: '+e.message); });
+}
+
+function tyChangePage(dir) {
+  var np = tyCurrentPage + dir;
+  if (np < 0 || np >= tyTotalPages) return;
+  loadTrendyolProducts(np);
+}
+
+function renderTyProducts(products) {
+  var el = document.getElementById('tyProductList');
+  el.innerHTML = '';
+  if (!products.length) {
+    el.innerHTML = '<p class="muted" style="padding:20px;text-align:center">Ürün bulunamadı</p>';
+    return;
+  }
+
+  products.forEach(function(p) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:14px;padding:12px 0;border-bottom:1px solid #f0f0f0;align-items:flex-start';
+
+    // Görsel
+    var imgWrap = document.createElement('div');
+    imgWrap.style.cssText = 'flex:0 0 60px';
+    var img = document.createElement('img');
+    var imgUrl = (p.images && p.images[0] && p.images[0].url) ? p.images[0].url : '';
+    if (imgUrl) {
+      img.src = imgUrl;
+      img.style.cssText = 'width:60px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #e5e5e5';
+      imgWrap.appendChild(img);
+    }
+    row.appendChild(imgWrap);
+
+    // Bilgiler
+    var info = document.createElement('div');
+    info.style.cssText = 'flex:1;min-width:0';
+
+    // Başlık
+    var title = document.createElement('div');
+    title.style.cssText = 'font-size:14px;font-weight:500;color:#111;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+    title.textContent = p.title || '—';
+    info.appendChild(title);
+
+    // Barkod + Model
+    var meta = document.createElement('div');
+    meta.style.cssText = 'font-size:12px;color:#888;margin-bottom:6px';
+    meta.textContent = 'Barkod: '+(p.barcode||'—')+' · Model: '+(p.productMainId||'—');
+    info.appendChild(meta);
+
+    // Fiyat + Stok
+    var priceRow = document.createElement('div');
+    priceRow.style.cssText = 'font-size:13px;color:#444;margin-bottom:6px';
+    var salePrice = p.salePrice || (p.pimCategoryId ? '' : '');
+    priceRow.textContent = (salePrice ? salePrice.toLocaleString('tr-TR')+'₺' : '—')+' · Stok: '+(p.quantity != null ? p.quantity : '—');
+    info.appendChild(priceRow);
+
+    row.appendChild(info);
+
+    // Durum + Aksiyon
+    var right = document.createElement('div');
+    right.style.cssText = 'flex:0 0 140px;text-align:right;display:flex;flex-direction:column;gap:6px;align-items:flex-end';
+
+    // Durum badge
+    var statusMap = {
+      'WAITING':  {label:'Onay Bekliyor', bg:'#fffbeb', color:'#d97706', border:'#fde68a'},
+      'APPROVED': {label:'Satışta',       bg:'#f0fdf4', color:'#16a34a', border:'#bbf7d0'},
+      'REJECTED': {label:'Reddedildi',    bg:'#fef2f2', color:'#dc2626', border:'#fecaca'},
+      'PASSIVE':  {label:'Pasif',         bg:'#f5f5f5', color:'#666',    border:'#e5e5e5'}
+    };
+    var st = p.approved === true ? 'APPROVED' : p.approved === false ? 'REJECTED' : (p.onSale ? 'APPROVED' : 'WAITING');
+    // API'den gelen status alanı
+    if (p.blacklisted) st = 'PASSIVE';
+    var stInfo = statusMap[st] || {label: st||'—', bg:'#f5f5f5', color:'#666', border:'#e5e5e5'};
+
+    var badge = document.createElement('span');
+    badge.textContent = stInfo.label;
+    badge.style.cssText = 'font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;background:'+stInfo.bg+';color:'+stInfo.color+';border:1px solid '+stInfo.border;
+    right.appendChild(badge);
+
+    // Batch kontrolü butonu
+    if (p.batchRequestId || p.lastBatchRequestId) {
+      var batchId = p.batchRequestId || p.lastBatchRequestId;
+      var batchBtn = document.createElement('button');
+      batchBtn.className = 'btn';
+      batchBtn.textContent = 'Batch kontrol';
+      batchBtn.style.cssText = 'font-size:11px;padding:4px 8px';
+      batchBtn.onclick = (function(bid) {
+        return function() { checkTyBatch(bid); };
+      })(batchId);
+      right.appendChild(batchBtn);
+    }
+
+    row.appendChild(right);
+    el.appendChild(row);
+  });
+}
+
+function checkTyBatch(batchId) {
+  setSt('tySt','load','<span class="spin">&#x27F3;</span> Batch kontrol: '+batchId);
+  fetch(PROXY+'?action=batch-status&batchId='+batchId)
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    var s2 = d.summary || {};
+    var color = s2.status === 'COMPLETED' ? (s2.failed===0?'ok':'err') : 'load';
+    var msg = 'Batch: '+batchId+' · Durum: '+(s2.status||'—')+' · Toplam: '+(s2.total||0)+' · Başarısız: '+(s2.failed||0);
+    setSt('tySt', color, msg);
+  })
+  .catch(function(e){ setSt('tySt','err','Hata: '+e.message); });
+}
+
+</script>
+</body>
+</html>

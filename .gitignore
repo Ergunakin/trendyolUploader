@@ -1,0 +1,5 @@
+.vercel
+.env*
+.DS_Store
+desktop-commander/node_modules/
+desktop-commander/build/
