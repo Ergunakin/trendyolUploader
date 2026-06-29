@@ -142,15 +142,9 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
 
       <div style="display:grid;grid-template-columns:160px 1fr;gap:16px">
 
-        <!-- Sol: Arka plan + logo seçici -->
+        <!-- Sol: Logo seçici -->
         <div style="display:flex;flex-direction:column;gap:12px">
           <div>
-            <p style="font-size:12px;font-weight:600;color:#444;margin-bottom:6px">Arka planlar</p>
-            <div id="bgLoadSt"></div>
-            <button class="btn" onclick="loadBackgrounds()" style="width:100%;font-size:12px;margin-bottom:8px;padding:6px">↻ Yükle</button>
-            <div id="bgList" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto"></div>
-          </div>
-          <div style="border-top:1px solid #f0f0f0;padding-top:10px">
             <p style="font-size:12px;font-weight:600;color:#444;margin-bottom:6px">Logo</p>
             <div id="logoSt"></div>
             <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
@@ -184,6 +178,19 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
           </div>
           <p style="font-size:11px;color:#aaa;margin-top:6px" id="objInfo">Ürün veya logo'ya tıkla</p>
         </div>
+      </div>
+
+      <!-- Arka plan kataloğu -->
+      <div style="margin-top:16px;border-top:1px solid #f0f0f0;padding-top:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <p style="font-size:13px;font-weight:600;color:#444">Arka Planlar <span id="bgCount" style="font-size:12px;color:#aaa;font-weight:400"></span></p>
+          <button class="btn" onclick="loadBackgrounds()" style="font-size:12px;padding:5px 12px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+            Yükle
+          </button>
+        </div>
+        <div id="bgLoadSt"></div>
+        <div id="bgList" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
       </div>
     </div>
 
@@ -670,24 +677,47 @@ function removeBgClick() {
 
 // ── BACKGROUNDS ───────────────────────────────────────────────────────────
 function loadBackgrounds() {
-  setSt('bgLoadSt','load','<span class="spin">&#x27F3;</span>');
+  setSt('bgLoadSt','load','<span class="spin">&#x27F3;</span> Arka planlar yükleniyor...');
   fetch(SUPA+'/storage/v1/object/list/trendyol', {
     method:'POST',
     headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
-    body: JSON.stringify({ prefix:'backgrounds/', limit:50, offset:0 })
+    body: JSON.stringify({ prefix:'backgrounds/', limit:100, offset:0 })
   })
   .then(function(r) { return r.json(); })
   .then(function(files) {
     document.getElementById('bgLoadSt').innerHTML = '';
     var imgs = files.filter(function(f) { return f.name && /\.(jpg|jpeg|png|webp)$/i.test(f.name); });
-    if (!imgs.length) { setSt('bgLoadSt','info','backgrounds/ klasoru bos'); return; }
-    document.getElementById('bgList').innerHTML = imgs.map(function(f) {
+    if (!imgs.length) { setSt('bgLoadSt','info','backgrounds/ klasörü boş'); return; }
+    var countEl = document.getElementById('bgCount');
+    if (countEl) countEl.textContent = '(' + imgs.length + ')';
+    var grid = document.getElementById('bgList');
+    grid.innerHTML = '';
+    imgs.forEach(function(f) {
       var url = SUPA+'/storage/v1/object/public/trendyol/backgrounds/'+f.name;
-      return '<div onclick="selectBg(\''+url+'\',this)" style="cursor:pointer;border-radius:6px;overflow:hidden;border:2px solid transparent;transition:border .15s">'
-        + '<img src="'+url+'" style="width:100%;aspect-ratio:2/3;object-fit:cover;display:block">'
-        + '<p style="font-size:10px;color:#888;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+f.name+'</p>'
-        + '</div>';
-    }).join('');
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid transparent;transition:border-color .15s;position:relative;aspect-ratio:2/3;background:#f0f0f0';
+      wrap.title = f.name;
+
+      var img = document.createElement('img');
+      img.src = url;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+      img.loading = 'lazy';
+      wrap.appendChild(img);
+
+      // Hover'da isim etiketi
+      var label = document.createElement('div');
+      label.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);color:#fff;font-size:9px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .15s';
+      label.textContent = f.name;
+      wrap.appendChild(label);
+      wrap.onmouseenter = function() { label.style.opacity='1'; };
+      wrap.onmouseleave = function() { label.style.opacity='0'; };
+
+      wrap.onclick = (function(u, el) {
+        return function() { selectBg(u, el); };
+      })(url, wrap);
+
+      grid.appendChild(wrap);
+    });
   })
   .catch(function(e) { setSt('bgLoadSt','err','Hata: '+e.message); });
 }
