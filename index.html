@@ -253,6 +253,12 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
         <h3>Temel bilgiler</h3>
         <button class="ai-btn" onclick="aiGenerate()">✦ AI ile doldur</button>
       </div>
+      <div style="margin-bottom:4px">
+        <label style="font-size:13px;font-weight:500;color:#444;display:block;margin-bottom:5px">
+          Ürünü tarif et <span style="font-size:12px;color:#aaa;font-weight:400">(opsiyonel — AI bunu kullanır)</span>
+        </label>
+        <textarea id="f_desc_hint" placeholder="Örnek: Kahverengi renkte, 18 cm yüksekliğinde, 10 cm çapında stoneware vazo" style="width:100%;padding:9px 12px;font-size:13px;border:1px solid #ddd;border-radius:8px;font-family:inherit;resize:vertical;min-height:64px;outline:none;color:#111" onfocus="this.style.borderColor='#111'" onblur="this.style.borderColor='#ddd'"></textarea>
+      </div>
       <div id="aiSt"></div>
       <div style="display:flex;flex-direction:column;gap:13px;margin-top:12px">
         <div class="field">
@@ -1583,7 +1589,8 @@ function aiGenerate() {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({
       category: s.catName||'seramik dekoratif obje',
-      requiredAttrs: s.attrs.filter(function(a){return a.required;}).map(function(a){return a.attribute.name;}).join(', ')
+      requiredAttrs: s.attrs.filter(function(a){return a.required;}).map(function(a){return a.attribute.name;}).join(', '),
+      hint: (document.getElementById('f_desc_hint').value||'').trim()
     })
   })
   .then(function(r){return r.json();})
@@ -1595,6 +1602,12 @@ function aiGenerate() {
     if (j.barcode)       document.getElementById('f_barcode').value=j.barcode;
     if (j.productMainId) document.getElementById('f_mainId').value=j.productMainId;
     if (j.stockCode)     document.getElementById('f_stock').value=j.stockCode;
+    // Tariften gelen ölçü/renk bilgilerini de doldur
+    if (j.color)    { document.getElementById('f_color').value=j.color; renderAttrFields(); }
+    if (j.material) document.getElementById('f_material').value=j.material;
+    if (j.height)   document.getElementById('f_height').value=j.height;
+    if (j.width)    document.getElementById('f_width').value=j.width;
+    if (j.weight)   document.getElementById('f_weight').value=j.weight;
     setSt('aiSt','ok','&#x2713; AI doldurdu');
   })
   .catch(function(e){setSt('aiSt','err','Hata: '+e.message);})
