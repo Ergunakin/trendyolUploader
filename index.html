@@ -213,6 +213,8 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
               <button class="btn" onclick="scaleActive(0.9)" style="font-size:12px;padding:5px 8px">− Küçült</button>
               <button class="btn" onclick="scaleActive(1.1)" style="font-size:12px;padding:5px 8px">+ Büyüt</button>
               <button class="btn" onclick="centerActive()"   style="font-size:12px;padding:5px 8px">⊕ Ortala</button>
+              <button class="btn" onclick="bringForward()"   style="font-size:12px;padding:5px 8px">▲ Öne</button>
+              <button class="btn" onclick="sendBackward()"   style="font-size:12px;padding:5px 8px">▼ Arkaya</button>
             </div>
 
             <!-- Efekt kontrolleri -->
@@ -699,14 +701,19 @@ const s = { imgs:[], urls:[], brandId:null, brandName:'', catId:null, catName:''
 // Canvas boyutlari
 const CW = 400, CH = 600, EW = 1200, EH = 1800;
 
+// Varsayılan efekt değerleri
+var DEFAULT_FX = { shadow:false, vignette:false, brightness:100, contrast:100, vigStrength:0.35, shadowStrength:0.55, shadowOffsetX:8, shadowOffsetY:10 };
+function cloneFx(fx) { return Object.assign({}, fx); }
+
 // Canvas nesneleri
 const objs = {
-  product:   { img:null, x:50,  y:60,  w:300, h:400, visible:true },
-  accessory: { img:null, x:100, y:100, w:180, h:180, visible:true },
+  product:   { img:null, x:50,  y:60,  w:300, h:400, visible:true, fx: cloneFx(DEFAULT_FX) },
+  accessory: { img:null, x:100, y:100, w:180, h:180, visible:true, fx: cloneFx(DEFAULT_FX) },
   logo:      { img:null, x:260, y:530, w:120, h:60,  visible:true }
 };
 let bgImg       = null;
 let activeObj   = null;
+let zOrder      = ['product', 'accessory', 'logo']; // index 0 = altta
 let dragMode    = null;
 let dragOX      = 0, dragOY = 0;
 let savedImages = [];
@@ -715,10 +722,31 @@ let savedImages = [];
 s.brandId = 2922973; s.brandName = 'MAAT SERAMİK';
 document.getElementById('brandBadge').textContent = 'Marka ID: 2922973';
 
-// Efekt kontrolleri — her değişimde canvas yenile + değer göster
+// Efekt kontrolleri — değişimde activeObj.fx'e kaydet + canvas yenile
+function saveFxToActiveObj() {
+  var key = (activeObj === 'product' || activeObj === 'accessory') ? activeObj : null;
+  if (!key) return;
+  objs[key].fx = getFxValues();
+}
+function loadFxFromObj(key) {
+  if (!key || !objs[key] || !objs[key].fx) return;
+  var fx = objs[key].fx;
+  function setEl(id, val) { var e = document.getElementById(id); if (e) e.value = val; }
+  function setTxt(id, txt) { var e = document.getElementById(id); if (e) e.textContent = txt; }
+  function setChk(id, val) { var e = document.getElementById(id); if (e) e.checked = val; }
+  setChk('showShadow',    fx.shadow);
+  setChk('showVignette',  fx.vignette);
+  setEl('brightness',       fx.brightness);       setTxt('brightnessVal',    fx.brightness);
+  setEl('contrast',         fx.contrast);         setTxt('contrastVal',      fx.contrast);
+  setEl('vignetteStrength', Math.round(fx.vigStrength * 100)); setTxt('vignetteVal', fx.vigStrength.toFixed(2));
+  setEl('shadowStrength',   Math.round(fx.shadowStrength * 100)); setTxt('shadowStrengthVal', Math.round(fx.shadowStrength * 100));
+  setEl('shadowOffsetX',    fx.shadowOffsetX);    setTxt('shadowOffsetXVal', fx.shadowOffsetX);
+  setEl('shadowOffsetY',    fx.shadowOffsetY);    setTxt('shadowOffsetYVal', fx.shadowOffsetY);
+}
+
 ['showShadow','showVignette'].forEach(function(id) {
   var el = document.getElementById(id);
-  if (el) el.addEventListener('change', renderCanvas);
+  if (el) el.addEventListener('change', function() { saveFxToActiveObj(); renderCanvas(); });
 });
 [
   {id:'brightness',      valId:'brightnessVal',      fmt: function(v){ return v; }},
@@ -733,6 +761,7 @@ document.getElementById('brandBadge').textContent = 'Marka ID: 2922973';
   if (!el) return;
   el.addEventListener('input', function() {
     if (val) val.textContent = cfg.fmt(this.value);
+    saveFxToActiveObj();
     renderCanvas();
   });
 });
@@ -1304,7 +1333,7 @@ function getFxValues() {
 // Ürünü gölge + brightness/contrast + vignette ile çizer.
 // Vignette: offscreen canvas + source-atop → sadece ürünün opak piksellerine uygulanır, şeffaflık korunur.
 // Gölge: canvas shadow API ile ürün şekline göre otomatik oluşur.
-function drawProductWithFx(ctx, p, sx, sy, fx) {
+function drawObjWithFx(ctx, p, sx, sy, fx) {
   sx = sx || 1; sy = sy || 1;
   var dx = p.x * sx, dy = p.y * sy, dw = p.w * sx, dh = p.h * sy;
 
@@ -1351,7 +1380,6 @@ function renderCanvas() {
   var canvas = document.getElementById('editCanvas');
   if (!canvas) return;
   var ctx = canvas.getContext('2d');
-  var fx = getFxValues();
   ctx.clearRect(0, 0, CW, CH);
 
   if (bgImg) {
@@ -1362,23 +1390,16 @@ function renderCanvas() {
     ctx.fillText('Arka plan secin', CW/2, CH/2); ctx.textAlign = 'left';
   }
 
-  var p = objs.product;
-  if (p.img && p.visible) {
-    drawProductWithFx(ctx, p, 1, 1, fx);
-    if (activeObj === 'product') drawSelection(ctx, p);
-  }
-
-  var a = objs.accessory;
-  if (a.img && a.visible) {
-    ctx.drawImage(a.img, a.x, a.y, a.w, a.h);
-    if (activeObj === 'accessory') drawSelection(ctx, a);
-  }
-
-  var l = objs.logo;
-  if (l.img && l.visible) {
-    ctx.drawImage(l.img, l.x, l.y, l.w, l.h);
-    if (activeObj === 'logo') drawSelection(ctx, l);
-  }
+  zOrder.forEach(function(key) {
+    var o = objs[key];
+    if (!o.img || !o.visible) return;
+    if (key === 'product' || key === 'accessory') {
+      drawObjWithFx(ctx, o, 1, 1, o.fx || DEFAULT_FX);
+    } else {
+      ctx.drawImage(o.img, o.x, o.y, o.w, o.h);
+    }
+    if (activeObj === key) drawSelection(ctx, o);
+  });
 
   updateInfo();
 }
@@ -1427,7 +1448,7 @@ function onMouseDown(e) {
   var pt = canvasXY(e);
   var x = pt.x, y = pt.y;
   // üstten alta hit-test sırası
-  var keys = ['logo','accessory','product'];
+  var keys = zOrder.slice().reverse();
   for (var ki=0; ki<keys.length; ki++) {
     var key = keys[ki];
     var o = objs[key];
@@ -1439,6 +1460,7 @@ function onMouseDown(e) {
     if (hitObj(x,y,o)) {
       activeObj = key; dragMode = 'move';
       dragOX = x - o.x; dragOY = y - o.y;
+      loadFxFromObj(key);
       renderCanvas(); return;
     }
   }
@@ -1489,7 +1511,24 @@ function centerActive() {
   renderCanvas();
 }
 function toggleObj(key) { objs[key].visible = !objs[key].visible; renderCanvas(); }
-function selectObj(key) { activeObj = key; renderCanvas(); }
+function selectObj(key) { activeObj = key; loadFxFromObj(key); renderCanvas(); }
+
+function bringForward() {
+  if (!activeObj) return;
+  var i = zOrder.indexOf(activeObj);
+  if (i < zOrder.length - 1) {
+    var tmp = zOrder[i]; zOrder[i] = zOrder[i+1]; zOrder[i+1] = tmp;
+  }
+  renderCanvas();
+}
+function sendBackward() {
+  if (!activeObj) return;
+  var i = zOrder.indexOf(activeObj);
+  if (i > 0) {
+    var tmp = zOrder[i]; zOrder[i] = zOrder[i-1]; zOrder[i-1] = tmp;
+  }
+  renderCanvas();
+}
 
 // ── SAVE COMPOSITION ─────────────────────────────────────────────────────
 function saveComposition() {
@@ -1499,25 +1538,25 @@ function saveComposition() {
   wc.width = EW; wc.height = EH;
   var ctx = wc.getContext('2d');
   var sx = EW/CW, sy = EH/CH;
-  var fx = getFxValues();
   ctx.clearRect(0,0,EW,EH);
   ctx.drawImage(bgImg, 0, 0, EW, EH);
-  var p = objs.product;
-  if (p.img && p.visible) {
-    drawProductWithFx(ctx, p, sx, sy, fx);
-  }
-  var a = objs.accessory;
-  if (a.img && a.visible) ctx.drawImage(a.img, a.x*sx, a.y*sy, a.w*sx, a.h*sy);
-  var l = objs.logo;
-  if (l.img && l.visible) ctx.drawImage(l.img, l.x*sx, l.y*sy, l.w*sx, l.h*sy);
+  zOrder.forEach(function(key) {
+    var o = objs[key];
+    if (!o.img || !o.visible) return;
+    if (key === 'product' || key === 'accessory') {
+      drawObjWithFx(ctx, o, sx, sy, o.fx || DEFAULT_FX);
+    } else {
+      ctx.drawImage(o.img, o.x*sx, o.y*sy, o.w*sx, o.h*sy);
+    }
+  });
   // State snapshot
   function imgSrc(img) { return img ? img.src : null; }
   var snap = {
     bgSrc:     imgSrc(bgImg),
-    product:   { src: imgSrc(objs.product.img),   x: objs.product.x,   y: objs.product.y,   w: objs.product.w,   h: objs.product.h,   visible: objs.product.visible },
-    accessory: { src: imgSrc(objs.accessory.img), x: objs.accessory.x, y: objs.accessory.y, w: objs.accessory.w, h: objs.accessory.h, visible: objs.accessory.visible },
+    product:   { src: imgSrc(objs.product.img),   x: objs.product.x,   y: objs.product.y,   w: objs.product.w,   h: objs.product.h,   visible: objs.product.visible,   fx: cloneFx(objs.product.fx   || DEFAULT_FX) },
+    accessory: { src: imgSrc(objs.accessory.img), x: objs.accessory.x, y: objs.accessory.y, w: objs.accessory.w, h: objs.accessory.h, visible: objs.accessory.visible, fx: cloneFx(objs.accessory.fx || DEFAULT_FX) },
     logo:      { src: imgSrc(objs.logo.img),      x: objs.logo.x,      y: objs.logo.y,      w: objs.logo.w,      h: objs.logo.h,      visible: objs.logo.visible },
-    fx: fx
+    zOrder: zOrder.slice()
   };
   savedImages.push({ dataUrl: wc.toDataURL('image/jpeg', 0.93), snap: snap });
   updateSavedGrid();
@@ -1634,27 +1673,17 @@ function loadSavedComposition(i) {
         objs.accessory.x = accSnap.x || 100; objs.accessory.y = accSnap.y || 100;
         objs.accessory.w = accSnap.w || 180;  objs.accessory.h = accSnap.h || 180;
         objs.accessory.visible = accSnap.visible !== false;
+        objs.accessory.fx = cloneFx(accSnap.fx || DEFAULT_FX);
+        objs.product.fx   = cloneFx(snap.product.fx || DEFAULT_FX);
         loadImg(snap.logo.src, function(li) {
         objs.logo.img = li;
         objs.logo.x = snap.logo.x; objs.logo.y = snap.logo.y;
         objs.logo.w = snap.logo.w; objs.logo.h = snap.logo.h;
         objs.logo.visible = snap.logo.visible;
 
-        // Efekt slider değerlerini geri yükle
-        var fx = snap.fx;
-        function setSlider(id, val) { var e=document.getElementById(id); if(e) e.value=val; }
-        function setCheck(id, val)  { var e=document.getElementById(id); if(e) e.checked=val; }
-        function setSpan(id, txt)   { var e=document.getElementById(id); if(e) e.textContent=txt; }
-        setCheck('showShadow',    fx.shadow);
-        setCheck('showVignette',  fx.vignette);
-        setSlider('brightness',       fx.brightness);     setSpan('brightnessVal', fx.brightness);
-        setSlider('contrast',         fx.contrast);       setSpan('contrastVal',   fx.contrast);
-        setSlider('vignetteStrength', Math.round(fx.vigStrength*100)); setSpan('vignetteVal', fx.vigStrength.toFixed(2));
-        setSlider('shadowStrength',   Math.round(fx.shadowStrength*100)); setSpan('shadowStrengthVal', Math.round(fx.shadowStrength*100));
-        setSlider('shadowOffsetX',    fx.shadowOffsetX);  setSpan('shadowOffsetXVal', fx.shadowOffsetX);
-        setSlider('shadowOffsetY',    fx.shadowOffsetY);  setSpan('shadowOffsetYVal', fx.shadowOffsetY);
-
-        activeObj = null;
+        if (snap.zOrder) zOrder = snap.zOrder.slice();
+        activeObj = 'product';
+        loadFxFromObj('product');
         renderCanvas();
         document.getElementById('editCanvas').scrollIntoView({ behavior: 'smooth', block: 'center' });
         }); // logo
