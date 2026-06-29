@@ -206,14 +206,14 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
               <span id="shadowStrengthVal" style="min-width:24px;color:#888">55</span>
             </label>
             <label style="display:flex;align-items:center;gap:5px">
-              Açı
-              <input type="range" id="shadowAngle" min="0" max="359" value="135" style="width:60px;accent-color:#111">
-              <span id="shadowAngleVal" style="min-width:28px;color:#888">135°</span>
+              X
+              <input type="range" id="shadowOffsetX" min="-40" max="40" value="8" style="width:60px;accent-color:#111">
+              <span id="shadowOffsetXVal" style="min-width:24px;color:#888">8</span>
             </label>
             <label style="display:flex;align-items:center;gap:5px">
-              Mesafe
-              <input type="range" id="shadowDistance" min="0" max="40" value="12" style="width:60px;accent-color:#111">
-              <span id="shadowDistanceVal" style="min-width:24px;color:#888">12</span>
+              Y
+              <input type="range" id="shadowOffsetY" min="-40" max="40" value="10" style="width:60px;accent-color:#111">
+              <span id="shadowOffsetYVal" style="min-width:24px;color:#888">10</span>
             </label>
             <div style="width:1px;height:20px;background:#ddd;margin:0 2px"></div>
             <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
@@ -629,9 +629,9 @@ document.getElementById('brandBadge').textContent = 'Marka ID: 2922973';
   {id:'brightness',      valId:'brightnessVal',      fmt: function(v){ return v; }},
   {id:'contrast',        valId:'contrastVal',         fmt: function(v){ return v; }},
   {id:'vignetteStrength',valId:'vignetteVal',         fmt: function(v){ return (v/100).toFixed(2); }},
-  {id:'shadowStrength',  valId:'shadowStrengthVal',   fmt: function(v){ return v; }},
-  {id:'shadowAngle',     valId:'shadowAngleVal',      fmt: function(v){ return v + '°'; }},
-  {id:'shadowDistance',  valId:'shadowDistanceVal',   fmt: function(v){ return v; }}
+  {id:'shadowStrength',  valId:'shadowStrengthVal',  fmt: function(v){ return v; }},
+  {id:'shadowOffsetX',   valId:'shadowOffsetXVal',   fmt: function(v){ return v; }},
+  {id:'shadowOffsetY',   valId:'shadowOffsetYVal',   fmt: function(v){ return v; }}
 ].forEach(function(cfg) {
   var el  = document.getElementById(cfg.id);
   var val = document.getElementById(cfg.valId);
@@ -1042,8 +1042,8 @@ function getFxValues() {
     contrast:       num('contrast', 100),
     vigStrength:    num('vignetteStrength', 35) / 100,
     shadowStrength: num('shadowStrength', 55) / 100,
-    shadowAngle:    num('shadowAngle', 135),
-    shadowDistance: num('shadowDistance', 12)
+    shadowOffsetX:  num('shadowOffsetX', 8),
+    shadowOffsetY:  num('shadowOffsetY', 10)
   };
 }
 
@@ -1054,15 +1054,13 @@ function drawProductWithFx(ctx, p, sx, sy, fx) {
   sx = sx || 1; sy = sy || 1;
   var dx = p.x * sx, dy = p.y * sy, dw = p.w * sx, dh = p.h * sy;
 
-  // Adım 1 – Gölge: açı ve mesafeden offset hesapla, canvas shadow API ile çiz
+  // Adım 1 – Gölge: canvas shadow API ile çiz
   if (fx.shadow) {
-    var rad = (fx.shadowAngle - 90) * Math.PI / 180;
-    var dist = fx.shadowDistance;
     ctx.save();
     ctx.shadowColor   = 'rgba(0,0,0,' + fx.shadowStrength + ')';
     ctx.shadowBlur    = 20 * sx;
-    ctx.shadowOffsetX = Math.cos(rad) * dist * sx;
-    ctx.shadowOffsetY = Math.sin(rad) * dist * sy;
+    ctx.shadowOffsetX = fx.shadowOffsetX * sx;
+    ctx.shadowOffsetY = fx.shadowOffsetY * sy;
     ctx.drawImage(p.img, dx, dy, dw, dh);
     ctx.restore();
   }
