@@ -547,33 +547,43 @@ function renderGalleryPage() {
   pageFiles.forEach(function(f) {
     var url = SUPA+'/storage/v1/object/public/trendyol/products/'+f.name;
     var isSelected = s.urls.indexOf(url) !== -1;
-    var wrap = document.createElement('div');
-    wrap.style.cssText = 'position:relative;cursor:pointer;border-radius:8px;overflow:hidden;border:2px solid '+(isSelected?'#111':'#e5e5e5')+';aspect-ratio:2/3;background:#f5f5f5';
-    wrap.id = 'gal_'+f.name.replace(/[^a-z0-9]/gi,'_');
+    var safeId = f.name.replace(/[^a-z0-9]/gi,'_');
+
+    var card = document.createElement('div');
+    card.style.cssText = 'border-radius:8px;border:2px solid '+(isSelected?'#111':'#e5e5e5')+';background:#f5f5f5;align-items:start';
+    card.id = 'gal_'+safeId;
 
     var img = document.createElement('img');
     img.src = url; img.alt = f.name;
-    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
-    wrap.appendChild(img);
-
-    var badge = document.createElement('div');
-    badge.style.cssText = 'position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:'+(isSelected?'#111':'rgba(0,0,0,0.3)')+';display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:bold';
-    badge.textContent = isSelected ? '✓' : '+';
-    badge.id = 'gal_badge_'+f.name.replace(/[^a-z0-9]/gi,'_');
-    wrap.appendChild(badge);
-
-    if (f.created_at) {
-      var info = document.createElement('div');
-      info.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.5);color:#fff;font-size:10px;padding:3px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-      info.textContent = new Date(f.created_at).toLocaleDateString('tr-TR');
-      wrap.appendChild(info);
-    }
-
-    wrap.onclick = (function(imgUrl, fname) {
+    img.style.cssText = 'width:100%;aspect-ratio:2/3;object-fit:cover;display:block;cursor:pointer;border-radius:6px 6px 0 0';
+    img.onclick = (function(imgUrl, fname) {
       return function() { toggleGalleryImage(imgUrl, fname); };
     })(url, f.name);
+    card.appendChild(img);
 
-    grid.appendChild(wrap);
+    // Aksiyonlar çubuğu
+    var bar = document.createElement('div');
+    bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:5px 6px;background:#f0f0f0;border-top:1px solid #e0e0e0;gap:4px';
+
+    var selBtn = document.createElement('button');
+    selBtn.id = 'gal_badge_'+safeId;
+    selBtn.style.cssText = 'flex:1;background:'+(isSelected?'#111':'#555')+';border:none;color:#fff;font-size:11px;padding:4px 4px;border-radius:4px;cursor:pointer;white-space:nowrap';
+    selBtn.textContent = isSelected ? '✓ Seçili' : '+ Seç';
+    selBtn.onclick = (function(imgUrl, fname) {
+      return function() { toggleGalleryImage(imgUrl, fname); };
+    })(url, f.name);
+    bar.appendChild(selBtn);
+
+    var dl = document.createElement('a');
+    dl.href = url;
+    dl.download = f.name;
+    dl.target = '_blank';
+    dl.style.cssText = 'background:#444;color:#fff;font-size:13px;width:26px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0';
+    dl.textContent = '↓';
+    bar.appendChild(dl);
+
+    card.appendChild(bar);
+    grid.appendChild(card);
   });
 
   if (total > 1) {
@@ -599,12 +609,12 @@ function toggleGalleryImage(url, fname) {
     }
     s.urls.push(url);
     if (wrap)  wrap.style.borderColor  = '#111';
-    if (badge) { badge.textContent = '✓'; badge.style.background = '#111'; }
+    if (badge) { badge.textContent = '✓ Seçili'; badge.style.background = '#111'; }
   } else {
     // Çıkar
     s.urls.splice(idx, 1);
     if (wrap)  wrap.style.borderColor  = '#e5e5e5';
-    if (badge) { badge.textContent = '+'; badge.style.background = 'rgba(0,0,0,0.3)'; }
+    if (badge) { badge.textContent = '+ Seç'; badge.style.background = '#555'; }
   }
   document.getElementById('galleryCount').textContent = '('+s.urls.length+' seçili)';
   setSt('gallerySt','ok','&#x2713; '+s.urls.length+'/8 görsel seçili');
