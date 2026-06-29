@@ -195,6 +195,30 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
             <button class="btn" onclick="scaleActive(1.1)" style="font-size:12px;padding:5px 8px">+ Büyüt</button>
             <button class="btn" onclick="centerActive()"   style="font-size:12px;padding:5px 8px">⊕ Ortala</button>
           </div>
+          <!-- Efekt kontrolleri -->
+          <div style="margin-top:10px;padding:10px 12px;background:#f8f8f8;border-radius:8px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12px;color:#444">
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+              <input type="checkbox" id="showShadow" checked> Gölge
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+              <input type="checkbox" id="showVignette" checked> Vignette
+            </label>
+            <label style="display:flex;align-items:center;gap:5px">
+              Parlaklık
+              <input type="range" id="brightness" min="70" max="130" value="100" style="width:72px;accent-color:#111">
+              <span id="brightnessVal" style="min-width:28px;color:#888">100</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:5px">
+              Kontrast
+              <input type="range" id="contrast" min="80" max="130" value="100" style="width:72px;accent-color:#111">
+              <span id="contrastVal" style="min-width:28px;color:#888">100</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:5px">
+              Vignette
+              <input type="range" id="vignetteStrength" min="0" max="60" value="35" style="width:72px;accent-color:#111">
+              <span id="vignetteVal" style="min-width:28px;color:#888">0.35</span>
+            </label>
+          </div>
           <p style="font-size:11px;color:#aaa;margin-top:6px" id="objInfo">Ürün veya logo'ya tıkla</p>
         </div>
       </div>
@@ -578,6 +602,25 @@ let savedImages = [];
 // Marka ID hardcoded
 s.brandId = 2922973; s.brandName = 'MAAT SERAMİK';
 document.getElementById('brandBadge').textContent = 'Marka ID: 2922973';
+
+// Efekt kontrolleri — her değişimde canvas yenile + değer göster
+['showShadow','showVignette'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('change', renderCanvas);
+});
+[
+  {id:'brightness', valId:'brightnessVal', fmt: function(v){ return v; }},
+  {id:'contrast',   valId:'contrastVal',   fmt: function(v){ return v; }},
+  {id:'vignetteStrength', valId:'vignetteVal', fmt: function(v){ return (v/100).toFixed(2); }}
+].forEach(function(cfg) {
+  var el  = document.getElementById(cfg.id);
+  var val = document.getElementById(cfg.valId);
+  if (!el) return;
+  el.addEventListener('input', function() {
+    if (val) val.textContent = cfg.fmt(this.value);
+    renderCanvas();
+  });
+});
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────
 
@@ -967,11 +1010,56 @@ function selectBg(url, el) {
   img.src = url + '?t=' + Date.now();
 })();
 
+// ── EFEKT YARDIMCILARI ────────────────────────────────────────────────────
+function getFxValues() {
+  var shadow   = document.getElementById('showShadow');
+  var vignette = document.getElementById('showVignette');
+  var bright   = document.getElementById('brightness');
+  var cont     = document.getElementById('contrast');
+  var vigStr   = document.getElementById('vignetteStrength');
+  return {
+    shadow:   shadow   ? shadow.checked   : true,
+    vignette: vignette ? vignette.checked : true,
+    brightness: bright  ? parseInt(bright.value)  : 100,
+    contrast:   cont    ? parseInt(cont.value)    : 100,
+    vigStrength: vigStr ? parseInt(vigStr.value) / 100 : 0.35
+  };
+}
+
+function drawShadow(ctx, p, sx, sy) {
+  sx = sx || 1; sy = sy || 1;
+  ctx.save();
+  ctx.globalAlpha = 0.4;
+  ctx.shadowColor   = 'rgba(0,0,0,0.6)';
+  ctx.shadowBlur    = 28 * sx;
+  ctx.shadowOffsetY = 6 * sy;
+  ctx.fillStyle = 'rgba(0,0,0,0.01)';
+  ctx.beginPath();
+  ctx.ellipse(
+    p.x*sx + (p.w*sx)/2,
+    p.y*sy + p.h*sy - 4*sy,
+    p.w*sx * 0.42,
+    p.w*sx * 0.07,
+    0, 0, Math.PI * 2
+  );
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawVignette(ctx, w, h, strength) {
+  var grad = ctx.createRadialGradient(w/2, h/2, h*0.3, w/2, h/2, h*0.85);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, 'rgba(0,0,0,' + strength + ')');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+}
+
 // ── CANVAS RENDER ─────────────────────────────────────────────────────────
 function renderCanvas() {
   var canvas = document.getElementById('editCanvas');
   if (!canvas) return;
   var ctx = canvas.getContext('2d');
+  var fx = getFxValues();
   ctx.clearRect(0, 0, CW, CH);
 
   if (bgImg) {
@@ -984,7 +1072,10 @@ function renderCanvas() {
 
   var p = objs.product;
   if (p.img && p.visible) {
+    if (fx.shadow) drawShadow(ctx, p, 1, 1);
+    ctx.filter = 'brightness(' + fx.brightness + '%) contrast(' + fx.contrast + '%)';
     ctx.drawImage(p.img, p.x, p.y, p.w, p.h);
+    ctx.filter = 'none';
     if (activeObj === 'product') drawSelection(ctx, p);
   }
 
@@ -993,6 +1084,8 @@ function renderCanvas() {
     ctx.drawImage(l.img, l.x, l.y, l.w, l.h);
     if (activeObj === 'logo') drawSelection(ctx, l);
   }
+
+  if (fx.vignette) drawVignette(ctx, CW, CH, fx.vigStrength);
 
   updateInfo();
 }
@@ -1113,12 +1206,19 @@ function saveComposition() {
   wc.width = EW; wc.height = EH;
   var ctx = wc.getContext('2d');
   var sx = EW/CW, sy = EH/CH;
+  var fx = getFxValues();
   ctx.clearRect(0,0,EW,EH);
   ctx.drawImage(bgImg, 0, 0, EW, EH);
   var p = objs.product;
-  if (p.img && p.visible) ctx.drawImage(p.img, p.x*sx, p.y*sy, p.w*sx, p.h*sy);
+  if (p.img && p.visible) {
+    if (fx.shadow) drawShadow(ctx, p, sx, sy);
+    ctx.filter = 'brightness(' + fx.brightness + '%) contrast(' + fx.contrast + '%)';
+    ctx.drawImage(p.img, p.x*sx, p.y*sy, p.w*sx, p.h*sy);
+    ctx.filter = 'none';
+  }
   var l = objs.logo;
   if (l.img && l.visible) ctx.drawImage(l.img, l.x*sx, l.y*sy, l.w*sx, l.h*sy);
+  if (fx.vignette) drawVignette(ctx, EW, EH, fx.vigStrength);
   savedImages.push(wc.toDataURL('image/jpeg', 0.93));
   updateSavedGrid();
 }
