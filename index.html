@@ -2634,6 +2634,59 @@ function renderTyProducts(products) {
       right.appendChild(refreshBtn);
     }
 
+    // Video yükle butonu
+    var videoBtn = document.createElement('button');
+    videoBtn.className = 'btn';
+    videoBtn.innerHTML = '&#9654; Video';
+    videoBtn.style.cssText = 'font-size:11px;padding:4px 8px;color:#7c3aed;border-color:#ddd6fe';
+    videoBtn.title = 'Video yükle ve ürüne ekle';
+    videoBtn.onclick = (function(productId, productTitle) {
+      return function() {
+        var inp = document.createElement('input');
+        inp.type = 'file'; inp.accept = 'video/mp4,video/quicktime,.mp4,.mov';
+        inp.onchange = function() {
+          var file = inp.files[0];
+          if (!file) return;
+          var maxMB = 500;
+          if (file.size > maxMB * 1024 * 1024) { alert('Video 500 MB\'dan büyük olamaz'); return; }
+          videoBtn.textContent = 'Yükleniyor…'; videoBtn.disabled = true;
+          var path = 'video/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+          fetch(SUPA + '/storage/v1/object/trendyol/' + path, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + SKEY, 'Content-Type': file.type, 'x-upsert': 'true' },
+            body: file
+          })
+          .then(function(r) { if (!r.ok) throw new Error('Storage yükleme hatası: ' + r.status); return r.json(); })
+          .then(function() {
+            var videoUrl = SUPA + '/storage/v1/object/public/trendyol/' + path;
+            videoBtn.textContent = 'Trendyol\'a ekleniyor…';
+            return fetch(PROXY + '?action=add-video', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ productContentId: productId, videoUrl: videoUrl, title: productTitle })
+            });
+          })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.videoId) {
+              videoBtn.innerHTML = '&#10003; Video eklendi';
+              videoBtn.style.color = '#16a34a'; videoBtn.style.borderColor = '#bbf7d0';
+            } else {
+              videoBtn.innerHTML = '&#9654; Video';
+              videoBtn.disabled = false;
+              alert('Video eklenemedi: ' + JSON.stringify(d).slice(0, 300));
+            }
+          })
+          .catch(function(e) {
+            videoBtn.innerHTML = '&#9654; Video'; videoBtn.disabled = false;
+            alert('Hata: ' + e.message);
+          });
+        };
+        inp.click();
+      };
+    })(p.id, p.title);
+    right.appendChild(videoBtn);
+
     row.appendChild(right);
     el.appendChild(row);
   });
