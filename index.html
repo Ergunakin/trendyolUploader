@@ -132,6 +132,11 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
               Sketch
             </button>
+            <button class="btn" onclick="cropProduct()" id="cropBtn"
+              style="flex:1;font-size:12px;padding:7px 6px;justify-content:center">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 2 6 6 2 6"/><polyline points="18 2 18 6 22 6"/><polyline points="6 22 6 18 2 18"/><polyline points="18 22 18 18 22 18"/><rect x="6" y="6" width="12" height="12"/></svg>
+              Kırp
+            </button>
           </div>
           <input type="file" id="fi" multiple accept="image/*" style="display:none">
 
@@ -933,6 +938,90 @@ function selectProductImg(i) { s._selIdx = i; renderGrid(); }
 function delImg(i) { s.imgs.splice(i,1); s.urls.splice(i,1); renderGrid(); }
 
 // ── REMOVE.BG ─────────────────────────────────────────────────────────────
+function cropProduct() {
+  var src = objs.product.img;
+  if (!src) { alert('Önce arka planı kaldırılmış bir görsel yükle'); return; }
+
+  var btn = document.getElementById('cropBtn');
+  btn.textContent = '...'; btn.disabled = true;
+
+  var oc = document.createElement('canvas');
+  oc.width = src.width; oc.height = src.height;
+  var octx = oc.getContext('2d');
+  octx.drawImage(src, 0, 0);
+
+  var w = oc.width, h = oc.height;
+  var data = octx.getImageData(0, 0, w, h).data;
+  var ALPHA_THRESH = 10;
+
+  // Dolu piksellerin bounding box'ını bul
+  var minX = w, maxX = 0, minY = h, maxY = 0;
+  for (var y = 0; y < h; y++) {
+    for (var x = 0; x < w; x++) {
+      if (data[(y * w + x) * 4 + 3] >= ALPHA_THRESH) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+
+  if (minX > maxX || minY > maxY) {
+    btn.textContent = 'Kırp'; btn.disabled = false;
+    alert('Görsel tamamen şeffaf, kırpılacak alan bulunamadı'); return;
+  }
+
+  // %5 padding ekle
+  var bw = maxX - minX, bh = maxY - minY;
+  var padX = Math.round(bw * 0.05), padY = Math.round(bh * 0.05);
+  var cx = Math.max(0, minX - padX);
+  var cy = Math.max(0, minY - padY);
+  var cw = Math.min(w, maxX + padX + 1) - cx;
+  var ch = Math.min(h, maxY + padY + 1) - cy;
+
+  // Kırpılmış canvas oluştur
+  var out = document.createElement('canvas');
+  out.width = cw; out.height = ch;
+  var outctx = out.getContext('2d');
+  outctx.drawImage(oc, cx, cy, cw, ch, 0, 0, cw, ch);
+
+  // Editöre yükle
+  var croppedImg = new Image();
+  croppedImg.crossOrigin = 'anonymous';
+  croppedImg.onload = function() {
+    objs.product.img = croppedImg;
+    var ratio = croppedImg.width / croppedImg.height;
+    objs.product.h = Math.round(CH * 0.72);
+    objs.product.w = Math.round(objs.product.h * ratio);
+    objs.product.x = Math.round((CW - objs.product.w) / 2);
+    objs.product.y = Math.round(CH * 0.12);
+    renderCanvas();
+
+    // Preview güncelle
+    var prevEl = document.getElementById('removedPreview');
+    prevEl.innerHTML = '';
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px;width:100%';
+    var previewImg = document.createElement('img');
+    previewImg.src = out.toDataURL('image/png');
+    previewImg.style.cssText = 'max-width:100%;max-height:150px;object-fit:contain';
+    wrap.appendChild(previewImg);
+    var dlBtn = document.createElement('a');
+    dlBtn.href = out.toDataURL('image/png');
+    dlBtn.download = 'cropped.png';
+    dlBtn.className = 'btn';
+    dlBtn.style.cssText = 'font-size:11px;padding:4px 10px;text-decoration:none';
+    dlBtn.textContent = '↓ İndir';
+    wrap.appendChild(dlBtn);
+    prevEl.appendChild(wrap);
+
+    setSt('removeBgSt', 'ok', '✓ Kırpıldı: ' + cw + '×' + ch + 'px');
+  };
+  croppedImg.src = out.toDataURL('image/png');
+  btn.textContent = 'Kırp'; btn.disabled = false;
+}
+
 function sketchProduct() {
   var src = objs.product.img;
   if (!src) { alert('Önce arka planı kaldırılmış bir görsel yükle'); return; }
