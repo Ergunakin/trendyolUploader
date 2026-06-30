@@ -2650,15 +2650,15 @@ function renderTyProducts(products) {
           var maxMB = 500;
           if (file.size > maxMB * 1024 * 1024) { alert('Video 500 MB\'dan büyük olamaz'); return; }
           videoBtn.textContent = 'Yükleniyor…'; videoBtn.disabled = true;
-          var path = 'video/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-          fetch(SUPA + '/storage/v1/object/trendyol/' + path, {
+          fetch(PROXY + '?action=upload-video&filename=' + encodeURIComponent(file.name), {
             method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + SKEY, 'Content-Type': file.type, 'x-upsert': 'true' },
+            headers: { 'Content-Type': file.type, 'x-content-type': file.type },
             body: file
           })
-          .then(function(r) { if (!r.ok) throw new Error('Storage yükleme hatası: ' + r.status); return r.json(); })
-          .then(function() {
-            var videoUrl = SUPA + '/storage/v1/object/public/trendyol/' + path;
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.error) throw new Error(d.error + (d.detail ? ': ' + d.detail : ''));
+            var videoUrl = d.url;
             videoBtn.textContent = 'Trendyol\'a ekleniyor…';
             return fetch(PROXY + '?action=add-video', {
               method: 'POST',

@@ -146,6 +146,32 @@ Deno.serve(async (req: Request) => {
       return json(await res.json());
     }
 
+    if (action === 'upload-video') {
+      const fileName = url.searchParams.get('filename') || (Date.now() + '.mp4');
+      const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `video/${Date.now()}_${safeName}`;
+      const contentType = req.headers.get('x-content-type') || 'video/mp4';
+      const body = await req.arrayBuffer();
+      const uploadRes = await fetch(
+        `${SUPA_URL}/storage/v1/object/trendyol/${path}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${SUPA_KEY}`,
+            'Content-Type': contentType,
+            'x-upsert': 'true',
+          },
+          body,
+        }
+      );
+      if (!uploadRes.ok) {
+        const err = await uploadRes.text();
+        return json({ error: 'Storage upload failed', detail: err }, 500);
+      }
+      const publicUrl = `${SUPA_URL}/storage/v1/object/public/trendyol/${path}`;
+      return json({ url: publicUrl });
+    }
+
     if (action === 'add-video') {
       const body = await req.json();
       const { productContentId, videoUrl, title } = body;
