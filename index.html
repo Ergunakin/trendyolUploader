@@ -127,6 +127,11 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
               BG Kaldır
             </button>
+            <button class="btn" onclick="sketchProduct()" id="sketchBtn"
+              style="flex:1;font-size:12px;padding:7px 6px;justify-content:center">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+              Sketch
+            </button>
           </div>
           <input type="file" id="fi" multiple accept="image/*" style="display:none">
 
@@ -928,6 +933,96 @@ function selectProductImg(i) { s._selIdx = i; renderGrid(); }
 function delImg(i) { s.imgs.splice(i,1); s.urls.splice(i,1); renderGrid(); }
 
 // ── REMOVE.BG ─────────────────────────────────────────────────────────────
+function sketchProduct() {
+  var src = objs.product.img;
+  if (!src) { alert('Önce arka planı kaldırılmış bir görsel yükle'); return; }
+
+  var btn = document.getElementById('sketchBtn');
+  btn.textContent = '...'; btn.disabled = true;
+
+  // Görseli offscreen canvas'a çiz
+  var oc = document.createElement('canvas');
+  oc.width = src.width; oc.height = src.height;
+  var octx = oc.getContext('2d');
+  octx.drawImage(src, 0, 0);
+
+  var w = oc.width, h = oc.height;
+  var src_data = octx.getImageData(0, 0, w, h).data;
+
+  // Çıkış canvas'ı — şeffaf zemin
+  var out = document.createElement('canvas');
+  out.width = w; out.height = h;
+  var outctx = out.getContext('2d');
+  var outImg = outctx.createImageData(w, h);
+  var od = outImg.data;
+
+  // Kenar tespiti: şeffaf olmayan piksel + en az 1 komşusu şeffaf → kenar
+  var ALPHA_THRESH = 20;
+  var dirs = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]];
+  for (var y = 0; y < h; y++) {
+    for (var x = 0; x < w; x++) {
+      var i = (y * w + x) * 4;
+      if (src_data[i + 3] < ALPHA_THRESH) continue; // şeffaf piksel, geç
+      var isEdge = false;
+      for (var d = 0; d < dirs.length; d++) {
+        var nx = x + dirs[d][0], ny = y + dirs[d][1];
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) { isEdge = true; break; }
+        if (src_data[(ny * w + nx) * 4 + 3] < ALPHA_THRESH) { isEdge = true; break; }
+      }
+      if (isEdge) {
+        od[i] = 30; od[i+1] = 30; od[i+2] = 30; od[i+3] = 255;
+      }
+    }
+  }
+  outctx.putImageData(outImg, 0, 0);
+
+  // Preview alanına göster
+  var prevEl = document.getElementById('removedPreview');
+  prevEl.innerHTML = '';
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px;width:100%';
+
+  var previewImg = document.createElement('img');
+  previewImg.src = out.toDataURL('image/png');
+  previewImg.style.cssText = 'max-width:100%;max-height:150px;object-fit:contain';
+  wrap.appendChild(previewImg);
+
+  // İndir butonu
+  var dlBtn = document.createElement('a');
+  dlBtn.href = out.toDataURL('image/png');
+  dlBtn.download = 'sketch.png';
+  dlBtn.className = 'btn';
+  dlBtn.style.cssText = 'font-size:11px;padding:4px 10px;text-decoration:none';
+  dlBtn.textContent = '↓ İndir';
+  wrap.appendChild(dlBtn);
+
+  // Editöre yükle butonu
+  var loadBtn = document.createElement('button');
+  loadBtn.className = 'btn';
+  loadBtn.style.cssText = 'font-size:11px;padding:4px 10px';
+  loadBtn.textContent = '+ Editöre Yükle';
+  loadBtn.onclick = function() {
+    var sketchImg = new Image();
+    sketchImg.crossOrigin = 'anonymous';
+    sketchImg.onload = function() {
+      objs.product.img = sketchImg;
+      var ratio = sketchImg.width / sketchImg.height;
+      objs.product.h = Math.round(CH * 0.72);
+      objs.product.w = Math.round(objs.product.h * ratio);
+      objs.product.x = Math.round((CW - objs.product.w) / 2);
+      objs.product.y = Math.round(CH * 0.12);
+      renderCanvas();
+      setSt('removeBgSt', 'ok', '✓ Sketch editöre yüklendi');
+    };
+    sketchImg.src = out.toDataURL('image/png');
+  };
+  wrap.appendChild(loadBtn);
+  prevEl.appendChild(wrap);
+
+  btn.textContent = 'Sketch'; btn.disabled = false;
+  setSt('removeBgSt', 'ok', '✓ Sketch oluşturuldu');
+}
+
 function removeBgClick() {
   var idx = s._selIdx || 0;
   if (!s.imgs.length) { setSt('removeBgSt','err','Once fotograf ekle'); return; }
