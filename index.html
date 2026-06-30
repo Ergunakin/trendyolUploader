@@ -113,56 +113,67 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
 
         <!-- Ürün görseli -->
         <div class="card" style="padding:14px">
-          <p style="font-size:12px;font-weight:600;color:#444;margin-bottom:10px">Ürün Görseli</p>
+  <p style="font-size:12px;font-weight:600;color:#444;margin-bottom:10px">Ürün Görseli</p>
+  <input type="file" id="fi" multiple accept="image/*" style="display:none">
+  <div style="display:flex;flex-direction:column;gap:8px">
 
-          <!-- Compact butonlar -->
-          <div style="display:flex;gap:6px;margin-bottom:10px">
-            <button class="btn" onclick="document.getElementById('fi').click()" id="dz"
-              style="flex:1;font-size:12px;padding:7px 6px;justify-content:center">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16v-8m0 0-3 3m3-3 3 3M20 16.7A4 4 0 0 0 17 9h-1.26A8 8 0 1 0 4 16.7"/></svg>
-              Fotoğraf Seç
-            </button>
-            <button class="btn" onclick="removeBgClick()" id="removeBgBtn"
-              style="flex:1;font-size:12px;padding:7px 6px;justify-content:center">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-              BG Kaldır
-            </button>
-            <button class="btn" onclick="sketchProduct()" id="sketchBtn"
-              style="flex:1;font-size:12px;padding:7px 6px;justify-content:center">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
-              Sketch
-            </button>
-            <button class="btn" onclick="cropProduct()" id="cropBtn"
-              style="flex:1;font-size:12px;padding:7px 6px;justify-content:center">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 2 6 6 2 6"/><polyline points="18 2 18 6 22 6"/><polyline points="6 22 6 18 2 18"/><polyline points="18 22 18 18 22 18"/><rect x="6" y="6" width="12" height="12"/></svg>
-              Kırp
-            </button>
-          </div>
-          <input type="file" id="fi" multiple accept="image/*" style="display:none">
+    <!-- Row 1: Fotoğraf Yükle -->
+    <div style="display:grid;grid-template-columns:100px 1fr;gap:8px;align-items:start">
+      <button class="btn" onclick="document.getElementById('fi').click()" id="dz"
+        style="font-size:11px;padding:7px 6px;justify-content:center;width:100%">
+        📷 Fotoğraf Yükle
+      </button>
+      <div class="img-grid" id="imgGrid" style="grid-template-columns:1fr;margin-top:0;min-height:60px;border:1px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center">
+        <span style="font-size:10px;color:#bbb">Ham görsel</span>
+      </div>
+    </div>
 
-          <!-- Yan yana preview -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <div>
-              <p style="font-size:10px;color:#999;margin-bottom:4px;text-align:center">Ham Fotoğraf</p>
-              <div class="img-grid" id="imgGrid" style="grid-template-columns:1fr;margin-top:0"></div>
-            </div>
-            <div>
-              <p style="font-size:10px;color:#999;margin-bottom:4px;text-align:center">Arka Plan Kaldırılmış</p>
-              <div id="removedPreview"
-                style="border:1px dashed #ddd;border-radius:8px;min-height:100px;display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#e8e8e8 0% 25%,#f8f8f8 0% 50%) 0 0/12px 12px">
-                <span style="font-size:10px;color:#bbb">Henüz işlenmedi</span>
-              </div>
-            </div>
-          </div>
+    <!-- Row 2: BG Kaldır -->
+    <div style="display:grid;grid-template-columns:100px 1fr;gap:8px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <button class="btn" onclick="removeBgClick()" id="removeBgBtn"
+          style="font-size:11px;padding:7px 6px;justify-content:center;width:100%">
+          🪄 BG Kaldır
+        </button>
+        <button class="btn" id="saveNoBgBtn" onclick="saveNoBgToStorage()"
+          style="display:none;font-size:10px;padding:4px 6px;justify-content:center;width:100%">
+          ↑ Depoya Kaydet
+        </button>
+      </div>
+      <div id="removedPreview"
+        style="border:1px dashed #ddd;border-radius:8px;min-height:60px;display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#e8e8e8 0% 25%,#f8f8f8 0% 50%) 0 0/12px 12px">
+        <span style="font-size:10px;color:#bbb">BG kaldırılmış</span>
+      </div>
+    </div>
 
-          <div id="removeBgSt" style="margin-top:6px"></div>
-          <button class="btn" id="saveNoBgBtn" onclick="saveNoBgToStorage()"
-            style="display:none;width:100%;margin-top:8px;font-size:12px;padding:6px;justify-content:center">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
-            Depoya Kaydet
-          </button>
-          <div id="saveNoBgSt" style="margin-top:4px"></div>
-        </div>
+    <!-- Row 3: Kırp -->
+    <div style="display:grid;grid-template-columns:100px 1fr;gap:8px;align-items:start">
+      <button class="btn" onclick="cropProduct()" id="cropBtn"
+        style="font-size:11px;padding:7px 6px;justify-content:center;width:100%">
+        ✂ Kırp
+      </button>
+      <div id="croppedPreview"
+        style="border:1px dashed #ddd;border-radius:8px;min-height:60px;display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#e8e8e8 0% 25%,#f8f8f8 0% 50%) 0 0/12px 12px">
+        <span style="font-size:10px;color:#bbb">Kırpılmış</span>
+      </div>
+    </div>
+
+    <!-- Row 4: Sketch -->
+    <div style="display:grid;grid-template-columns:100px 1fr;gap:8px;align-items:start">
+      <button class="btn" onclick="sketchProduct()" id="sketchBtn"
+        style="font-size:11px;padding:7px 6px;justify-content:center;width:100%">
+        ✏ Sketch
+      </button>
+      <div id="sketchPreview"
+        style="border:1px dashed #ddd;border-radius:8px;min-height:60px;display:flex;align-items:center;justify-content:center;background:#fff">
+        <span style="font-size:10px;color:#bbb">Sketch</span>
+      </div>
+    </div>
+
+  </div>
+  <div id="removeBgSt" style="margin-top:6px"></div>
+  <div id="saveNoBgSt" style="margin-top:4px"></div>
+</div>
 
         <!-- NoBg galerisi -->
         <div class="card" style="padding:14px">
@@ -227,6 +238,11 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
                 <span style="width:1px;height:18px;background:#e5e5e5;margin:0 2px"></span>
                 <button class="btn" onclick="bringForward()"   style="font-size:12px;padding:5px 8px">▲ Öne Getir</button>
                 <button class="btn" onclick="sendBackward()"   style="font-size:12px;padding:5px 8px">▼ Arkaya Gönder</button>
+              </div>
+              <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+                <button class="btn" onclick="addRuler('v')" style="font-size:12px;padding:5px 8px">📏 Dikey Cetvel</button>
+                <button class="btn" onclick="addRuler('h')" style="font-size:12px;padding:5px 8px">📐 Yatay Cetvel</button>
+                <button class="btn" onclick="addTextBox()" style="font-size:12px;padding:5px 8px">T Metin Ekle</button>
               </div>
             </div>
 
@@ -724,6 +740,8 @@ const objs = {
   accessory: { img:null, x:100, y:100, w:180, h:180, visible:true, fx: cloneFx(DEFAULT_FX) },
   logo:      { img:null, x:260, y:530, w:120, h:60,  visible:true }
 };
+var texts = []; // {id, text, x, y, w, h, fontSize, color}
+var textIdCounter = 0;
 let bgImg       = null;
 let activeObj   = null;
 let zOrder      = ['product', 'accessory', 'logo']; // index 0 = altta
@@ -999,7 +1017,7 @@ function cropProduct() {
     renderCanvas();
 
     // Preview güncelle
-    var prevEl = document.getElementById('removedPreview');
+    var prevEl = document.getElementById('croppedPreview');
     prevEl.innerHTML = '';
     var wrap = document.createElement('div');
     wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px;width:100%';
@@ -1048,25 +1066,37 @@ function sketchProduct() {
   // Kenar tespiti: şeffaf olmayan piksel + en az 1 komşusu şeffaf → kenar
   var ALPHA_THRESH = 20;
   var dirs = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]];
+  // Pass 1: collect edge pixels
+  var edgeSet = new Set();
   for (var y = 0; y < h; y++) {
     for (var x = 0; x < w; x++) {
       var i = (y * w + x) * 4;
-      if (src_data[i + 3] < ALPHA_THRESH) continue; // şeffaf piksel, geç
+      if (src_data[i + 3] < ALPHA_THRESH) continue;
       var isEdge = false;
       for (var d = 0; d < dirs.length; d++) {
         var nx = x + dirs[d][0], ny = y + dirs[d][1];
         if (nx < 0 || nx >= w || ny < 0 || ny >= h) { isEdge = true; break; }
         if (src_data[(ny * w + nx) * 4 + 3] < ALPHA_THRESH) { isEdge = true; break; }
       }
-      if (isEdge) {
-        od[i] = 30; od[i+1] = 30; od[i+2] = 30; od[i+3] = 255;
-      }
+      if (isEdge) edgeSet.add(y * w + x);
     }
   }
+  // Pass 2: draw 3x3 block around each edge pixel for thickness
+  edgeSet.forEach(function(idx) {
+    var ex = idx % w, ey = Math.floor(idx / w);
+    for (var dy = -2; dy <= 2; dy++) {
+      for (var dx = -2; dx <= 2; dx++) {
+        var px = ex + dx, py = ey + dy;
+        if (px < 0 || px >= w || py < 0 || py >= h) continue;
+        var pi = (py * w + px) * 4;
+        od[pi] = 0; od[pi+1] = 0; od[pi+2] = 0; od[pi+3] = 255;
+      }
+    }
+  });
   outctx.putImageData(outImg, 0, 0);
 
   // Preview alanına göster
-  var prevEl = document.getElementById('removedPreview');
+  var prevEl = document.getElementById('sketchPreview');
   prevEl.innerHTML = '';
   var wrap = document.createElement('div');
   wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px;width:100%';
@@ -1588,6 +1618,25 @@ function renderCanvas() {
     if (activeObj === key) drawSelection(ctx, o);
   });
 
+  texts.forEach(function(t) {
+    ctx.save();
+    ctx.font = t.fontSize + 'px sans-serif';
+    ctx.fillStyle = t.color || '#000000';
+    ctx.textBaseline = 'top';
+    // Measure to set w dynamically
+    var measured = ctx.measureText(t.text);
+    t.w = Math.max(measured.width + 16, 60);
+    t.h = t.fontSize + 16;
+    ctx.fillText(t.text, t.x + 8, t.y + 8);
+    if (activeObj === 'text_' + t.id) {
+      ctx.strokeStyle = 'rgba(0,100,255,0.8)'; ctx.lineWidth = 1.5;
+      ctx.setLineDash([4,3]);
+      ctx.strokeRect(t.x, t.y, t.w, t.h);
+      ctx.setLineDash([]);
+    }
+    ctx.restore();
+  });
+
   updateInfo();
 }
 
@@ -1605,9 +1654,15 @@ function drawSelection(ctx, o) {
 function updateInfo() {
   var el = document.getElementById('objInfo');
   if (!el) return;
+  if (activeObj && activeObj.startsWith('text_')) {
+    var tid = parseInt(activeObj.replace('text_',''));
+    var t = texts.find(function(x){ return x.id === tid; });
+    el.textContent = t ? 'Metin: ' + t.text.slice(0,20) + '  (' + Math.round(t.x) + ', ' + Math.round(t.y) + ')' : '';
+    return;
+  }
   var o = activeObj ? objs[activeObj] : null;
   el.textContent = o
-    ? ({product:'Ürün',accessory:'Süsleme',logo:'Logo'}[activeObj]||activeObj)+': '+Math.round(o.w)+'x'+Math.round(o.h)+'px  ('+Math.round(o.x)+', '+Math.round(o.y)+')'
+    ? ({product:'Ürün',accessory:'Süsleme',logo:'Logo',ruler_v:'Dikey Cetvel',ruler_h:'Yatay Cetvel'}[activeObj]||activeObj)+': '+Math.round(o.w)+'x'+Math.round(o.h)+'px  ('+Math.round(o.x)+', '+Math.round(o.y)+')'
     : 'Ürün, süsleme veya logo\'ya tıkla';
 }
 
@@ -1651,6 +1706,16 @@ function onMouseDown(e) {
       renderCanvas(); return;
     }
   }
+  // Check text objects (reverse order = top first)
+  for (var ti = texts.length - 1; ti >= 0; ti--) {
+    var t = texts[ti];
+    if (x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h) {
+      activeObj = 'text_' + t.id;
+      dragMode = 'move';
+      dragOX = x - t.x; dragOY = y - t.y;
+      renderCanvas(); return;
+    }
+  }
   activeObj = null; dragMode = null; renderCanvas();
 }
 
@@ -1659,6 +1724,12 @@ function onMouseMove(e) {
   e.preventDefault();
   var pt = canvasXY(e);
   var x = pt.x, y = pt.y;
+  if (activeObj && activeObj.startsWith('text_')) {
+    var tid = parseInt(activeObj.replace('text_',''));
+    var t = texts.find(function(x){ return x.id === tid; });
+    if (t && dragMode === 'move') { t.x = x - dragOX; t.y = y - dragOY; renderCanvas(); }
+    return;
+  }
   var o = objs[activeObj];
   var ratio = o.img.width / o.img.height;
   if (dragMode === 'move') {
@@ -1717,6 +1788,61 @@ function sendBackward() {
   renderCanvas();
 }
 
+function addRuler(type) {
+  var key = type === 'v' ? 'ruler_v' : 'ruler_h';
+  var fname = type === 'v' ? 'cetvel_dikey.png' : 'cetvel_yatay.png';
+  var url = SUPA + '/storage/v1/object/public/trendyol/cetvel/' + fname;
+  var img = new Image(); img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    if (!objs[key]) {
+      objs[key] = { img: null, x: 0, y: 0, w: img.width > CW ? CW : img.width, h: img.height > CH ? CH : img.height, visible: true, fx: cloneFx(DEFAULT_FX) };
+      zOrder.push(key);
+    }
+    objs[key].img = img;
+    objs[key].visible = true;
+    if (type === 'v') { objs[key].w = Math.round(CW * 0.08); objs[key].h = CH; objs[key].x = 0; objs[key].y = 0; }
+    else              { objs[key].w = CW; objs[key].h = Math.round(CH * 0.05); objs[key].x = 0; objs[key].y = 0; }
+    activeObj = key;
+    renderCanvas();
+  };
+  img.src = url + '?t=' + Date.now();
+}
+
+function addTextBox() {
+  var text = prompt('Metin girin:', 'Metin');
+  if (!text) return;
+  var id = ++textIdCounter;
+  texts.push({ id: id, text: text, x: Math.round(CW/2 - 60), y: Math.round(CH/2 - 20), w: 120, h: 40, fontSize: 24, color: '#000000' });
+  activeObj = 'text_' + id;
+  renderCanvas();
+}
+
+function deleteActive() {
+  if (!activeObj) return;
+  if (activeObj.startsWith('text_')) {
+    var tid = parseInt(activeObj.replace('text_',''));
+    texts = texts.filter(function(t){ return t.id !== tid; });
+    activeObj = null; renderCanvas(); return;
+  }
+  var o = objs[activeObj];
+  if (o) { o.img = null; o.visible = false; }
+  // Remove from zOrder if it's a ruler
+  if (activeObj === 'ruler_v' || activeObj === 'ruler_h') {
+    zOrder = zOrder.filter(function(k){ return k !== activeObj; });
+    delete objs[activeObj];
+  }
+  activeObj = null; renderCanvas();
+}
+
+document.addEventListener('keydown', function(e) {
+  if ((e.key === 'Delete' || e.key === 'Backspace') && activeObj) {
+    var tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    e.preventDefault();
+    deleteActive();
+  }
+});
+
 // ── SAVE COMPOSITION ─────────────────────────────────────────────────────
 function saveComposition() {
   if (!bgImg) { alert('Arka plan secilmeli'); return; }
@@ -1735,6 +1861,14 @@ function saveComposition() {
     } else {
       ctx.drawImage(o.img, o.x*sx, o.y*sy, o.w*sx, o.h*sy);
     }
+  });
+  texts.forEach(function(t) {
+    ctx.save();
+    ctx.font = (t.fontSize * sx) + 'px sans-serif';
+    ctx.fillStyle = t.color || '#000000';
+    ctx.textBaseline = 'top';
+    ctx.fillText(t.text, (t.x + 8) * sx, (t.y + 8) * sy);
+    ctx.restore();
   });
   // State snapshot
   function imgSrc(img) { return img ? img.src : null; }
