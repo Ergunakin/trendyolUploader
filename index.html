@@ -1081,11 +1081,11 @@ function sketchProduct() {
       if (isEdge) edgeSet.add(y * w + x);
     }
   }
-  // Pass 2: draw 3x3 block around each edge pixel for thickness
+  // Pass 2: draw 13x13 block around each edge pixel for thickness
   edgeSet.forEach(function(idx) {
     var ex = idx % w, ey = Math.floor(idx / w);
-    for (var dy = -2; dy <= 2; dy++) {
-      for (var dx = -2; dx <= 2; dx++) {
+    for (var dy = -6; dy <= 6; dy++) {
+      for (var dx = -6; dx <= 6; dx++) {
         var px = ex + dx, py = ey + dy;
         if (px < 0 || px >= w || py < 0 || py >= h) continue;
         var pi = (py * w + px) * 4;
