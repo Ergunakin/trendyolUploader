@@ -1117,33 +1117,53 @@ function showProcCard(previewId, dataUrl) {
   addPcardButtons(el, previewId);
 }
 
+function imageHasTransparency(dataUrl) {
+  var img = new Image();
+  img.src = dataUrl;
+  var c = document.createElement('canvas');
+  c.width = img.width || 1; c.height = img.height || 1;
+  var ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  var data = ctx.getImageData(0, 0, c.width, c.height).data;
+  for (var i = 3; i < data.length; i += 4) {
+    if (data[i] < 255) return true;
+  }
+  return false;
+}
+
 async function hazirlaProduct() {
   if (!s.imgs.length) { setSt('hazirlaStatus','err','⚠ Önce fotoğraf yükle'); return; }
   var btn = document.getElementById('hazirlaBtn');
   btn.disabled = true; btn.textContent = '⏳ İşleniyor...';
-  setSt('hazirlaStatus','load','<span class="spin">⟳</span> Arka plan kaldırılıyor...');
   var imgData = s.imgs[0];
-  var b64  = imgData.dataUrl.split(',')[1];
-  var mime = imgData.dataUrl.split(';')[0].split(':')[1];
   try {
-    var r = await fetch(PROXY+'?action=remove-bg', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ imageBase64:b64, mimeType:mime })
-    });
-    var d = await r.json();
-    if (!d.ok) throw new Error(d.error || d.detail || 'BG kaldırma hatası');
-    var pngUrl = 'data:image/png;base64,'+d.pngBase64;
+    var sourceImg = await loadImagePromise(imgData.dataUrl);
+    var hasAlpha = imageHasTransparency(imgData.dataUrl);
+    var bgRemovedImg;
+    if (hasAlpha) {
+      setSt('hazirlaStatus','load','<span class="spin">⟳</span> Transparan görsel — BG kaldırma atlanıyor...');
+      bgRemovedImg = sourceImg;
+    } else {
+      setSt('hazirlaStatus','load','<span class="spin">⟳</span> Arka plan kaldırılıyor...');
+      var b64  = imgData.dataUrl.split(',')[1];
+      var mime = imgData.dataUrl.split(';')[0].split(':')[1];
+      var r = await fetch(PROXY+'?action=remove-bg', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ imageBase64:b64, mimeType:mime })
+      });
+      var d = await r.json();
+      if (!d.ok) throw new Error(d.error || d.detail || 'BG kaldırma hatası');
+      bgRemovedImg = await loadImagePromise('data:image/png;base64,'+d.pngBase64);
+    }
     setSt('hazirlaStatus','load','<span class="spin">⟳</span> Kırpılıyor...');
-    var bgImg = await loadImagePromise(pngUrl);
-    var croppedUrl = cropImageToBounds(bgImg);
+    var croppedUrl = cropImageToBounds(bgRemovedImg);
     var croppedImg = await loadImagePromise(croppedUrl);
     setSt('hazirlaStatus','load','<span class="spin">⟳</span> Sketch oluşturuluyor...');
     var sketchUrl = sketchImageToUrl(croppedImg);
     showProcCard('processedPreview', croppedUrl);
     showProcCard('sketchPreview', sketchUrl);
-    // otomatik olarak işlenmiş görseli editöre yükle
     addProductToCanvas(croppedImg);
-    setSt('hazirlaStatus','ok','✓ Hazırlama tamamlandı!');
+    setSt('hazirlaStatus','ok', (hasAlpha ? '✓ Kırpıldı + Sketch oluşturuldu' : '✓ Hazırlama tamamlandı!'));
   } catch(e) {
     setSt('hazirlaStatus','err','✗ ' + e.message);
   } finally {
