@@ -147,25 +147,16 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === 'upload-video') {
-      // Returns a signed upload URL so the client can upload directly to storage
       const fileName = url.searchParams.get('filename') || (Date.now() + '.mp4');
       const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
       const path = `video/${Date.now()}_${safeName}`;
-      const signRes = await fetch(
-        `${SUPA_URL}/storage/v1/object/upload/sign/trendyol/${path}`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ upsert: true }),
-        }
-      );
-      if (!signRes.ok) {
-        const err = await signRes.text();
-        return json({ error: 'Signed URL alınamadı', detail: err }, 500);
-      }
-      const signData = await signRes.json();
+      const supaAdmin = createClient(SUPA_URL, SUPA_KEY);
+      const { data, error } = await supaAdmin.storage
+        .from('trendyol')
+        .createSignedUploadUrl(path);
+      if (error) return json({ error: 'Signed URL alınamadı', detail: error.message }, 500);
       const publicUrl = `${SUPA_URL}/storage/v1/object/public/trendyol/${path}`;
-      return json({ signedUrl: SUPA_URL + signData.url, token: signData.token, publicUrl });
+      return json({ signedUrl: data.signedUrl, token: data.token, publicUrl });
     }
 
     if (action === 'add-video') {
