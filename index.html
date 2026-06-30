@@ -2435,26 +2435,31 @@ var tyCurrentPage = 0;
 var tyTotalPages  = 0;
 var tyPageSize    = 50;
 
-function checkVideoStatus(videoId, btn) {
+function applyVideoStatusLabel(btn, status, isApproved) {
+  var label, color, border;
+  if (status === 'FAILED') {
+    label = '✕ Video Başarısız'; color = '#dc2626'; border = '#fecaca';
+  } else if (status === 'SUCCESS' && isApproved) {
+    label = '✓ Video Yayında';   color = '#16a34a'; border = '#bbf7d0';
+  } else if (status === 'SUCCESS') {
+    label = '◷ Onay Bekliyor';  color = '#d97706'; border = '#fde68a';
+  } else {
+    label = '◷ İşleniyor';      color = '#7c3aed'; border = '#ddd6fe';
+  }
+  btn.textContent = label;
+  btn.style.color = color; btn.style.borderColor = border;
+}
+
+function checkVideoStatus(videoId, btn, productContentId) {
   btn.textContent = '⟳ Kontrol…'; btn.disabled = true;
-  fetch(PROXY + '?action=video-status&videoId=' + encodeURIComponent(videoId))
+  var qs = '?action=video-status&videoId=' + encodeURIComponent(videoId);
+  if (productContentId) qs += '&productContentId=' + encodeURIComponent(productContentId);
+  fetch(PROXY + qs)
   .then(function(r) { return r.json(); })
   .then(function(d) {
     var item = (d.data && d.data[0]) || null;
     if (!item) { btn.textContent = '? Bulunamadı'; btn.disabled = false; return; }
-    var st = item.status, approved = item.isApproved;
-    var label, color, border;
-    if (st === 'FAILED') {
-      label = '✕ Video Başarısız'; color = '#dc2626'; border = '#fecaca';
-    } else if (st === 'SUCCESS' && approved) {
-      label = '✓ Video Yayında'; color = '#16a34a'; border = '#bbf7d0';
-    } else if (st === 'SUCCESS') {
-      label = '◷ Onay Bekliyor'; color = '#d97706'; border = '#fde68a';
-    } else {
-      label = '◷ İşleniyor'; color = '#7c3aed'; border = '#ddd6fe';
-    }
-    btn.textContent = label;
-    btn.style.color = color; btn.style.borderColor = border;
+    applyVideoStatusLabel(btn, item.status, item.isApproved);
     btn.disabled = false;
   })
   .catch(function() { btn.textContent = '▶ Video'; btn.disabled = false; });
@@ -2658,70 +2663,70 @@ function renderTyProducts(products) {
       right.appendChild(refreshBtn);
     }
 
-    // Video yükle butonu
+    // Video butonu — DB'den gelen durum varsa direkt göster, yoksa upload akışı
     var videoBtn = document.createElement('button');
     videoBtn.className = 'btn';
-    videoBtn.innerHTML = '&#9654; Video';
     videoBtn.style.cssText = 'font-size:11px;padding:4px 8px;color:#7c3aed;border-color:#ddd6fe';
-    videoBtn.title = 'Video yükle ve ürüne ekle';
-    videoBtn.onclick = (function(productId, productTitle) {
-      return function() {
-        var inp = document.createElement('input');
-        inp.type = 'file'; inp.accept = 'video/mp4,video/quicktime,.mp4,.mov';
-        inp.onchange = function() {
-          var file = inp.files[0];
-          if (!file) return;
-          var maxMB = 500;
-          if (file.size > maxMB * 1024 * 1024) { alert('Video 500 MB\'dan büyük olamaz'); return; }
-          videoBtn.textContent = 'Yükleniyor…'; videoBtn.disabled = true;
-          // 1) Signed upload URL al
-          videoBtn.textContent = 'URL alınıyor…';
-          fetch(PROXY + '?action=upload-video&filename=' + encodeURIComponent(file.name))
-          .then(function(r) { return r.json(); })
-          .then(function(d) {
-            if (d.error) throw new Error(d.error + (d.detail ? ': ' + d.detail : ''));
-            // 2) Direkt storage'a yükle
-            videoBtn.textContent = 'Storage\'a yükleniyor…';
-            return fetch(d.signedUrl, {
-              method: 'PUT',
-              headers: { 'Content-Type': file.type },
-              body: file
-            }).then(function(r) {
-              if (!r.ok) return r.text().then(function(t){ throw new Error('Storage hatası ' + r.status + ': ' + t); });
-              return { publicUrl: d.publicUrl };
-            });
-          })
-          .then(function(d) {
-            var videoUrl = d.publicUrl;
-            videoBtn.textContent = 'Trendyol\'a ekleniyor…';
-            return fetch(PROXY + '?action=add-video', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ productContentId: productId, videoUrl: videoUrl, title: productTitle })
-            }).then(function(r) { return r.json(); })
-              .then(function(d) {
-                return d;
+    var _pid = p.productContentId || p.id;
+    if (p._videoId) {
+      applyVideoStatusLabel(videoBtn, p._videoStatus, p._videoApproved);
+      videoBtn.onclick = (function(vid, pid) {
+        return function() { checkVideoStatus(vid, videoBtn, pid); };
+      })(p._videoId, _pid);
+    } else {
+      videoBtn.innerHTML = '&#9654; Video';
+      videoBtn.title = 'Video yükle ve ürüne ekle';
+      videoBtn.onclick = (function(productId) {
+        return function() {
+          var inp = document.createElement('input');
+          inp.type = 'file'; inp.accept = 'video/mp4,video/quicktime,.mp4,.mov';
+          inp.onchange = function() {
+            var file = inp.files[0];
+            if (!file) return;
+            if (file.size > 500 * 1024 * 1024) { alert('Video 500 MB\'dan büyük olamaz'); return; }
+            videoBtn.textContent = 'URL alınıyor…'; videoBtn.disabled = true;
+            fetch(PROXY + '?action=upload-video&filename=' + encodeURIComponent(file.name))
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+              if (d.error) throw new Error(d.error + (d.detail ? ': ' + d.detail : ''));
+              videoBtn.textContent = 'Storage\'a yükleniyor…';
+              return fetch(d.signedUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': file.type },
+                body: file
+              }).then(function(r) {
+                if (!r.ok) return r.text().then(function(t){ throw new Error('Storage hatası ' + r.status + ': ' + t); });
+                return { publicUrl: d.publicUrl };
               });
-          })
-          .then(function(d) {
-            if (d.videoId) {
-              videoBtn.disabled = false;
-              videoBtn.onclick = function() { checkVideoStatus(d.videoId, videoBtn); };
-              checkVideoStatus(d.videoId, videoBtn);
-            } else {
-              videoBtn.innerHTML = '&#9654; Video';
-              videoBtn.disabled = false;
-              alert('Video eklenemedi:\n' + JSON.stringify(d, null, 2).slice(0, 500));
-            }
-          })
-          .catch(function(e) {
-            videoBtn.innerHTML = '&#9654; Video'; videoBtn.disabled = false;
-            alert('Hata: ' + e.message);
-          });
+            })
+            .then(function(d) {
+              videoBtn.textContent = 'Trendyol\'a ekleniyor…';
+              return fetch(PROXY + '?action=add-video', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productContentId: productId, videoUrl: d.publicUrl })
+              }).then(function(r) { return r.json(); });
+            })
+            .then(function(d) {
+              if (d.videoId) {
+                applyVideoStatusLabel(videoBtn, 'IN_PROGRESS', false);
+                videoBtn.disabled = false;
+                videoBtn.onclick = function() { checkVideoStatus(d.videoId, videoBtn, productId); };
+                checkVideoStatus(d.videoId, videoBtn, productId);
+              } else {
+                videoBtn.innerHTML = '&#9654; Video'; videoBtn.disabled = false;
+                alert('Video eklenemedi:\n' + JSON.stringify(d, null, 2).slice(0, 500));
+              }
+            })
+            .catch(function(e) {
+              videoBtn.innerHTML = '&#9654; Video'; videoBtn.disabled = false;
+              alert('Hata: ' + e.message);
+            });
+          };
+          inp.click();
         };
-        inp.click();
-      };
-    })(p.productContentId || p.id, p.title);
+      })(_pid);
+    }
     right.appendChild(videoBtn);
 
     row.appendChild(right);

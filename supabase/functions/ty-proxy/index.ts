@@ -128,7 +128,38 @@ Deno.serve(async (req: Request) => {
         const res  = await fetch(endpoint, { headers: { Authorization: AUTH } });
         const data = await res.json();
         if (data && (Array.isArray(data.content) || typeof data.totalElements === 'number')) {
-          return json({ ...data, _endpoint: endpoint });
+          const products: any[] = data.content || [];
+          const supaAdmin = createClient(SUPA_URL, SUPA_KEY);
+
+          // Upsert products into DB
+          if (products.length) {
+            await supaAdmin.from('products').upsert(
+              products.map((p: any) => ({
+                product_content_id: p.productContentId,
+                barcode:            p.barcode,
+                title:              p.title,
+                product_main_id:    p.productMainId,
+                trendyol_status:    p.blacklisted ? 'PASSIVE' : p.rejected ? 'REJECTED' : (p.approved || p.onSale) ? 'APPROVED' : 'WAITING',
+              })),
+              { onConflict: 'product_content_id', ignoreDuplicates: false }
+            );
+          }
+
+          // Fetch DB rows to get video info
+          const contentIds = products.map((p: any) => p.productContentId).filter(Boolean);
+          const { data: dbRows } = contentIds.length
+            ? await supaAdmin.from('products').select('product_content_id,video_id,video_status,video_is_approved').in('product_content_id', contentIds)
+            : { data: [] };
+          const dbMap: Record<number, any> = {};
+          for (const row of (dbRows || [])) dbMap[row.product_content_id] = row;
+
+          // Merge video info into Trendyol products
+          const merged = products.map((p: any) => {
+            const db = dbMap[p.productContentId];
+            return db ? { ...p, _videoId: db.video_id, _videoStatus: db.video_status, _videoApproved: db.video_is_approved } : p;
+          });
+
+          return json({ ...data, content: merged });
         }
         lastErrors.push({ endpoint, data });
       }
@@ -161,17 +192,26 @@ Deno.serve(async (req: Request) => {
 
     if (action === 'video-status') {
       const videoId = url.searchParams.get('videoId');
+      const productContentId = url.searchParams.get('productContentId');
       if (!videoId) return json({ error: 'videoId required' }, 400);
       const BASE_VIDEO = 'https://apigw.trendyol.com/integration/video';
       const res = await fetch(`${BASE_VIDEO}/sellers/${SELLER_ID}/videos?id=${videoId}&size=1`, {
         headers: { Authorization: AUTH },
       });
-      return json(await res.json());
+      const data = await res.json();
+      const item = data?.data?.[0];
+      if (item && productContentId) {
+        const supaAdmin = createClient(SUPA_URL, SUPA_KEY);
+        await supaAdmin.from('products')
+          .update({ video_status: item.status, video_is_approved: item.isApproved ?? false })
+          .eq('product_content_id', Number(productContentId));
+      }
+      return json(data);
     }
 
     if (action === 'add-video') {
       const body = await req.json();
-      const { productContentId, videoUrl, title } = body;
+      const { productContentId, videoUrl } = body;
       if (!productContentId || !videoUrl) return json({ error: 'productContentId and videoUrl required' }, 400);
       const BASE_VIDEO = 'https://apigw.trendyol.com/integration/video';
       const reqBody = {
@@ -186,7 +226,14 @@ Deno.serve(async (req: Request) => {
         headers: { Authorization: AUTH, 'Content-Type': 'application/json' },
         body: JSON.stringify(reqBody),
       });
-      return json(await res.json());
+      const data = await res.json();
+      if (data.videoId) {
+        const supaAdmin = createClient(SUPA_URL, SUPA_KEY);
+        await supaAdmin.from('products')
+          .update({ video_id: data.videoId, video_status: 'IN_PROGRESS', video_is_approved: false })
+          .eq('product_content_id', Number(productContentId));
+      }
+      return json(data);
     }
 
     if (action === 'ai-generate') {
