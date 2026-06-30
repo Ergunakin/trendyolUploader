@@ -175,7 +175,8 @@ Deno.serve(async (req: Request) => {
       if (!productContentId || !videoUrl) return json({ error: 'productContentId and videoUrl required' }, 400);
       const BASE_VIDEO = 'https://apigw.trendyol.com/integration/video';
       const reqBody = {
-        title: (title || 'Ürün Tanıtım Videosu').slice(0, 50),
+        title: 'MAAT SERAMİK Ürün Tanıtım Videosu',
+        description: 'Maat Seramik El yapımı Kolleksiyonu',
         videoUrl,
         productContentIds: [productContentId],
         videoContentType: 'PRODUCT_PROMOTION',
