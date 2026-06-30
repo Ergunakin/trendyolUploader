@@ -2435,6 +2435,31 @@ var tyCurrentPage = 0;
 var tyTotalPages  = 0;
 var tyPageSize    = 50;
 
+function checkVideoStatus(videoId, btn) {
+  btn.textContent = '⟳ Kontrol…'; btn.disabled = true;
+  fetch(PROXY + '?action=video-status&videoId=' + encodeURIComponent(videoId))
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    var item = (d.data && d.data[0]) || null;
+    if (!item) { btn.textContent = '? Bulunamadı'; btn.disabled = false; return; }
+    var st = item.status, approved = item.isApproved;
+    var label, color, border;
+    if (st === 'FAILED') {
+      label = '✕ Video Başarısız'; color = '#dc2626'; border = '#fecaca';
+    } else if (st === 'SUCCESS' && approved) {
+      label = '✓ Video Yayında'; color = '#16a34a'; border = '#bbf7d0';
+    } else if (st === 'SUCCESS') {
+      label = '◷ Onay Bekliyor'; color = '#d97706'; border = '#fde68a';
+    } else {
+      label = '◷ İşleniyor'; color = '#7c3aed'; border = '#ddd6fe';
+    }
+    btn.textContent = label;
+    btn.style.color = color; btn.style.borderColor = border;
+    btn.disabled = false;
+  })
+  .catch(function() { btn.textContent = '▶ Video'; btn.disabled = false; });
+}
+
 function loadTrendyolProducts(page) {
   tyCurrentPage = page;
   var status  = document.getElementById('tyStatus').value;
@@ -2680,17 +2705,16 @@ function renderTyProducts(products) {
           })
           .then(function(d) {
             if (d.videoId) {
-              videoBtn.innerHTML = '&#10003; Video eklendi';
-              videoBtn.style.color = '#16a34a'; videoBtn.style.borderColor = '#bbf7d0';
+              videoBtn.disabled = false;
+              videoBtn.onclick = function() { checkVideoStatus(d.videoId, videoBtn); };
+              checkVideoStatus(d.videoId, videoBtn);
             } else {
               videoBtn.innerHTML = '&#9654; Video';
               videoBtn.disabled = false;
-              console.error('[Video] başarısız yanıt:', d);
               alert('Video eklenemedi:\n' + JSON.stringify(d, null, 2).slice(0, 500));
             }
           })
           .catch(function(e) {
-            console.error('[Video] hata:', e);
             videoBtn.innerHTML = '&#9654; Video'; videoBtn.disabled = false;
             alert('Hata: ' + e.message);
           });

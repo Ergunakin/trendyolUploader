@@ -159,6 +159,16 @@ Deno.serve(async (req: Request) => {
       return json({ signedUrl: data.signedUrl, token: data.token, publicUrl });
     }
 
+    if (action === 'video-status') {
+      const videoId = url.searchParams.get('videoId');
+      if (!videoId) return json({ error: 'videoId required' }, 400);
+      const BASE_VIDEO = 'https://apigw.trendyol.com/integration/video';
+      const res = await fetch(`${BASE_VIDEO}/sellers/${SELLER_ID}/videos?id=${videoId}&size=1`, {
+        headers: { Authorization: AUTH },
+      });
+      return json(await res.json());
+    }
+
     if (action === 'add-video') {
       const body = await req.json();
       const { productContentId, videoUrl, title } = body;
