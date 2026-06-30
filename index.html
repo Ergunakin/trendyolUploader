@@ -873,8 +873,10 @@ s.brandId = 2922973; s.brandName = 'MAAT SERAMİK';
 document.getElementById('brandBadge').textContent = 'Marka ID: 2922973';
 
 // Efekt kontrolleri — değişimde activeObj.fx'e kaydet + canvas yenile
+function isProductKey(k) { return k === 'product' || (k && k.startsWith('prod_')); }
+
 function saveFxToActiveObj() {
-  var key = (activeObj === 'product' || activeObj === 'accessory') ? activeObj : null;
+  var key = (isProductKey(activeObj) || activeObj === 'accessory') ? activeObj : null;
   if (!key) return;
   objs[key].fx = getFxValues();
 }
@@ -1140,14 +1142,7 @@ async function hazirlaProduct() {
     showProcCard('processedPreview', croppedUrl);
     showProcCard('sketchPreview', sketchUrl);
     // otomatik olarak işlenmiş görseli editöre yükle
-    objs.product.img = croppedImg;
-    var ratio = croppedImg.width / croppedImg.height;
-    objs.product.h = Math.round(CH * 0.72);
-    objs.product.w = Math.round(objs.product.h * ratio);
-    objs.product.x = Math.round((CW - objs.product.w) / 2);
-    objs.product.y = Math.round(CH * 0.12);
-    objs.product.visible = true;
-    renderCanvas();
+    addProductToCanvas(croppedImg);
     setSt('hazirlaStatus','ok','✓ Hazırlama tamamlandı!');
   } catch(e) {
     setSt('hazirlaStatus','err','✗ ' + e.message);
@@ -1235,22 +1230,37 @@ function sketchImageToUrl(src) {
   return out.toDataURL('image/png');
 }
 
+function addProductToCanvas(img) {
+  // Reuse 'product' slot if empty, otherwise create a new unique key
+  var key = 'product';
+  if (objs.product.img) {
+    key = 'prod_' + Date.now();
+    objs[key] = { img: null, x: 50, y: 60, w: 300, h: 400, visible: true, fx: cloneFx(DEFAULT_FX) };
+    zOrder.push(key);
+  }
+  var ratio = img.width / img.height;
+  var h = Math.round(CH * 0.72);
+  var w = Math.round(h * ratio);
+  // Slightly offset each additional product so they don't fully overlap
+  var offset = Object.keys(objs).filter(isProductKey).length - 1;
+  objs[key].img = img;
+  objs[key].w = w;
+  objs[key].h = h;
+  objs[key].x = Math.round((CW - w) / 2) + offset * 10;
+  objs[key].y = Math.round(CH * 0.12) + offset * 10;
+  objs[key].visible = true;
+  activeObj = key;
+  loadFxFromObj(key);
+  renderCanvas();
+}
+
 function editorEkleProc() {
   var id = selectedProcPreview || 'processedPreview';
   var el = document.getElementById(id);
   if (!el || !el._dataUrl) { setSt('hazirlaStatus','err','⚠ Önce Hazırla\'ya bas'); return; }
   var img = new Image(); img.crossOrigin = 'anonymous';
   img.onload = function() {
-    objs.product.img = img;
-    var ratio = img.width / img.height;
-    objs.product.h = Math.round(CH * 0.72);
-    objs.product.w = Math.round(objs.product.h * ratio);
-    objs.product.x = Math.round((CW - objs.product.w) / 2);
-    objs.product.y = Math.round(CH * 0.12);
-    objs.product.visible = true;
-    activeObj = 'product';
-    loadFxFromObj('product');
-    renderCanvas();
+    addProductToCanvas(img);
     setSt('hazirlaStatus','ok','✓ Editöre eklendi');
   };
   img.src = el._dataUrl;
@@ -1900,7 +1910,7 @@ function renderCanvas() {
   zOrder.forEach(function(key) {
     var o = objs[key];
     if (!o.img || !o.visible) return;
-    if (key === 'product' || key === 'accessory') {
+    if (isProductKey(key) || key === 'accessory') {
       drawObjWithFx(ctx, o, 1, 1, o.fx || DEFAULT_FX);
     } else {
       ctx.drawImage(o.img, o.x, o.y, o.w, o.h);
@@ -1951,8 +1961,10 @@ function updateInfo() {
     return;
   }
   var o = activeObj ? objs[activeObj] : null;
+  var label = {product:'Ürün',accessory:'Süsleme',logo:'Logo',ruler_v:'Dikey Cetvel',ruler_h:'Yatay Cetvel'}[activeObj]
+    || (activeObj && activeObj.startsWith('prod_') ? 'Ürün' : activeObj);
   el.textContent = o
-    ? ({product:'Ürün',accessory:'Süsleme',logo:'Logo',ruler_v:'Dikey Cetvel',ruler_h:'Yatay Cetvel'}[activeObj]||activeObj)+': '+Math.round(o.w)+'x'+Math.round(o.h)+'px  ('+Math.round(o.x)+', '+Math.round(o.y)+')'
+    ? label+': '+Math.round(o.w)+'x'+Math.round(o.h)+'px  ('+Math.round(o.x)+', '+Math.round(o.y)+')'
     : 'Ürün, süsleme veya logo\'ya tıkla';
 }
 
@@ -2123,7 +2135,7 @@ function selectObj(key) {
   loadFxFromObj(key);
   renderCanvas();
   var card = document.getElementById('urunGorseliCard');
-  if (card) card.classList.toggle('card-active', key === 'product');
+  if (card) card.classList.toggle('card-active', isProductKey(key));
 }
 
 function bringForward() {
@@ -2181,8 +2193,7 @@ function deleteActive() {
   }
   var o = objs[activeObj];
   if (o) { o.img = null; o.visible = false; }
-  // Remove from zOrder if it's a ruler
-  if (activeObj === 'ruler_v' || activeObj === 'ruler_h') {
+  if (activeObj === 'ruler_v' || activeObj === 'ruler_h' || activeObj.startsWith('prod_')) {
     zOrder = zOrder.filter(function(k){ return k !== activeObj; });
     delete objs[activeObj];
   }
@@ -2211,7 +2222,7 @@ function saveComposition() {
   zOrder.forEach(function(key) {
     var o = objs[key];
     if (!o.img || !o.visible) return;
-    if (key === 'product' || key === 'accessory') {
+    if (isProductKey(key) || key === 'accessory') {
       drawObjWithFx(ctx, o, sx, sy, o.fx || DEFAULT_FX);
     } else {
       ctx.drawImage(o.img, o.x*sx, o.y*sy, o.w*sx, o.h*sy);
@@ -3625,7 +3636,7 @@ function renderWorkCanvas() {
   zOrder.forEach(function(key) {
     var o = objs[key];
     if (!o.img || !o.visible) return;
-    if (key === 'product' || key === 'accessory') drawObjWithFx(ctx, o, sx, sy, o.fx || DEFAULT_FX);
+    if (isProductKey(key) || key === 'accessory') drawObjWithFx(ctx, o, sx, sy, o.fx || DEFAULT_FX);
     else ctx.drawImage(o.img, o.x*sx, o.y*sy, o.w*sx, o.h*sy);
   });
   texts.forEach(function(t) {
