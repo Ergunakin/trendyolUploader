@@ -148,14 +148,6 @@ Deno.serve(async (req: Request) => {
 
     if (action === 'upload-video') {
       const supaAdmin = createClient(SUPA_URL, SUPA_KEY);
-      // Ensure bucket allows video MIME types
-      await supaAdmin.storage.updateBucket('trendyol', {
-        allowedMimeTypes: [
-          'image/jpeg','image/png','image/webp','image/gif',
-          'video/mp4','video/quicktime','video/webm',
-        ],
-        fileSizeLimit: 524288000, // 500 MB
-      });
       const fileName = url.searchParams.get('filename') || (Date.now() + '.mp4');
       const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
       const path = `video/${Date.now()}_${safeName}`;
