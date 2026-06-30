@@ -157,6 +157,11 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
   <span class="sub">·</span>
   <span style="font-size:13px;color:var(--muted)">Trendyol Ürün Yükleme Paneli</span>
   <span class="badge indigo" id="brandBadge">Marka ID: 2922973</span>
+  <div style="flex:1"></div>
+  <button class="btn sm" onclick="location.reload()" style="gap:6px;color:#6366f1;border-color:#c7d2fe;background:#eef2ff">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+    Yeni Tasarım
+  </button>
 </div>
 
 <div class="container">
@@ -300,14 +305,43 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
               <div class="toolbar-group-label">Katmanlar</div>
               <div class="toolbar-row">
                 <button class="btn sm" onclick="selectObj('product')">📦 Ürün</button>
-                <button class="btn sm" onclick="selectObj('accessory')">✨ Süsleme</button>
+                <button class="btn sm" id="tbAccBtn" onclick="toggleToolbarPanel('tbAccPanel','tbAccBtn')" style="flex:1">✨ Süsleme</button>
                 <button class="btn sm" onclick="selectObj('logo')">🔖 Logo</button>
               </div>
               <div class="toolbar-row">
-                <button class="btn sm" onclick="addRuler('v')">📏 Dikey</button>
-                <button class="btn sm" onclick="addRuler('h')">📐 Yatay</button>
-                <button class="btn sm" onclick="addTextBox()">T Metin</button>
+                <button class="btn sm" id="tbBgBtn" onclick="toggleToolbarPanel('tbBgPanel','tbBgBtn')" style="flex:1">🖼 Arka Plan</button>
+                <button class="btn sm" onclick="addRuler('v')">📏</button>
+                <button class="btn sm" onclick="addRuler('h')">📐</button>
+                <button class="btn sm" onclick="addTextBox()">T</button>
               </div>
+            </div>
+
+            <!-- Süsleme dropdown panel -->
+            <div id="tbAccPanel" style="display:none;border:2px solid var(--primary);border-radius:10px;padding:8px;background:#fafbff">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:10px;font-weight:700;color:var(--primary)">✨ Süslemeler</span>
+                <div style="display:flex;gap:4px;align-items:center">
+                  <button class="btn xs" onclick="loadAccessories();renderToolbarAccPanel()" style="padding:2px 6px">↺</button>
+                  <button class="btn xs" id="tbAccPrev" onclick="tbAccPage(-1)">‹</button>
+                  <span id="tbAccInfo" style="font-size:10px;color:#64748b;min-width:28px;text-align:center"></span>
+                  <button class="btn xs" id="tbAccNext" onclick="tbAccPage(1)">›</button>
+                </div>
+              </div>
+              <div id="tbAccGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px"></div>
+            </div>
+
+            <!-- Arka Plan dropdown panel -->
+            <div id="tbBgPanel" style="display:none;border:2px solid var(--primary);border-radius:10px;padding:8px;background:#fafbff">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:10px;font-weight:700;color:var(--primary)">🖼 Arka Planlar</span>
+                <div style="display:flex;gap:4px;align-items:center">
+                  <button class="btn xs" onclick="loadBackgrounds();renderToolbarBgPanel()" style="padding:2px 6px">↺</button>
+                  <button class="btn xs" id="tbBgPrev" onclick="tbBgPage(-1)">‹</button>
+                  <span id="tbBgInfo" style="font-size:10px;color:#64748b;min-width:28px;text-align:center"></span>
+                  <button class="btn xs" id="tbBgNext" onclick="tbBgPage(1)">›</button>
+                </div>
+              </div>
+              <div id="tbBgGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px"></div>
             </div>
 
             <!-- Group 2: Düzenle -->
@@ -399,7 +433,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
             </button>
           </div>
           <div id="bgLoadSt"></div>
-          <div id="bgList" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>
+          <div id="bgList" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
           <div id="bgPager" style="display:none;align-items:center;justify-content:center;gap:8px;margin-top:8px">
             <button class="btn xs" id="bgPrevBtn" onclick="bgChangePage(-1)">&#8592;</button>
             <span id="bgPageInfo" style="font-size:11px;color:#888"></span>
@@ -1656,7 +1690,7 @@ function toggleSection(sectionId, chevronId) {
 // ── BACKGROUNDS ───────────────────────────────────────────────────────────
 var bgAllFiles = [];
 var bgCurrentPage = 0;
-var BG_PER_PAGE = 4; // sağ kolon 2×2
+var BG_PER_PAGE = 8; // sağ kolon 4×2
 
 function loadBackgrounds() {
   setSt('bgLoadSt','load','<span class="spin">&#x27F3;</span> Arka planlar yükleniyor...');
@@ -3717,6 +3751,122 @@ function clearCanvas() {
   renderCanvas();
   // Reset bg selection
   document.querySelectorAll('#bgList > div').forEach(function(d){ d.style.borderColor='transparent'; });
+}
+
+// ── TOOLBAR DROPDOWN PANELS ───────────────────────────────────────────────────
+
+var tbBgPage_ = 0, TB_BG_PER = 8;
+var tbAccPage_ = 0, TB_ACC_PER = 6;
+
+function toggleToolbarPanel(panelId, btnId) {
+  var panel = document.getElementById(panelId);
+  var btn   = document.getElementById(btnId);
+  var isOpen = panel.style.display !== 'none';
+  // Close both first
+  ['tbBgPanel','tbAccPanel'].forEach(function(id) {
+    document.getElementById(id).style.display = 'none';
+  });
+  ['tbBgBtn','tbAccBtn'].forEach(function(id) {
+    var b = document.getElementById(id);
+    if (b) { b.style.background=''; b.style.color=''; b.style.borderColor=''; }
+  });
+  if (!isOpen) {
+    panel.style.display = 'block';
+    btn.style.background = '#eef2ff';
+    btn.style.color = 'var(--primary)';
+    btn.style.borderColor = 'var(--primary)';
+    if (panelId === 'tbBgPanel')  renderToolbarBgPanel();
+    if (panelId === 'tbAccPanel') renderToolbarAccPanel();
+  }
+}
+
+function renderToolbarBgPanel() {
+  var grid = document.getElementById('tbBgGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  if (!bgAllFiles.length) {
+    grid.innerHTML = '<span style="font-size:10px;color:#94a3b8;grid-column:1/-1;padding:8px">Önce Yükle\'ye bas</span>';
+    return;
+  }
+  var total = Math.ceil(bgAllFiles.length / TB_BG_PER);
+  var start = tbBgPage_ * TB_BG_PER;
+  var files = bgAllFiles.slice(start, start + TB_BG_PER);
+  var info = document.getElementById('tbBgInfo');
+  if (info) info.textContent = (tbBgPage_+1)+'/'+total;
+  document.getElementById('tbBgPrev').disabled = tbBgPage_ === 0;
+  document.getElementById('tbBgNext').disabled = tbBgPage_ >= total-1;
+  files.forEach(function(f) {
+    var url = SUPA+'/storage/v1/object/public/trendyol/backgrounds/'+f.name;
+    var card = document.createElement('div');
+    card.style.cssText = 'aspect-ratio:2/3;border-radius:6px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:#f0f0f0;transition:border-color .15s';
+    card.onmouseenter = function(){ card.style.borderColor='var(--primary)'; };
+    card.onmouseleave = function(){ card.style.borderColor='transparent'; };
+    card.onclick = function() { selectBg(url, card); };
+    var img = document.createElement('img');
+    img.src = url; img.loading = 'lazy';
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+    card.appendChild(img);
+    grid.appendChild(card);
+  });
+}
+
+function tbBgPage(dir) {
+  var total = Math.ceil(bgAllFiles.length / TB_BG_PER);
+  tbBgPage_ = Math.max(0, Math.min(tbBgPage_ + dir, total-1));
+  renderToolbarBgPanel();
+}
+
+function renderToolbarAccPanel() {
+  var grid = document.getElementById('tbAccGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  if (!accAllFiles.length) {
+    grid.innerHTML = '<span style="font-size:10px;color:#94a3b8;grid-column:1/-1;padding:8px">Önce Yükle\'ye bas</span>';
+    return;
+  }
+  var total = Math.ceil(accAllFiles.length / TB_ACC_PER);
+  var start = tbAccPage_ * TB_ACC_PER;
+  var files = accAllFiles.slice(start, start + TB_ACC_PER);
+  var info = document.getElementById('tbAccInfo');
+  if (info) info.textContent = (tbAccPage_+1)+'/'+total;
+  document.getElementById('tbAccPrev').disabled = tbAccPage_ === 0;
+  document.getElementById('tbAccNext').disabled = tbAccPage_ >= total-1;
+  files.forEach(function(f) {
+    var url = SUPA+'/storage/v1/object/public/trendyol/accessories/'+f.name;
+    var card = document.createElement('div');
+    card.style.cssText = 'aspect-ratio:1/1;border-radius:6px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:repeating-conic-gradient(#e8ecf0 0% 25%,#f8fafc 0% 50%) 0 0/10px 10px;transition:border-color .15s';
+    card.onmouseenter = function(){ card.style.borderColor='var(--primary)'; };
+    card.onmouseleave = function(){ card.style.borderColor='transparent'; };
+    card.onclick = function() { loadAccessoryImg(url); };
+    var img = document.createElement('img');
+    img.src = url; img.loading = 'lazy';
+    img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block';
+    card.appendChild(img);
+    grid.appendChild(card);
+  });
+}
+
+function tbAccPage(dir) {
+  var total = Math.ceil(accAllFiles.length / TB_ACC_PER);
+  tbAccPage_ = Math.max(0, Math.min(tbAccPage_ + dir, total-1));
+  renderToolbarAccPanel();
+}
+
+function loadAccessoryImg(url) {
+  var img = new Image(); img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    objs.accessory.img = img;
+    var ratio = img.width / img.height;
+    objs.accessory.w = 180;
+    objs.accessory.h = Math.round(180 / ratio);
+    objs.accessory.x = Math.round((CW - objs.accessory.w) / 2);
+    objs.accessory.y = Math.round((CH - objs.accessory.h) / 2);
+    objs.accessory.visible = true;
+    activeObj = 'accessory';
+    loadFxFromObj('accessory');
+    renderCanvas();
+  };
+  img.src = url + '?t=' + Date.now();
 }
 
 // ── FOTOĞRAF YÜKLE MODAL ─────────────────────────────────────────────────────
