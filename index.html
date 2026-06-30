@@ -187,7 +187,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
 
           <!-- Buttons -->
           <div style="display:flex;gap:6px;margin-bottom:12px">
-            <button class="btn sm" onclick="document.getElementById('fi').click()" id="dz" style="flex:1;justify-content:center">
+            <button class="btn sm" onclick="openFotoModal()" id="dz" style="flex:1;justify-content:center">
               📷 Fotoğraf Yükle
             </button>
             <button class="btn sm primary" onclick="hazirlaProduct()" id="hazirlaBtn" style="flex:1;justify-content:center">
@@ -3688,6 +3688,165 @@ function clearCanvas() {
   document.querySelectorAll('#bgList > div').forEach(function(d){ d.style.borderColor='transparent'; });
 }
 
+// ── FOTOĞRAF YÜKLE MODAL ─────────────────────────────────────────────────────
+
+var modalNoBgFiles = [];
+var modalNoBgPage  = 0;
+var MODAL_PER_PAGE = 12;
+
+function switchFotoTab(tab) {
+  document.getElementById('fotoTabUpload').style.display = tab === 'upload' ? 'flex' : 'none';
+  document.getElementById('fotoTabDepo').style.display   = tab === 'depo'   ? 'flex' : 'none';
+  document.getElementById('tabUpload').style.borderBottomColor = tab === 'upload' ? 'var(--primary)' : 'transparent';
+  document.getElementById('tabUpload').style.color = tab === 'upload' ? 'var(--primary)' : '#94a3b8';
+  document.getElementById('tabDepo').style.borderBottomColor   = tab === 'depo'   ? 'var(--primary)' : 'transparent';
+  document.getElementById('tabDepo').style.color   = tab === 'depo'   ? 'var(--primary)' : '#94a3b8';
+  if (tab === 'depo') loadModalGallery();
+}
+
+function openFotoModal() {
+  document.getElementById('fotoModal').style.display = 'flex';
+  loadModalGallery();
+}
+
+function closeFotoModal() {
+  document.getElementById('fotoModal').style.display = 'none';
+}
+
+function loadModalGallery() {
+  var grid = document.getElementById('modalGalleryGrid');
+  grid.innerHTML = '<span style="color:#94a3b8;font-size:12px;padding:12px">Yükleniyor...</span>';
+  fetch(SUPA+'/storage/v1/object/list/trendyol', {
+    method:'POST',
+    headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
+    body: JSON.stringify({ prefix:'nobackground/', limit:200, offset:0, sortBy:{column:'created_at',order:'desc'} })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(files){
+    modalNoBgFiles = (files||[]).filter(function(f){ return f.name && /\.(png|jpg|jpeg|webp)$/i.test(f.name); });
+    modalNoBgPage = 0;
+    renderModalGallery();
+  })
+  .catch(function(e){ grid.innerHTML = '<span style="color:#ef4444;font-size:12px;padding:12px">Hata: '+e.message+'</span>'; });
+}
+
+function renderModalGallery() {
+  var grid = document.getElementById('modalGalleryGrid');
+  var info = document.getElementById('modalPageInfo');
+  grid.innerHTML = '';
+  if (!modalNoBgFiles.length) {
+    grid.innerHTML = '<span style="color:#94a3b8;font-size:12px;padding:12px">Depoda görsel yok</span>';
+    if (info) info.textContent = '';
+    return;
+  }
+  var total = Math.ceil(modalNoBgFiles.length / MODAL_PER_PAGE);
+  var start = modalNoBgPage * MODAL_PER_PAGE;
+  var pageFiles = modalNoBgFiles.slice(start, start + MODAL_PER_PAGE);
+  if (info) info.textContent = (modalNoBgPage+1) + ' / ' + total;
+  document.getElementById('modalPrevBtn').disabled = modalNoBgPage === 0;
+  document.getElementById('modalNextBtn').disabled = modalNoBgPage >= total - 1;
+
+  pageFiles.forEach(function(f) {
+    var url = SUPA+'/storage/v1/object/public/trendyol/nobackground/'+f.name;
+    var card = document.createElement('div');
+    card.style.cssText = 'position:relative;aspect-ratio:2/3;border-radius:8px;overflow:hidden;border:2px solid var(--border);background:repeating-conic-gradient(#e8ecf0 0% 25%,#f8fafc 0% 50%) 0 0/12px 12px;cursor:pointer;transition:border-color .15s';
+    card.onmouseenter = function(){ card.style.borderColor='var(--primary)'; };
+    card.onmouseleave = function(){ card.style.borderColor='var(--border)'; };
+    card.onclick = function() { pickModalImage(url, f.name); };
+
+    var img = document.createElement('img');
+    img.src = url; img.loading = 'lazy';
+    img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block';
+    card.appendChild(img);
+
+    var lbl = document.createElement('div');
+    lbl.textContent = f.name.replace(/^[^_]*_/,'').replace(/\.[^.]+$/,'');
+    lbl.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.45);color:#fff;font-size:9px;padding:3px 5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    card.appendChild(lbl);
+
+    grid.appendChild(card);
+  });
+}
+
+function modalChangePage(dir) {
+  var total = Math.ceil(modalNoBgFiles.length / MODAL_PER_PAGE);
+  modalNoBgPage = Math.max(0, Math.min(modalNoBgPage + dir, total - 1));
+  renderModalGallery();
+}
+
+function pickModalImage(url, fname) {
+  // Load as raw image
+  var img = new Image(); img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    // Convert to dataUrl via canvas so we can use it locally
+    var c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    c.getContext('2d').drawImage(img, 0, 0);
+    var dataUrl = c.toDataURL('image/png');
+    s.imgs = [{ file: null, dataUrl: dataUrl, done: false }];
+    s._selIdx = 0;
+    showRawPreview(dataUrl);
+    closeFotoModal();
+  };
+  img.src = url + '?t=' + Date.now();
+}
+
+function pickLocalFile() {
+  document.getElementById('fi').click();
+  closeFotoModal();
+}
+
 </script>
+
+<!-- Fotoğraf Yükle Modal -->
+<div id="fotoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;width:min(640px,95vw);max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.25)">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
+      <h3 style="font-size:15px;font-weight:700;color:var(--text);margin:0">📷 Fotoğraf Seç</h3>
+      <button onclick="closeFotoModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8;line-height:1;padding:2px 6px">×</button>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display:flex;border-bottom:1px solid var(--border);padding:0 20px">
+      <button onclick="switchFotoTab('upload')" id="tabUpload"
+        style="padding:10px 16px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid var(--primary);color:var(--primary)">
+        💻 Bilgisayardan Yükle
+      </button>
+      <button onclick="switchFotoTab('depo')" id="tabDepo"
+        style="padding:10px 16px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;color:#94a3b8">
+        🗂 Depodaki Görseller
+      </button>
+    </div>
+
+    <!-- Tab: Upload -->
+    <div id="fotoTabUpload" style="padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px">
+      <div onclick="pickLocalFile()" style="border:2px dashed var(--border2);border-radius:12px;padding:40px;text-align:center;cursor:pointer;width:100%;box-sizing:border-box;transition:all .2s"
+        onmouseenter="this.style.borderColor='var(--primary)';this.style.background='#eef2ff'"
+        onmouseleave="this.style.borderColor='var(--border2)';this.style.background=''">
+        <div style="font-size:36px;margin-bottom:8px">📁</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text)">Dosya seçmek için tıkla</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:4px">PNG, JPG, WEBP — maks. birkaç MB</div>
+      </div>
+    </div>
+
+    <!-- Tab: Depo -->
+    <div id="fotoTabDepo" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div style="padding:10px 20px 6px;display:flex;align-items:center;gap:8px">
+        <button class="btn xs" onclick="loadModalGallery()" style="gap:4px">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+          Yenile
+        </button>
+        <span style="font-size:11px;color:#94a3b8">nobackground klasöründen seç</span>
+        <div style="flex:1"></div>
+        <button id="modalPrevBtn" class="btn xs" onclick="modalChangePage(-1)" disabled>‹</button>
+        <span id="modalPageInfo" style="font-size:11px;color:#64748b;white-space:nowrap"></span>
+        <button id="modalNextBtn" class="btn xs" onclick="modalChangePage(1)" disabled>›</button>
+      </div>
+      <div id="modalGalleryGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px 20px 20px;overflow-y:auto;flex:1"></div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
