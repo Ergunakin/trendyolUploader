@@ -140,6 +140,13 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
 .proc-preview{border:1px dashed var(--border2);border-radius:8px;min-height:64px;display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#e8ecf0 0% 25%,#f8fafc 0% 50%) 0 0/12px 12px;overflow:hidden;position:relative;cursor:pointer;transition:border-color .15s}
 .proc-preview:hover{border-color:#94a3b8}
 .proc-preview img{max-width:100%;max-height:140px;object-fit:contain;display:block}
+.pcard{position:relative;border:2px dashed var(--border2);border-radius:8px;min-height:100px;background:repeating-conic-gradient(#e8ecf0 0% 25%,#f8fafc 0% 50%) 0 0/12px 12px;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.pcard:hover{border-color:#94a3b8}
+.pcard.selected{border-color:var(--primary);box-shadow:0 0 0 2px rgba(99,102,241,.2)}
+.pcard img{max-width:100%;max-height:160px;object-fit:contain;display:block}
+.pcard-btn{position:absolute;background:rgba(15,23,42,.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;z-index:2;transition:background .15s}
+.pcard-btn:hover{background:rgba(15,23,42,.9)}
+.card-active{border-color:var(--primary) !important;box-shadow:0 0 0 3px rgba(99,102,241,.2) !important}
 /* EXPORT BUTTONS GROUP */
 .export-group{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px;background:linear-gradient(135deg,#f8fafc,#f1f5f9);border-radius:10px;border:1px solid var(--border);margin-top:10px}
 </style>
@@ -174,66 +181,59 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
       <div style="display:flex;flex-direction:column;gap:12px">
 
         <!-- Ürün Görseli card -->
-        <div class="card" style="padding:14px">
+        <div class="card" id="urunGorseliCard" style="padding:14px">
           <div class="card-title"><span class="icon">📷</span> Ürün Görseli</div>
-          <input type="file" id="fi" multiple accept="image/*" style="display:none">
+          <input type="file" id="fi" accept="image/*" style="display:none">
 
-          <!-- Row 1: Fotoğraf Yükle -->
-          <div class="proc-row">
-            <button class="btn sm" onclick="document.getElementById('fi').click()" id="dz"
-              style="justify-content:center;width:100%">
+          <!-- Buttons -->
+          <div style="display:flex;gap:6px;margin-bottom:12px">
+            <button class="btn sm" onclick="document.getElementById('fi').click()" id="dz" style="flex:1;justify-content:center">
               📷 Fotoğraf Yükle
             </button>
-            <div id="imgGrid" style="min-height:64px;border:1px dashed var(--border2);border-radius:8px;display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;padding:4px">
-              <span style="font-size:10px;color:#bbb">Ham görsel</span>
-            </div>
-          </div>
-
-          <!-- Row 2: BG Kaldır -->
-          <div class="proc-row">
-            <div style="display:flex;flex-direction:column;gap:4px">
-              <button class="btn sm" onclick="removeBgClick()" id="removeBgBtn" style="justify-content:center;width:100%">
-                🪄 BG Kaldır
-              </button>
-            </div>
-            <div class="proc-preview" id="removedPreview" onclick="selectProcImage('removedPreview','nobg-result','nobackground')">
-              <span style="font-size:10px;color:#bbb">BG kaldırılmış</span>
-            </div>
-          </div>
-
-          <!-- Row 3: Kırp -->
-          <div class="proc-row">
-            <button class="btn sm" onclick="cropProduct()" id="cropBtn" style="justify-content:center;width:100%">
-              ✂ Kırp
+            <button class="btn sm primary" onclick="hazirlaProduct()" id="hazirlaBtn" style="flex:1;justify-content:center">
+              ⚡ Hazırla
             </button>
-            <div class="proc-preview" id="croppedPreview" onclick="selectProcImage('croppedPreview','crop-result','nobackground')">
-              <span style="font-size:10px;color:#bbb">Kırpılmış</span>
+          </div>
+
+          <!-- Row 1: Ham fotoğraf (ortada) -->
+          <div style="display:flex;justify-content:center;margin-bottom:10px">
+            <div id="rawPreview" class="pcard" style="width:90px;min-height:120px" onclick="selectProcPreview('rawPreview')">
+              <span style="font-size:10px;color:#bbb;text-align:center">Ham<br>görsel</span>
             </div>
           </div>
 
-          <!-- Row 4: Sketch -->
-          <div class="proc-row" style="border-bottom:none">
-            <button class="btn sm" onclick="sketchProduct()" id="sketchBtn" style="justify-content:center;width:100%">
-              ✏ Sketch
-            </button>
-            <div class="proc-preview" id="sketchPreview" style="background:#fff" onclick="selectProcImage('sketchPreview','sketch-result','nobackground')">
-              <span style="font-size:10px;color:#bbb">Sketch</span>
+          <!-- Row 2: BG+Kırp | Sketch -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <div>
+              <p style="font-size:10px;color:#94a3b8;text-align:center;margin-bottom:4px">BG + Kırp</p>
+              <div id="processedPreview" class="pcard" onclick="selectProcPreview('processedPreview')">
+                <span style="font-size:10px;color:#bbb;text-align:center">—</span>
+              </div>
+            </div>
+            <div>
+              <p style="font-size:10px;color:#94a3b8;text-align:center;margin-bottom:4px">Sketch</p>
+              <div id="sketchPreview" class="pcard" style="background:#fff" onclick="selectProcPreview('sketchPreview')">
+                <span style="font-size:10px;color:#bbb;text-align:center">—</span>
+              </div>
             </div>
           </div>
 
-          <div id="removeBgSt" style="margin-top:6px"></div>
-          <div id="saveNoBgSt" style="margin-top:4px"></div>
-          <!-- Hidden compat button -->
+          <!-- Action buttons -->
+          <div style="display:flex;gap:6px">
+            <button class="btn sm primary" onclick="editorEkleProc()" style="flex:1;justify-content:center">✎ Editöre Ekle</button>
+            <button class="btn sm" onclick="depoYukleProc()" style="flex:1;justify-content:center">☁ Depoya Yükle</button>
+          </div>
+
+          <div id="hazirlaStatus" style="margin-top:8px;font-size:11px"></div>
+
+          <!-- Compat hidden elements (referenced by other functions) -->
+          <div id="removeBgSt" style="display:none"></div>
+          <div id="saveNoBgSt" style="display:none"></div>
+          <div id="imgGrid" style="display:none"></div>
+          <div id="removedPreview" style="display:none"></div>
+          <div id="croppedPreview" style="display:none"></div>
           <button id="saveNoBgBtn" onclick="saveNoBgToStorage()" style="display:none"></button>
-
-          <!-- Proc image action bar -->
-          <div class="action-bar" id="procActionBar">
-            <span style="font-size:10px;color:#64748b;font-weight:600;flex-shrink:0">Seçili:</span>
-            <button class="abar-btn abar-primary" onclick="procBarAction('editor')">✎ Editöre Ekle</button>
-            <button class="abar-btn abar-success" onclick="procBarAction('upload')">☁ Depoya Yükle</button>
-            <button class="abar-btn" onclick="procBarAction('product')">＋ Ürüne Ekle</button>
-            <button class="abar-btn" onclick="procBarAction('download')">⬇ İndir</button>
-          </div>
+          <div class="action-bar" id="procActionBar" style="display:none"></div>
         </div>
 
         <!-- Depodaki Görseller -->
@@ -1035,13 +1035,233 @@ dz.addEventListener('drop', function(e) {
 });
 
 function addImg(f) {
-  if (s.imgs.length >= 8 || !f.type.startsWith('image/')) return;
+  if (!f.type.startsWith('image/')) return;
   var r = new FileReader();
   r.onload = function(e) {
-    s.imgs.push({ file:f, dataUrl:e.target.result, done:false });
+    s.imgs = [{ file:f, dataUrl:e.target.result, done:false }]; // tek fotoğraf
+    s._selIdx = 0;
     renderGrid();
+    showRawPreview(e.target.result);
   };
   r.readAsDataURL(f);
+}
+
+function showRawPreview(dataUrl) {
+  var el = document.getElementById('rawPreview');
+  if (!el) return;
+  el._dataUrl = dataUrl;
+  el.innerHTML = '';
+  var img = document.createElement('img');
+  img.src = dataUrl;
+  img.style.cssText = 'max-width:100%;max-height:160px;object-fit:contain;display:block';
+  el.appendChild(img);
+  addPcardButtons(el, 'rawPreview');
+}
+
+function addPcardButtons(el, previewId) {
+  var xBtn = document.createElement('button');
+  xBtn.className = 'pcard-btn';
+  xBtn.innerHTML = '✕';
+  xBtn.style.cssText = 'position:absolute;top:4px;right:4px;width:22px;height:22px;font-size:11px';
+  xBtn.onclick = function(e) {
+    e.stopPropagation();
+    el.innerHTML = '<span style="font-size:10px;color:#bbb;text-align:center">' +
+      (previewId === 'sketchPreview' ? 'Sketch' : previewId === 'processedPreview' ? '—' : 'Ham<br>görsel') + '</span>';
+    el._dataUrl = null;
+    el.classList.remove('selected');
+    if (selectedProcPreview === previewId) selectedProcPreview = null;
+    if (previewId === 'rawPreview') { s.imgs = []; s._selIdx = 0; renderGrid(); }
+  };
+  el.appendChild(xBtn);
+
+  var dlBtn = document.createElement('button');
+  dlBtn.className = 'pcard-btn';
+  dlBtn.innerHTML = '↓';
+  dlBtn.title = 'İndir';
+  dlBtn.style.cssText = 'position:absolute;bottom:4px;right:4px;width:22px;height:22px;font-size:14px';
+  dlBtn.onclick = function(e) {
+    e.stopPropagation();
+    if (!el._dataUrl) return;
+    var a = document.createElement('a');
+    a.href = el._dataUrl;
+    a.download = previewId + '_' + Date.now() + '.png';
+    a.click();
+  };
+  el.appendChild(dlBtn);
+}
+
+var selectedProcPreview = null;
+
+function selectProcPreview(id) {
+  var el = document.getElementById(id);
+  if (!el || !el._dataUrl) return;
+  ['rawPreview','processedPreview','sketchPreview'].forEach(function(pid) {
+    var pe = document.getElementById(pid);
+    if (pe) pe.classList.remove('selected');
+  });
+  el.classList.add('selected');
+  selectedProcPreview = id;
+}
+
+function showProcCard(previewId, dataUrl) {
+  var el = document.getElementById(previewId);
+  if (!el) return;
+  el._dataUrl = dataUrl;
+  el.innerHTML = '';
+  var img = document.createElement('img');
+  img.src = dataUrl;
+  img.style.cssText = 'max-width:100%;max-height:160px;object-fit:contain;display:block';
+  el.appendChild(img);
+  addPcardButtons(el, previewId);
+}
+
+async function hazirlaProduct() {
+  if (!s.imgs.length) { setSt('hazirlaStatus','err','⚠ Önce fotoğraf yükle'); return; }
+  var btn = document.getElementById('hazirlaBtn');
+  btn.disabled = true; btn.textContent = '⏳ İşleniyor...';
+  setSt('hazirlaStatus','load','<span class="spin">⟳</span> Arka plan kaldırılıyor...');
+  var imgData = s.imgs[0];
+  var b64  = imgData.dataUrl.split(',')[1];
+  var mime = imgData.dataUrl.split(';')[0].split(':')[1];
+  try {
+    var r = await fetch(PROXY+'?action=remove-bg', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ imageBase64:b64, mimeType:mime })
+    });
+    var d = await r.json();
+    if (!d.ok) throw new Error(d.error || d.detail || 'BG kaldırma hatası');
+    var pngUrl = 'data:image/png;base64,'+d.pngBase64;
+    setSt('hazirlaStatus','load','<span class="spin">⟳</span> Kırpılıyor...');
+    var bgImg = await loadImagePromise(pngUrl);
+    var croppedUrl = cropImageToBounds(bgImg);
+    var croppedImg = await loadImagePromise(croppedUrl);
+    setSt('hazirlaStatus','load','<span class="spin">⟳</span> Sketch oluşturuluyor...');
+    var sketchUrl = sketchImageToUrl(croppedImg);
+    showProcCard('processedPreview', croppedUrl);
+    showProcCard('sketchPreview', sketchUrl);
+    // otomatik olarak işlenmiş görseli editöre yükle
+    objs.product.img = croppedImg;
+    var ratio = croppedImg.width / croppedImg.height;
+    objs.product.h = Math.round(CH * 0.72);
+    objs.product.w = Math.round(objs.product.h * ratio);
+    objs.product.x = Math.round((CW - objs.product.w) / 2);
+    objs.product.y = Math.round(CH * 0.12);
+    objs.product.visible = true;
+    renderCanvas();
+    setSt('hazirlaStatus','ok','✓ Hazırlama tamamlandı!');
+  } catch(e) {
+    setSt('hazirlaStatus','err','✗ ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '⚡ Hazırla';
+  }
+}
+
+function loadImagePromise(url) {
+  return new Promise(function(resolve, reject) {
+    var img = new Image(); img.crossOrigin = 'anonymous';
+    img.onload = function() { resolve(img); };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function cropImageToBounds(src) {
+  var oc = document.createElement('canvas');
+  oc.width = src.width; oc.height = src.height;
+  var octx = oc.getContext('2d');
+  octx.drawImage(src, 0, 0);
+  var w = oc.width, h = oc.height;
+  var data = octx.getImageData(0, 0, w, h).data;
+  var minX = w, maxX = 0, minY = h, maxY = 0;
+  for (var y = 0; y < h; y++) {
+    for (var x = 0; x < w; x++) {
+      if (data[(y * w + x) * 4 + 3] >= 10) {
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+      }
+    }
+  }
+  if (minX > maxX || minY > maxY) return src.src;
+  var bw = maxX - minX, bh = maxY - minY;
+  var padX = Math.round(bw * 0.05), padY = Math.round(bh * 0.05);
+  var cx = Math.max(0, minX - padX), cy = Math.max(0, minY - padY);
+  var cw = Math.min(w, maxX + padX + 1) - cx;
+  var ch = Math.min(h, maxY + padY + 1) - cy;
+  var out = document.createElement('canvas');
+  out.width = cw; out.height = ch;
+  out.getContext('2d').drawImage(oc, cx, cy, cw, ch, 0, 0, cw, ch);
+  return out.toDataURL('image/png');
+}
+
+function sketchImageToUrl(src) {
+  var oc = document.createElement('canvas');
+  oc.width = src.width; oc.height = src.height;
+  var octx = oc.getContext('2d');
+  octx.drawImage(src, 0, 0);
+  var w = oc.width, h = oc.height;
+  var src_data = octx.getImageData(0, 0, w, h).data;
+  var out = document.createElement('canvas');
+  out.width = w; out.height = h;
+  var outctx = out.getContext('2d');
+  var outImg = outctx.createImageData(w, h);
+  var od = outImg.data;
+  var dirs = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]];
+  var edgeSet = new Set();
+  for (var y = 0; y < h; y++) {
+    for (var x = 0; x < w; x++) {
+      var i = (y * w + x) * 4;
+      if (src_data[i + 3] < 20) continue;
+      var isEdge = false;
+      for (var di = 0; di < dirs.length; di++) {
+        var nx = x + dirs[di][0], ny = y + dirs[di][1];
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) { isEdge = true; break; }
+        if (src_data[(ny * w + nx) * 4 + 3] < 20) { isEdge = true; break; }
+      }
+      if (isEdge) edgeSet.add(y * w + x);
+    }
+  }
+  edgeSet.forEach(function(idx) {
+    var ex = idx % w, ey = Math.floor(idx / w);
+    for (var dy = -6; dy <= 6; dy++) {
+      for (var dx = -6; dx <= 6; dx++) {
+        var px = ex + dx, py = ey + dy;
+        if (px < 0 || px >= w || py < 0 || py >= h) continue;
+        var pi = (py * w + px) * 4;
+        od[pi] = 0; od[pi+1] = 0; od[pi+2] = 0; od[pi+3] = 255;
+      }
+    }
+  });
+  outctx.putImageData(outImg, 0, 0);
+  return out.toDataURL('image/png');
+}
+
+function editorEkleProc() {
+  var id = selectedProcPreview || 'processedPreview';
+  var el = document.getElementById(id);
+  if (!el || !el._dataUrl) { setSt('hazirlaStatus','err','⚠ Önce Hazırla\'ya bas'); return; }
+  var img = new Image(); img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    objs.product.img = img;
+    var ratio = img.width / img.height;
+    objs.product.h = Math.round(CH * 0.72);
+    objs.product.w = Math.round(objs.product.h * ratio);
+    objs.product.x = Math.round((CW - objs.product.w) / 2);
+    objs.product.y = Math.round(CH * 0.12);
+    objs.product.visible = true;
+    activeObj = 'product';
+    loadFxFromObj('product');
+    renderCanvas();
+    setSt('hazirlaStatus','ok','✓ Editöre eklendi');
+  };
+  img.src = el._dataUrl;
+}
+
+function depoYukleProc() {
+  var id = selectedProcPreview || 'processedPreview';
+  var el = document.getElementById(id);
+  if (!el || !el._dataUrl) { setSt('hazirlaStatus','err','⚠ Önce Hazırla\'ya bas'); return; }
+  var prefix = id === 'sketchPreview' ? 'sketch_' : 'cropped_';
+  uploadDataUrlToStorage(el._dataUrl, 'nobackground/' + prefix + Date.now() + '.png', 'hazirlaStatus');
 }
 
 function renderGrid() {
@@ -1898,7 +2118,13 @@ function centerActive() {
   renderCanvas();
 }
 function toggleObj(key) { objs[key].visible = !objs[key].visible; renderCanvas(); }
-function selectObj(key) { activeObj = key; loadFxFromObj(key); renderCanvas(); }
+function selectObj(key) {
+  activeObj = key;
+  loadFxFromObj(key);
+  renderCanvas();
+  var card = document.getElementById('urunGorseliCard');
+  if (card) card.classList.toggle('card-active', key === 'product');
+}
 
 function bringForward() {
   if (!activeObj) return;
