@@ -164,15 +164,16 @@ Deno.serve(async (req: Request) => {
       const { productContentId, videoUrl, title } = body;
       if (!productContentId || !videoUrl) return json({ error: 'productContentId and videoUrl required' }, 400);
       const BASE_VIDEO = 'https://apigw.trendyol.com/integration/video';
+      const reqBody = {
+        title: (title || 'Ürün Tanıtım Videosu').slice(0, 50),
+        videoUrl,
+        productContentIds: [productContentId],
+        videoContentType: 'PRODUCT_PROMOTION',
+      };
       const res = await fetch(`${BASE_VIDEO}/sellers/${SELLER_ID}/videos`, {
         method: 'POST',
         headers: { Authorization: AUTH, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: (title || 'Ürün Tanıtım Videosu').slice(0, 50),
-          videoUrl,
-          productContentIds: [productContentId],
-          videoContentType: 'PRODUCT_PROMOTION',
-        }),
+        body: JSON.stringify(reqBody),
       });
       return json(await res.json());
     }

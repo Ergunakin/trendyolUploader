@@ -2485,7 +2485,6 @@ function tyChangePage(dir) {
 }
 
 function renderTyProducts(products) {
-  if (products.length) console.log('[TY] İlk ürün ham verisi:', JSON.stringify(products[0], null, 2));
   var el = document.getElementById('tyProductList');
   el.innerHTML = '';
   if (!products.length) {
@@ -2655,7 +2654,6 @@ function renderTyProducts(products) {
           fetch(PROXY + '?action=upload-video&filename=' + encodeURIComponent(file.name))
           .then(function(r) { return r.json(); })
           .then(function(d) {
-            console.log('[Video] signed URL yanıtı:', d);
             if (d.error) throw new Error(d.error + (d.detail ? ': ' + d.detail : ''));
             // 2) Direkt storage'a yükle
             videoBtn.textContent = 'Storage\'a yükleniyor…';
@@ -2664,7 +2662,6 @@ function renderTyProducts(products) {
               headers: { 'Content-Type': file.type },
               body: file
             }).then(function(r) {
-              console.log('[Video] storage upload status:', r.status);
               if (!r.ok) return r.text().then(function(t){ throw new Error('Storage hatası ' + r.status + ': ' + t); });
               return { publicUrl: d.publicUrl };
             });
@@ -2678,7 +2675,6 @@ function renderTyProducts(products) {
               body: JSON.stringify({ productContentId: productId, videoUrl: videoUrl, title: productTitle })
             }).then(function(r) { return r.json(); })
               .then(function(d) {
-                console.log('[Video] Trendyol API yanıtı:', d);
                 return d;
               });
           })
