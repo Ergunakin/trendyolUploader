@@ -1658,6 +1658,7 @@ function loadSavedComposition(i) {
   function loadImg(src, cb) {
     if (!src) { cb(null); return; }
     var img = new Image();
+    img.crossOrigin = 'anonymous';
     img.onload = function() { cb(img); };
     img.onerror = function() { cb(null); };
     img.src = src;
@@ -2484,6 +2485,7 @@ function tyChangePage(dir) {
 }
 
 function renderTyProducts(products) {
+  if (products.length) console.log('[TY] İlk ürün ham verisi:', JSON.stringify(products[0], null, 2));
   var el = document.getElementById('tyProductList');
   el.innerHTML = '';
   if (!products.length) {
