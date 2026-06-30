@@ -475,7 +475,10 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
         </div>
       </div>
       <div id="savedSection">
-        <div id="savedGrid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:10px;margin-top:10px;align-items:start"></div>
+        <div id="savedGrid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:10px;margin-top:10px;align-items:start;min-height:80px;border:2px dashed transparent;border-radius:8px;transition:border-color .15s"
+          ondragover="event.preventDefault();this.style.borderColor='var(--primary)'"
+          ondragleave="this.style.borderColor='transparent'"
+          ondrop="onDropToSavedGrid(event);this.style.borderColor='transparent'"></div>
         <div id="savedPager" style="display:none;align-items:center;justify-content:center;gap:12px;margin-top:10px">
           <button class="btn sm" id="savedPrevBtn" onclick="savedChangePage(-1)">&#8592;</button>
           <span id="savedPageInfo" style="font-size:12px;color:#888"></span>
@@ -498,7 +501,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
         </div>
       </div>
       <div id="gallerySection">
-        <p class="muted" style="margin:10px 0 6px;font-size:12px">Daha önce hazırlanmış görseller — seçmek için tıkla</p>
+        <p class="muted" style="margin:10px 0 6px;font-size:12px">Daha önce hazırlanmış görseller — tıkla veya sürükle → Trendyola Yüklenecek</p>
         <div id="gallerySt"></div>
         <div id="galleryGrid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:10px;margin-top:8px"></div>
         <div id="galleryPager" style="display:none;align-items:center;justify-content:center;gap:12px;margin-top:10px">
@@ -742,12 +745,14 @@ function renderGalleryPage() {
 
   pageFiles.forEach(function(f) {
     var url = SUPA+'/storage/v1/object/public/trendyol/products/'+f.name;
-    var isSelected = s.urls.indexOf(url) !== -1;
+    var isInQueue = savedImages.some(function(it){ return it && (it.isGalleryItem) && it.dataUrl === url; });
 
     var wrap = document.createElement('div');
-    wrap.className = 'gallery-thumb' + (isSelected ? ' img-selected' : '');
+    wrap.className = 'gallery-thumb' + (isInQueue ? ' img-selected' : '');
     wrap.style.cssText = 'position:relative;aspect-ratio:2/3';
     wrap.title = f.name;
+    wrap.draggable = true;
+    wrap.ondragstart = (function(imgUrl){ return function(e){ e.dataTransfer.setData('text/plain', imgUrl); e.dataTransfer.effectAllowed = 'copy'; }; })(url);
 
     var img = document.createElement('img');
     img.src = url; img.alt = f.name; img.loading = 'lazy';
@@ -775,16 +780,19 @@ function renderGalleryPage() {
     })(f.name, wrap, url);
     wrap.appendChild(delBtn);
 
-    if (isSelected) {
+    if (isInQueue) {
       var selBadge = document.createElement('div');
       selBadge.style.cssText = 'position:absolute;bottom:4px;left:4px;background:var(--primary);color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px';
-      selBadge.textContent = '✓ Ürüne Eklendi';
+      selBadge.textContent = '✓ Kuyruğa Eklendi';
       wrap.appendChild(selBadge);
     }
 
-    wrap.onclick = (function(imgUrl, fname) {
-      return function() { selectGalleryThumb(wrap, imgUrl, fname); };
-    })(url, f.name);
+    wrap.onclick = (function(imgUrl, wrapEl, fname) {
+      return function() {
+        selectGalleryThumb(wrapEl, imgUrl, fname);
+        addGalleryToQueue(imgUrl);
+      };
+    })(url, wrap, f.name);
 
     grid.appendChild(wrap);
   });
@@ -1003,13 +1011,15 @@ function renderStep3Preview() {
     items.push({ dataUrl: tmpCanvas.toDataURL('image/png'), label: 'Arka plan kaldırılmış' });
   }
 
-  // 2) Kaydedilmiş kompozisyonlar
-  savedImages.forEach(function(dataUrl, i) {
-    items.push({ dataUrl: dataUrl, label: 'Kompozisyon ' + (i+1) });
+  // 2) Kaydedilmiş kompozisyonlar + galeriden eklenenler
+  savedImages.forEach(function(item, i) {
+    var dataUrl = (item && item.dataUrl) ? item.dataUrl : item;
+    var label = (item && item.isGalleryItem) ? ('Hazır ' + (i+1)) : ('Kompozisyon ' + (i+1));
+    items.push({ dataUrl: dataUrl, label: label });
   });
 
-  // 3) Storage'a yüklenmiş URL'ler (galeriden seçilenler)
-  if (!objs.product.img && !savedImages.length && !s.urls.length) {
+  // 3) Boş kontrol
+  if (!objs.product.img && !savedImages.length) {
     if (empty) empty.style.display = 'block';
     return;
   }
@@ -1037,24 +1047,6 @@ function renderStep3Preview() {
     row.appendChild(wrap);
   });
 
-  // Storage URL'lerini de göster
-  s.urls.forEach(function(url, i) {
-    var wrap = document.createElement('div');
-    wrap.style.cssText = 'flex:0 0 auto;width:100px;display:flex;flex-direction:column;gap:4px';
-
-    var imgEl = document.createElement('img');
-    imgEl.src = url;
-    imgEl.crossOrigin = 'anonymous';
-    imgEl.style.cssText = 'width:100px;height:150px;object-fit:cover;border-radius:7px;border:1px solid #e5e5e5;background:#f5f5f5';
-
-    var lbl = document.createElement('p');
-    lbl.textContent = 'Yüklendi ' + (i+1);
-    lbl.style.cssText = 'font-size:10px;color:#16a34a;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-
-    wrap.appendChild(imgEl);
-    wrap.appendChild(lbl);
-    row.appendChild(wrap);
-  });
 }
 
 // ── FILE INPUT ────────────────────────────────────────────────────────────
@@ -2338,26 +2330,35 @@ function renderSavedPage() {
 
   pageItems.forEach(function(item, pi) {
     var i = start + pi;
-    var dataUrl = item.dataUrl || item;
+    var dataUrl = (item && item.dataUrl) ? item.dataUrl : item;
+    var isGallery = item && item.isGalleryItem;
 
     var card = document.createElement('div');
-    card.style.cssText = 'border-radius:8px;border:1px solid var(--border);background:#fff;overflow:hidden;transition:box-shadow .15s';
+    card.style.cssText = 'border-radius:8px;border:1px solid '+(isGallery?'var(--primary)':'var(--border)')+';background:#fff;overflow:hidden;transition:box-shadow .15s';
     card.onmouseenter = function(){ this.style.boxShadow = 'var(--shadow-md)'; };
     card.onmouseleave = function(){ this.style.boxShadow = ''; };
 
     var img = document.createElement('img');
     img.src = dataUrl;
+    if (isGallery) img.crossOrigin = 'anonymous';
     img.style.cssText = 'width:100%;aspect-ratio:2/3;object-fit:cover;display:block';
     card.appendChild(img);
 
     var bar = document.createElement('div');
     bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:4px 5px;background:#f8fafc;border-top:1px solid var(--border);gap:3px';
 
-    var ed = document.createElement('button');
-    ed.style.cssText = 'flex:1;background:var(--primary);border:none;color:#fff;font-size:10px;padding:4px 3px;border-radius:4px;cursor:pointer;white-space:nowrap;font-family:inherit';
-    ed.textContent = '✎ Düzenle';
-    ed.onclick = (function(idx) { return function() { loadSavedComposition(idx); }; })(i);
-    bar.appendChild(ed);
+    if (!isGallery) {
+      var ed = document.createElement('button');
+      ed.style.cssText = 'flex:1;background:var(--primary);border:none;color:#fff;font-size:10px;padding:4px 3px;border-radius:4px;cursor:pointer;white-space:nowrap;font-family:inherit';
+      ed.textContent = '✎ Düzenle';
+      ed.onclick = (function(idx) { return function() { loadSavedComposition(idx); }; })(i);
+      bar.appendChild(ed);
+    } else {
+      var lbl = document.createElement('span');
+      lbl.style.cssText = 'flex:1;font-size:9px;color:var(--primary);font-weight:600;padding:2px 3px';
+      lbl.textContent = '🖼 Hazır';
+      bar.appendChild(lbl);
+    }
 
     var dl = document.createElement('a');
     dl.href = dataUrl;
@@ -2441,6 +2442,10 @@ function uploadSaved() {
   s.urls = [];
   var promises = savedImages.map(function(item, i) {
     var dataUrl = item.dataUrl || item;
+    if (item.isGalleryItem || (typeof dataUrl === 'string' && dataUrl.startsWith('http'))) {
+      s.urls.push(dataUrl);
+      return Promise.resolve();
+    }
     var b64   = dataUrl.split(',')[1];
     var bytes = Uint8Array.from(atob(b64), function(c) { return c.charCodeAt(0); });
     var blob  = new Blob([bytes], {type:'image/jpeg'});
@@ -3653,6 +3658,29 @@ function galleryBarAction(action) {
         setSt('gallerySt','err','Silinemedi');
       }
     });
+  }
+}
+
+function addGalleryToQueue(url) {
+  var idx = savedImages.findIndex(function(it){ return it && it.isGalleryItem && it.dataUrl === url; });
+  if (idx !== -1) {
+    savedImages.splice(idx, 1);
+  } else {
+    savedImages.push({ dataUrl: url, isGalleryItem: true, snap: null });
+  }
+  updateSavedGrid();
+  renderGalleryPage();
+}
+
+function onDropToSavedGrid(e) {
+  e.preventDefault();
+  var url = e.dataTransfer.getData('text/plain');
+  if (!url) return;
+  var alreadyIn = savedImages.some(function(it){ return it && it.isGalleryItem && it.dataUrl === url; });
+  if (!alreadyIn) {
+    savedImages.push({ dataUrl: url, isGalleryItem: true, snap: null });
+    updateSavedGrid();
+    renderGalleryPage();
   }
 }
 
