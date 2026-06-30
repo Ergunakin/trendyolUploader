@@ -222,6 +222,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px}
               style="display:block;width:400px;border:1px solid #e5e5e5;border-radius:8px;cursor:crosshair;touch-action:none"
               onmousedown="onMouseDown(event)" onmousemove="onMouseMove(event)"
               onmouseup="onMouseUp(event)"    onmouseleave="onMouseUp(event)"
+              ondblclick="onDblClick(event)"
               ontouchstart="onTouchStart(event)" ontouchmove="onTouchMove(event)" ontouchend="onMouseUp(event)">
             </canvas>
 
@@ -1750,6 +1751,65 @@ function onMouseMove(e) {
 }
 
 function onMouseUp() { dragMode = null; }
+
+function onDblClick(e) {
+  var pt = canvasXY(e);
+  var x = pt.x, y = pt.y;
+  for (var ti = texts.length - 1; ti >= 0; ti--) {
+    var t = texts[ti];
+    if (x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h) {
+      startInlineEdit(t);
+      return;
+    }
+  }
+}
+
+function startInlineEdit(t) {
+  var canvas = document.getElementById('editCanvas');
+  var rect = canvas.getBoundingClientRect();
+  // canvas logical → screen scale
+  var scaleX = rect.width / CW;
+  var scaleY = rect.height / CH;
+
+  var inp = document.createElement('input');
+  inp.type = 'text';
+  inp.value = t.text;
+  inp.style.cssText = [
+    'position:fixed',
+    'left:' + (rect.left + t.x * scaleX) + 'px',
+    'top:'  + (rect.top  + t.y * scaleY) + 'px',
+    'width:' + Math.max(t.w * scaleX, 80) + 'px',
+    'height:' + (t.h * scaleY) + 'px',
+    'font-size:' + (t.fontSize * scaleY) + 'px',
+    'font-family:sans-serif',
+    'color:' + (t.color || '#000'),
+    'background:rgba(255,255,255,0.85)',
+    'border:2px solid rgba(0,100,255,0.7)',
+    'border-radius:3px',
+    'padding:0 6px',
+    'box-sizing:border-box',
+    'outline:none',
+    'z-index:9999',
+  ].join(';');
+
+  document.body.appendChild(inp);
+  inp.focus();
+  inp.select();
+
+  function commit() {
+    var val = inp.value.trim();
+    if (val) t.text = val;
+    if (inp.parentNode) inp.parentNode.removeChild(inp);
+    renderCanvas();
+  }
+
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', function(ev) {
+    if (ev.key === 'Enter') { ev.preventDefault(); commit(); }
+    if (ev.key === 'Escape') { if (inp.parentNode) inp.parentNode.removeChild(inp); renderCanvas(); }
+  });
+}
+
 function onTouchStart(e) { e.preventDefault(); onMouseDown(e); }
 function onTouchMove(e)  { e.preventDefault(); onMouseMove(e); }
 
