@@ -469,7 +469,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
         <div style="display:flex;align-items:center;gap:8px">
           <button class="btn sm primary" onclick="event.stopPropagation();uploadSaved()" id="uploadSavedBtn" style="display:none">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Tümünü Yükle
+            Tümünü Depoya Yükle
           </button>
           <span id="savedChevron" style="font-size:14px;color:#94a3b8;transition:transform .2s">▼</span>
         </div>
@@ -2306,6 +2306,11 @@ function updateSavedGrid() {
   // Sayfa sınırını kontrol et
   var totalPages = Math.max(1, Math.ceil(savedImages.length / SAVED_PER_PAGE));
   if (savedCurrentPage >= totalPages) savedCurrentPage = totalPages - 1;
+  // Galeri URL'lerini s.urls ile senkronize et (yükleme gerekmez)
+  var galleryUrls = savedImages.filter(function(it){ return it && it.isGalleryItem; }).map(function(it){ return it.dataUrl; });
+  // s.urls'deki sadece gallery'den gelenleri temizle ve yeniden ekle (upload edilmiş olanları koru)
+  s.urls = s.urls.filter(function(u){ return !galleryAllFiles.some(function(f){ return u.indexOf(f.name) !== -1; }); });
+  galleryUrls.forEach(function(u){ if (s.urls.indexOf(u) === -1) s.urls.push(u); });
   renderSavedPage();
 }
 
