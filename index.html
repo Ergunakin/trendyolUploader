@@ -1033,6 +1033,28 @@ function cropProduct() {
     dlBtn.style.cssText = 'font-size:11px;padding:4px 10px;text-decoration:none';
     dlBtn.textContent = '↓ İndir';
     wrap.appendChild(dlBtn);
+
+    // Editöre yükle butonu
+    var loadCroppedBtn = document.createElement('button');
+    loadCroppedBtn.className = 'btn';
+    loadCroppedBtn.style.cssText = 'font-size:11px;padding:4px 10px';
+    loadCroppedBtn.textContent = '+ Editöre Yükle';
+    loadCroppedBtn.onclick = function() {
+      var ci = new Image();
+      ci.crossOrigin = 'anonymous';
+      ci.onload = function() {
+        objs.product.img = ci;
+        var ratio = ci.width / ci.height;
+        objs.product.h = Math.round(CH * 0.72);
+        objs.product.w = Math.round(objs.product.h * ratio);
+        objs.product.x = Math.round((CW - objs.product.w) / 2);
+        objs.product.y = Math.round(CH * 0.12);
+        renderCanvas();
+        setSt('removeBgSt', 'ok', '✓ Kırpılmış görsel editöre yüklendi');
+      };
+      ci.src = out.toDataURL('image/png');
+    };
+    wrap.appendChild(loadCroppedBtn);
     prevEl.appendChild(wrap);
 
     setSt('removeBgSt', 'ok', '✓ Kırpıldı: ' + cw + '×' + ch + 'px');
