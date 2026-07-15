@@ -2344,9 +2344,37 @@ function renderSavedPage() {
     var isGallery = item && item.isGalleryItem;
 
     var card = document.createElement('div');
-    card.style.cssText = 'border-radius:8px;border:1px solid '+(isGallery?'var(--primary)':'var(--border)')+';background:#fff;overflow:hidden;transition:box-shadow .15s';
+    card.draggable = true;
+    card.dataset.savedIdx = String(i);
+    card.style.cssText = 'position:relative;border-radius:8px;border:1px solid '+(isGallery?'var(--primary)':'var(--border)')+';background:#fff;overflow:hidden;transition:box-shadow .15s,outline .1s;cursor:grab';
     card.onmouseenter = function(){ this.style.boxShadow = 'var(--shadow-md)'; };
     card.onmouseleave = function(){ this.style.boxShadow = ''; };
+    card.ondragstart = (function(idx){ return function(e){
+      savedDragSrcIdx = idx;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('x-saved-idx', String(idx));
+      e.stopPropagation();
+    }; })(i);
+    card.ondragover = function(e){
+      if (savedDragSrcIdx === null || savedDragSrcIdx === i) return;
+      e.preventDefault(); e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+      this.style.outline = '2px solid var(--primary)';
+    };
+    card.ondragleave = function(){ this.style.outline = ''; };
+    card.ondrop = (function(idx){ return function(e){
+      e.preventDefault(); e.stopPropagation();
+      this.style.outline = '';
+      if (savedDragSrcIdx !== null && savedDragSrcIdx !== idx) reorderSaved(savedDragSrcIdx, idx);
+      savedDragSrcIdx = null;
+    }; })(i);
+    card.ondragend = function(){ savedDragSrcIdx = null; };
+
+    // Sıra numarası rozeti
+    var badge = document.createElement('div');
+    badge.style.cssText = 'position:absolute;top:4px;left:4px;background:rgba(0,0,0,0.55);color:#fff;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2';
+    badge.textContent = String(i + 1);
+    card.appendChild(badge);
 
     var img = document.createElement('img');
     img.src = dataUrl;
@@ -2399,6 +2427,14 @@ function renderSavedPage() {
 
 function removeSaved(i) { savedImages.splice(i,1); updateSavedGrid(); }
 
+var savedDragSrcIdx = null;
+
+function reorderSaved(from, to) {
+  var item = savedImages.splice(from, 1)[0];
+  savedImages.splice(to, 0, item);
+  updateSavedGrid();
+}
+
 function loadSavedComposition(i) {
   var item = savedImages[i];
   if (!item || !item.snap) return;
@@ -2449,11 +2485,11 @@ function loadSavedComposition(i) {
 function uploadSaved() {
   if (!savedImages.length) { setSt('uploadSt','err','Kaydedilmis gorsel yok'); return; }
   setSt('uploadSt','load','<span class="spin">&#x27F3;</span> Yukleniyor...');
-  s.urls = [];
+  var result = new Array(savedImages.length).fill(null);
   var promises = savedImages.map(function(item, i) {
     var dataUrl = item.dataUrl || item;
     if (item.isGalleryItem || (typeof dataUrl === 'string' && dataUrl.startsWith('http'))) {
-      s.urls.push(dataUrl);
+      result[i] = dataUrl;
       return Promise.resolve();
     }
     var b64   = dataUrl.split(',')[1];
@@ -2465,10 +2501,11 @@ function uploadSaved() {
       headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'image/jpeg','x-upsert':'true'},
       body: blob
     }).then(function(res) {
-      if (res.ok) s.urls.push(SUPA+'/storage/v1/object/public/'+path);
+      if (res.ok) result[i] = SUPA+'/storage/v1/object/public/'+path;
     }).catch(function(e) { console.error(e); });
   });
   Promise.all(promises).then(function() {
+    s.urls = result.filter(Boolean);
     if (s.urls.length === savedImages.length)
       setSt('uploadSt','ok','&#x2713; '+s.urls.length+' gorsel yuklendi');
     else
@@ -3684,6 +3721,8 @@ function addGalleryToQueue(url) {
 
 function onDropToSavedGrid(e) {
   e.preventDefault();
+  // Ignore intra-savedGrid reorder drops (handled by card-level ondrop)
+  if (e.dataTransfer.getData('x-saved-idx') !== '') return;
   var url = e.dataTransfer.getData('text/plain');
   if (!url) return;
   var alreadyIn = savedImages.some(function(it){ return it && it.isGalleryItem && it.dataUrl === url; });
