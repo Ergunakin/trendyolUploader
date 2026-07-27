@@ -2,15 +2,15 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const SELLER_ID    = '354534';
-const API_KEY      = 'SI5R4qDhlJ6SyqRsiLgy';
-const API_SECRET   = 'Z1O5HWGqRdDtm5xbhVFq';
+const API_KEY      = Deno.env.get('TY_API_KEY') ?? '';
+const API_SECRET   = Deno.env.get('TY_API_SECRET') ?? '';
 const AUTH         = 'Basic ' + btoa(API_KEY + ':' + API_SECRET);
 const BASE         = 'https://apigw.trendyol.com/integration/product';
 const BASE_SAPIGW  = 'https://apigw.trendyol.com/sapigw/suppliers';
 const CLAUDE_KEY   = Deno.env.get('CLAUDE_API_KEY') ?? '';
 const SUPA_URL     = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPA_KEY     = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const CLIPDROP_KEY = '3ebacc47355ce0c5953bcf2d397f28097da39afe563e54c8eb0b4aa7f4a45abd4805c685303e7bf0b1b7e72809a45111';
+const CLIPDROP_KEY = Deno.env.get('CLIPDROP_KEY') ?? '';
 
 const MAAT_BRAND = { id: 2922973, name: 'MAAT SERAMİK' };
 
@@ -42,6 +42,8 @@ Deno.serve(async (req: Request) => {
   const action = url.searchParams.get('action');
 
   try {
+
+    if (!API_KEY || !API_SECRET) return json({ error: 'TY_API_KEY / TY_API_SECRET env vars not set' }, 500);
 
     if (action === 'brand') {
       return json({ brand: MAAT_BRAND, raw: [MAAT_BRAND] });
@@ -117,10 +119,20 @@ Deno.serve(async (req: Request) => {
 
       const params = new URLSearchParams({ page, size });
       if (barcode) params.set('barcode', barcode);
-      if (status === 'APPROVED') params.set('approved', 'true');
-      if (status === 'REJECTED') params.set('approved', 'false');
-      if (status === 'WAITING')  params.set('onSale', 'false');
-      if (status === 'PASSIVE')  params.set('blacklisted', 'true');
+      // API tarafında kaba filtre; kesin ayrım aşağıda statusOf ile yapılır
+      if (status === 'APPROVED' || status === 'PASSIVE') params.set('approved', 'true');
+      if (status === 'WAITING'  || status === 'REJECTED') params.set('approved', 'false');
+
+      // Stok 0 / arşivli ürün "Satışta" sayılmaz
+      const statusOf = (p: any) => {
+        const qty = p.quantity ?? 0;
+        const onSale = p.onSale ?? (p.approved && qty > 0);
+        if (p.blacklisted || p.archived) return 'PASSIVE';
+        if (p.rejected) return 'REJECTED';
+        if (p.approved && onSale && qty > 0) return 'APPROVED';
+        if (p.approved) return 'PASSIVE';
+        return 'WAITING';
+      };
 
       const lastErrors: any[] = [];
       for (const base of endpoints) {
@@ -128,7 +140,8 @@ Deno.serve(async (req: Request) => {
         const res  = await fetch(endpoint, { headers: { Authorization: AUTH } });
         const data = await res.json();
         if (data && (Array.isArray(data.content) || typeof data.totalElements === 'number')) {
-          const products: any[] = data.content || [];
+          let products: any[] = data.content || [];
+          if (status) products = products.filter((p: any) => statusOf(p) === status);
           const supaAdmin = createClient(SUPA_URL, SUPA_KEY);
 
           // Upsert products into DB
@@ -139,7 +152,7 @@ Deno.serve(async (req: Request) => {
                 barcode:            p.barcode,
                 title:              p.title,
                 product_main_id:    p.productMainId,
-                trendyol_status:    p.blacklisted ? 'PASSIVE' : p.rejected ? 'REJECTED' : (p.approved || p.onSale) ? 'APPROVED' : 'WAITING',
+                trendyol_status:    statusOf(p),
               })),
               { onConflict: 'product_content_id', ignoreDuplicates: false }
             );
@@ -293,6 +306,7 @@ SADECE JSON döndür (başka hiçbir şey yazma):
       const body = await req.json();
       const { imageBase64, mimeType } = body;
       if (!imageBase64) return json({ error: 'imageBase64 required' }, 400);
+      if (!CLIPDROP_KEY) return json({ error: 'CLIPDROP_KEY env var not set' }, 500);
       const bytes = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
       const blob  = new Blob([bytes], { type: mimeType || 'image/jpeg' });
       const form  = new FormData();

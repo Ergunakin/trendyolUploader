@@ -68,6 +68,9 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
 /* TAGS */
 .tag{font-size:11px;padding:2px 7px;border-radius:5px;font-weight:500}
 .tag.req{background:#fee2e2;color:#dc2626}
+/* ZORUNLU ALAN UYARISI */
+.miss-field{border-color:#dc2626 !important;background:#fef2f2 !important;box-shadow:0 0 0 3px rgba(220,38,38,.12)}
+#reqToast{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:12px 18px;border-radius:10px;font-size:13px;line-height:1.6;box-shadow:0 8px 24px rgba(0,0,0,.14);max-width:420px;display:none}
 /* STATUS BARS */
 .sbar{padding:9px 12px;border-radius:8px;font-size:12px;display:flex;align-items:flex-start;gap:8px;margin-top:6px;line-height:1.5}
 .sbar.ok{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
@@ -980,7 +983,78 @@ function markAttrFilled(input) {
     input.style.borderColor = '';
   }
 }
+// ── ZORUNLU ALAN KONTROLÜ (Gönder sekmesine geçmeden) ────────────────────
+function clearReqHighlights() {
+  document.querySelectorAll('.miss-field').forEach(function(el){ el.classList.remove('miss-field'); });
+}
+
+function showReqToast(missing) {
+  var t = document.getElementById('reqToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'reqToast';
+    document.body.appendChild(t);
+  }
+  var list = missing.slice(0, 6).join(', ') + (missing.length > 6 ? ' … (+' + (missing.length - 6) + ')' : '');
+  t.innerHTML = '<strong>&#x26A0; Eksik zorunlu alanlar:</strong><br>' + list;
+  t.style.display = 'block';
+  clearTimeout(showReqToast._timer);
+  showReqToast._timer = setTimeout(function(){ t.style.display = 'none'; }, 5000);
+}
+
+function validateRequiredForSend() {
+  clearReqHighlights();
+  var missing = [], markIds = [];
+
+  [['f_title','Ürün adı'],['f_barcode','Barkod'],['f_mainId','Model kodu'],
+   ['f_qty','Stok adedi'],['f_list','Liste fiyatı'],['f_sale','Satış fiyatı'],
+   ['f_desi','Desi'],['f_desc','Açıklama']].forEach(function(f) {
+    var el = document.getElementById(f[0]);
+    if (!el || !String(el.value).trim()) { missing.push(f[1]); markIds.push(f[0]); }
+  });
+
+  (s.attrs || []).forEach(function(a) {
+    if (!a.required) return;
+    var id = a.attribute.id;
+    if (a.allowCustom) {
+      var el = document.getElementById('attr_' + id);
+      var val = el ? el.value.trim() : '';
+      if (!val) { var av = autoVal(a); if (av && av !== '__HARDCODE_MENSEI__') val = av; }
+      if (!val) { missing.push(a.attribute.name); markIds.push('attr_' + id); }
+    } else {
+      var hidden = document.getElementById('attr_' + id);
+      // Yazılmış ama seçilmemiş metni önce eşleştirmeyi dene
+      if ((!hidden || !hidden.value.trim()) && !resolveAttrText(id)) {
+        missing.push(a.attribute.name);
+        markIds.push(document.getElementById('attr_search_' + id) ? 'attr_search_' + id : 'mat_btns_' + id);
+      }
+    }
+  });
+
+  if (!missing.length) return true;
+
+  // Alanların görünmesi için 3. adıma dön, sonra vurgula (render sonrası)
+  var p3 = document.getElementById('p3');
+  if (!p3 || p3.className.indexOf('active') === -1) goStep(3);
+  setTimeout(function() {
+    var first = null;
+    markIds.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) { el.classList.add('miss-field'); if (!first) first = el; }
+    });
+    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 60);
+  showReqToast(missing);
+  return false;
+}
+
+// Alan doldurulunca vurguyu kaldır
+document.addEventListener('input', function(e) {
+  if (e.target && e.target.classList) e.target.classList.remove('miss-field');
+});
+
 function goStep(n) {
+  if (n === 4 && !validateRequiredForSend()) return;
   [1,2,3,4,5,6].forEach(function(i) {
     var el_s = document.getElementById('s'+i);
     var el_p = document.getElementById('p'+i);
@@ -2688,16 +2762,15 @@ function renderAttrFields() {
   if (!req.length) { el.innerHTML='<p class="muted">Onceki adimda kategori secin</p>'; return; }
   var all = req.concat(opt); // tüm opsiyoneller
 
-  // Mevcut seçimleri kaydet
+  // Mevcut seçimleri kaydet — seçilmemiş ama yazılmış metinler de korunur
   var savedValues = {};
   all.forEach(function(a) {
     var id = a.attribute.id;
     var hidden = document.getElementById('attr_' + id);
     var search = document.getElementById('attr_search_' + id);
-    if (hidden && hidden.value) savedValues[id] = {
-      valueId: hidden.value,
-      valueName: search ? search.value : ''
-    };
+    var hv = hidden ? hidden.value : '';
+    var sv = search ? search.value : '';
+    if (hv || sv) savedValues[id] = { valueId: hv, valueName: sv };
   });
 
   // Zorunlu ve opsiyonel gruplarını ayır
@@ -2725,6 +2798,8 @@ function renderAttrFields() {
       selectAttrValue(id, parseInt(savedValues[id].valueId), savedValues[id].valueName);
       return;
     }
+    // Yazılmış ama seçilmemiş metin — eşleştirmeyi dene
+    if (savedValues[id] && savedValues[id].valueName) { resolveAttrText(id); return; }
     var auto = autoVal(a);
     if (auto) searchAttrValuesAuto(id, s.catId, auto);
   });
@@ -2885,20 +2960,23 @@ function buildAttrRow(a, savedValues) {
         +'</div>';
     }
 
-    // SERBEST METİN
+    // SERBEST METİN — yeniden çizimde yazılmış metin korunur
     if (a.allowCustom) {
+      var savedTxt = (savedValues && savedValues[attrId] && savedValues[attrId].valueId) ? savedValues[attrId].valueId : '';
+      var txtVal = savedTxt || (isAuto ? auto : '');
       return '<div class="attr-row">'
         +'<span class="attr-name">'+a.attribute.name+' '+(a.required?'<span class="tag req" style="font-size:10px">zorunlu</span>':'')+'</span>'
         +'<div style="position:relative;flex:1">'
-        +'<input type="text" id="attr_'+attrId+'" value="'+(isAuto?auto:'')+'" placeholder="Serbest metin" '
-        +'style="width:100%;padding:7px 10px;font-size:13px;border:1px solid '+(isAuto?'#bbf7d0':'#ddd')+';border-radius:7px;font-family:inherit;background:'+(isAuto?'#f0fdf4':'#fff')+';padding-right:28px"'
+        +'<input type="text" id="attr_'+attrId+'" value="'+String(txtVal).replace(/"/g,'&quot;')+'" placeholder="Serbest metin" '
+        +'style="width:100%;padding:7px 10px;font-size:13px;border:1px solid '+(txtVal?'#bbf7d0':'#ddd')+';border-radius:7px;font-family:inherit;background:'+(txtVal?'#f0fdf4':'#fff')+';padding-right:28px"'
         +' oninput="markAttrFilled(this)">'
-        +'<span id="attr_check_'+attrId+'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);color:#16a34a;font-weight:bold;display:'+(isAuto&&auto?'block':'none')+'">&#x2713;</span>'
+        +'<span id="attr_check_'+attrId+'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);color:#16a34a;font-weight:bold;display:'+(txtVal?'block':'none')+'">&#x2713;</span>'
         +'</div>'
         +'</div>';
     }
 
-    // COMBOBOX — açılır liste, yazmadan da görünür
+    // COMBOBOX — açılır liste, yazmadan da görünür; yazılmış metin yeniden çizimde korunur
+    var savedName = (savedValues && savedValues[attrId] && savedValues[attrId].valueName) ? savedValues[attrId].valueName : '';
     return '<div class="attr-row" style="flex-direction:column;align-items:flex-start;gap:4px">'
       +'<span class="attr-name">'+a.attribute.name+' '
       +(a.required?'<span class="tag req" style="font-size:10px">zorunlu</span>':'')+' '
@@ -2906,10 +2984,11 @@ function buildAttrRow(a, savedValues) {
       +'</span>'
       +'<div style="position:relative;width:100%">'
       +'<input type="text" id="attr_search_'+attrId+'" '
-      +'value="'+(isAuto?auto:'')+'" '
+      +'value="'+String(savedName || (isAuto?auto:'')).replace(/"/g,'&quot;')+'" '
       +'placeholder="Tikla veya ara..." '
       +'style="width:100%;padding:7px 30px 7px 10px;font-size:13px;border:1px solid '+(isAuto?'#bbf7d0':'#ddd')+';border-radius:7px;font-family:inherit;background:'+(isAuto?'#f0fdf4':'#fff')+';cursor:pointer"'
-      +' oninput="searchAttrValues('+attrId+','+s.catId+',this.value)"'
+      +' oninput="attrSearchInput('+attrId+','+s.catId+',this)"'
+      +' onchange="resolveAttrText('+attrId+')"'
       +' onclick="openAttrDropdown('+attrId+','+s.catId+')"'
       +' onfocus="openAttrDropdown('+attrId+','+s.catId+')">'
       +'<span id="attr_combo_icon_'+attrId+'" onclick="openAttrDropdown('+attrId+','+s.catId+')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:12px;pointer-events:auto;color:'+(isAuto?'#16a34a':'#aaa')+'">'+(isAuto?'&#x2713;':'&#9660;')+'</span>'
@@ -2942,6 +3021,41 @@ function renderMateryalButtons(container, attrId, matList, savedValues) {
   });
 }
 
+// Combobox'a yazı yazılınca: eski seçimi temizle + arama yap
+function attrSearchInput(attrId, catId, el) {
+  var hidden = document.getElementById('attr_' + attrId);
+  if (hidden) hidden.value = '';
+  var icon = document.getElementById('attr_combo_icon_' + attrId);
+  if (icon) { icon.innerHTML = '&#9660;'; icon.style.color = '#aaa'; }
+  el.style.background = '#fff';
+  el.style.borderColor = '#ddd';
+  searchAttrValues(attrId, catId, el.value);
+}
+
+// Yazılmış metni listeden değere eşle (tam eşleşme, yoksa tek başlangıç eşleşmesi)
+function resolveAttrText(attrId) {
+  var hidden = document.getElementById('attr_' + attrId);
+  var search = document.getElementById('attr_search_' + attrId);
+  if (!hidden || !search) return false;
+  if (hidden.value) return true;
+  var q = (search.value || '').trim();
+  if (!q) return false;
+  var vals = getAttrValuesLocal(attrId, '');
+  if (!vals || !vals.length) return false;
+  var ql = q.toLocaleLowerCase('tr');
+  var norm = function(v){ return (v.attributeValue || '').trim().toLocaleLowerCase('tr'); };
+  var hit = null;
+  var exact = vals.filter(function(v){ return norm(v) === ql; });
+  if (exact.length === 1) hit = exact[0];
+  if (!hit) {
+    var pre = vals.filter(function(v){ return norm(v).indexOf(ql) === 0; });
+    if (pre.length === 1) hit = pre[0];
+  }
+  if (!hit) return false;
+  selectAttrValue(attrId, hit.attributeValueId, hit.attributeValue);
+  return true;
+}
+
 function selectAttrValue(attrId, valueId, valueName) {
   var hidden = document.getElementById('attr_' + attrId);
   var search = document.getElementById('attr_search_' + attrId);
@@ -2949,9 +3063,12 @@ function selectAttrValue(attrId, valueId, valueName) {
   if (hidden) hidden.value = valueId;
   if (search) {
     search.value = valueName;
+    search.classList.remove('miss-field');
     search.style.background  = '#f0fdf4';
     search.style.borderColor = '#bbf7d0';
   }
+  var matCont = document.getElementById('mat_btns_' + attrId);
+  if (matCont) matCont.classList.remove('miss-field');
   // Combo icon -> check
   var icon = document.getElementById('attr_combo_icon_' + attrId);
   if (icon) { icon.textContent = '\u2713'; icon.style.color = '#16a34a'; }
@@ -3211,6 +3328,8 @@ function collectAttrs() {
     } else {
       var hidden = document.getElementById('attr_'+id);
       var hval = hidden ? hidden.value.trim() : '';
+      // Yazılmış ama seçilmemiş metin varsa eşleştir
+      if (!hval && resolveAttrText(id)) hval = hidden ? hidden.value.trim() : '';
       if (hval) {
         var n = parseInt(hval);
         if (!isNaN(n)) result.push({attributeId:id, attributeValueId:n});
@@ -3304,6 +3423,17 @@ function tyChangePage(dir) {
   loadTrendyolProducts(np);
 }
 
+// Ürün durumunu tek yerden tespit et — stok 0 / arşivli ürün "Satışta" sayılmaz
+function tyStatusOf(p) {
+  var qty = p.quantity != null ? p.quantity : 0;
+  var onSale = (p.onSale != null) ? p.onSale : (p.approved && qty > 0);
+  if (p.blacklisted || p.archived) return 'PASSIVE';
+  if (p.rejected)                  return 'REJECTED';
+  if (p.approved && onSale && qty > 0) return 'APPROVED';
+  if (p.approved)                  return 'PASSIVE';
+  return 'WAITING';
+}
+
 function renderTyProducts(products) {
   var el = document.getElementById('tyProductList');
   el.innerHTML = '';
@@ -3364,12 +3494,7 @@ function renderTyProducts(products) {
       'REJECTED': {label:'Reddedildi',    bg:'#fef2f2', color:'#dc2626', border:'#fecaca'},
       'PASSIVE':  {label:'Pasif',         bg:'#f5f5f5', color:'#666',    border:'#e5e5e5'}
     };
-    // Doğru durum tespiti: rejected ayrı bir alan, approved:false sadece "henüz onaylanmadı" demek
-    var st;
-    if (p.blacklisted)       st = 'PASSIVE';
-    else if (p.rejected)     st = 'REJECTED';
-    else if (p.approved || p.onSale) st = 'APPROVED';
-    else                     st = 'WAITING';
+    var st = tyStatusOf(p);
     var stInfo = statusMap[st] || {label: st||'—', bg:'#f5f5f5', color:'#666', border:'#e5e5e5'};
 
     var badge = document.createElement('span');
@@ -3417,11 +3542,7 @@ function renderTyProducts(products) {
             var items = d.content || d.items || [];
             if (!items.length) { btn.innerHTML = '&#x21BB; Durumu yenile'; btn.disabled = false; return; }
             var prod = items[0];
-            var newSt;
-            if (prod.blacklisted)            newSt = 'PASSIVE';
-            else if (prod.rejected)          newSt = 'REJECTED';
-            else if (prod.approved || prod.onSale) newSt = 'APPROVED';
-            else                             newSt = 'WAITING';
+            var newSt = tyStatusOf(prod);
             var stMap = {
               'WAITING':  {label:'Onay Bekliyor', bg:'#fffbeb', color:'#d97706', border:'#fde68a'},
               'APPROVED': {label:'Satışta',       bg:'#f0fdf4', color:'#16a34a', border:'#bbf7d0'},
