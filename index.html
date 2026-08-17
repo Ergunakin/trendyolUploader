@@ -317,7 +317,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
               <div class="toolbar-row">
                 <button class="btn sm" onclick="selectObj('product')">📦 Ürün</button>
                 <button class="btn sm" id="tbAccBtn" onclick="toggleToolbarPanel('tbAccPanel','tbAccBtn')" style="flex:1">✨ Süsleme</button>
-                <button class="btn sm" onclick="selectObj('logo')">🔖 Logo</button>
+                <button class="btn sm" id="tbLogoBtn" onclick="toggleToolbarPanel('tbLogoPanel','tbLogoBtn')" style="flex:1">🔖 Logo</button>
               </div>
               <div class="toolbar-row">
                 <button class="btn sm" id="tbBgBtn" onclick="toggleToolbarPanel('tbBgPanel','tbBgBtn')" style="flex:1">🖼 Arka Plan</button>
@@ -325,6 +325,26 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
                 <button class="btn sm" onclick="addRuler('h')">📐</button>
                 <button class="btn sm" onclick="addTextBox()">T</button>
               </div>
+            </div>
+
+            <!-- Logo dropdown panel -->
+            <div id="tbLogoPanel" style="display:none;border:2px solid var(--primary);border-radius:10px;padding:8px;background:#fafbff">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:10px;font-weight:700;color:var(--primary)">🔖 Logolar</span>
+                <div style="display:flex;gap:4px;align-items:center">
+                  <button class="btn xs" onclick="loadLogos()" style="padding:2px 6px">↺</button>
+                  <button class="btn xs" onclick="selectObj('logo')" style="padding:2px 6px">Seç</button>
+                </div>
+              </div>
+              <input type="file" id="logoFile" accept="image/png,image/svg+xml,image/webp,image/jpeg" style="display:none" onchange="onLogoFilePicked(event)">
+              <button class="btn xs" onclick="document.getElementById('logoFile').click()" style="width:100%;justify-content:center;margin-bottom:6px">⬆ Yeni logo yükle</button>
+              <div id="logoGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:170px;overflow-y:auto"></div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:7px">
+                <span style="font-size:10px;color:#64748b;white-space:nowrap">Boyut</span>
+                <input type="range" id="logoSize" min="40" max="320" value="120" oninput="setLogoSize(this.value)" style="flex:1">
+                <span style="font-size:10px;color:#94a3b8;width:32px" id="logoSizeVal">120</span>
+              </div>
+              <div id="logoUploadSt" style="margin-top:5px"></div>
             </div>
 
             <!-- Süsleme dropdown panel -->
@@ -2346,22 +2366,147 @@ function selectBg(url, el) {
 }
 
 // ── LOGO ──────────────────────────────────────────────────────────────────
-(function loadLogo() {
-  var url = SUPA+'/storage/v1/object/public/trendyol/logos/maat_logo.png';
+// ── LOGO YONETIMI ─────────────────────────────────────────────────────────
+// logos/ klasorundeki tum logolar listelenir; secim localStorage'da tutulur.
+var LOGO_PREFIX  = 'logos/';
+var LOGO_KEY     = 'selectedLogo';
+var logoFiles    = [];
+var selectedLogo = null;
+try { selectedLogo = localStorage.getItem(LOGO_KEY) || null; } catch (e) {}
+
+function logoUrlOf(name) {
+  return SUPA + '/storage/v1/object/public/trendyol/' + LOGO_PREFIX + name;
+}
+
+function loadLogos() {
+  setSt('logoSt','load','...');
+  return fetch(SUPA+'/storage/v1/object/list/trendyol', {
+    method:'POST',
+    headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
+    body: JSON.stringify({ prefix: LOGO_PREFIX, limit: 200, offset: 0 })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(files){
+    logoFiles = (files || []).filter(function(f){
+      return f.name && /\.(png|jpe?g|webp|svg)$/i.test(f.name);
+    });
+    renderLogoGrid();
+    if (!logoFiles.length) { setSt('logoSt','err','logos/ klasoru bos'); return; }
+    // Kayitli secim yoksa ya da silinmisse ilk logoyu kullan
+    var exists = selectedLogo && logoFiles.some(function(f){ return f.name === selectedLogo; });
+    applyLogo(exists ? selectedLogo : logoFiles[0].name, { silent: true });
+  })
+  .catch(function(e){ setSt('logoSt','err','Logo listesi alinamadi'); });
+}
+
+function renderLogoGrid() {
+  var grid = document.getElementById('logoGrid');
+  if (!grid) return;
+  if (!logoFiles.length) {
+    grid.innerHTML = '<p style="grid-column:1/-1;font-size:11px;color:#94a3b8;margin:4px 0">Logo yok — yukleyin</p>';
+    return;
+  }
+  grid.innerHTML = logoFiles.map(function(f){
+    var on = (f.name === selectedLogo);
+    return '<div style="position:relative">'
+      + '<div onclick="applyLogo(\''+f.name.replace(/'/g,"\\'")+'\')" title="'+eEsc(f.name)+'" '
+      + 'style="border:2px solid '+(on?'var(--primary)':'var(--border)')+';border-radius:7px;height:46px;'
+      + 'display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;'
+      + 'background:repeating-conic-gradient(#eef1f5 0% 25%,#fff 0% 50%) 0 0/8px 8px">'
+      + '<img src="'+eEsc(logoUrlOf(f.name))+'" style="max-width:90%;max-height:90%;object-fit:contain">'
+      + '</div>'
+      + '<button onclick="deleteLogo(event,\''+f.name.replace(/'/g,"\\'")+'\')" title="Sil" '
+      + 'style="position:absolute;top:-5px;right:-5px;width:17px;height:17px;border-radius:50%;border:none;'
+      + 'background:rgba(220,38,38,.9);color:#fff;font-size:10px;line-height:1;cursor:pointer">×</button>'
+      + '</div>';
+  }).join('');
+}
+
+// Secilen logoyu tuvale yerlestirir. Konum/boyut korunur, ilk seferde sag alta oturur.
+function applyLogo(name, opts) {
+  opts = opts || {};
   var img = new Image(); img.crossOrigin = 'anonymous';
   img.onload = function() {
-    objs.logo.img = img;
+    var prev = objs.logo;
+    var hadLogo = !!prev.img;
     var ratio = img.width / img.height;
-    objs.logo.w = 120;
-    objs.logo.h = Math.round(120 / ratio);
-    objs.logo.x = CW - objs.logo.w - 16;
-    objs.logo.y = CH - objs.logo.h - 16;
+    var w = hadLogo ? prev.w : Math.min(120, CW - 32);
+
+    objs.logo.img = img;
+    objs.logo.w = w;
+    objs.logo.h = Math.max(1, Math.round(w / ratio));
+    if (!hadLogo) {
+      objs.logo.x = CW - objs.logo.w - 16;
+      objs.logo.y = CH - objs.logo.h - 16;
+    }
+
+    selectedLogo = name;
+    try { localStorage.setItem(LOGO_KEY, name); } catch (e) {}
+
+    var sz = document.getElementById('logoSize');
+    if (sz) { sz.value = objs.logo.w; document.getElementById('logoSizeVal').textContent = objs.logo.w; }
+
+    renderLogoGrid();
     renderCanvas();
-    setSt('logoSt','ok','Logo yuklendi');
+    if (!opts.silent) setSt('logoSt','ok','Logo: ' + name);
+    else setSt('logoSt','ok','Logo yuklendi');
   };
-  img.onerror = function() { setSt('logoSt','err','Logo bulunamadi'); };
-  img.src = url + '?t=' + Date.now();
-})();
+  img.onerror = function() { setSt('logoSt','err','Logo yuklenemedi: ' + name); };
+  img.src = logoUrlOf(name) + '?t=' + Date.now();
+}
+
+function setLogoSize(v) {
+  var w = parseInt(v, 10) || 120;
+  document.getElementById('logoSizeVal').textContent = w;
+  if (!objs.logo.img) return;
+  var ratio = objs.logo.img.width / objs.logo.img.height;
+  objs.logo.w = w;
+  objs.logo.h = Math.max(1, Math.round(w / ratio));
+  renderCanvas();
+}
+
+function onLogoFilePicked(ev) {
+  var file = ev.target.files && ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  if (file.size > 4 * 1024 * 1024) {
+    setSt('logoUploadSt','err','Dosya 4 MB\'tan buyuk');
+    return;
+  }
+  var safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  var path = LOGO_PREFIX + Date.now() + '_' + safe;
+
+  var reader = new FileReader();
+  reader.onload = function() {
+    uploadDataUrlToStorage(reader.result, path, 'logoUploadSt')
+      .then(function(url) {
+        if (!url) return;
+        return loadLogos().then(function() {
+          applyLogo(path.slice(LOGO_PREFIX.length));
+          setSt('logoUploadSt','ok','&#x2713; Logo yuklendi ve secildi');
+        });
+      });
+  };
+  reader.readAsDataURL(file);
+}
+
+function deleteLogo(ev, name) {
+  ev.stopPropagation();
+  if (!confirm('"' + name + '" silinecek. Emin misiniz?')) return;
+  supaDeleteFile(LOGO_PREFIX + name)
+    .then(function() {
+      if (selectedLogo === name) {
+        selectedLogo = null;
+        objs.logo.img = null;
+        try { localStorage.removeItem(LOGO_KEY); } catch (e) {}
+        renderCanvas();
+      }
+      return loadLogos();
+    })
+    .catch(function(e) { setSt('logoUploadSt','err','Silinemedi: ' + eEsc(e.message)); });
+}
+
+loadLogos();
 
 // ── EFEKT YARDIMCILARI ────────────────────────────────────────────────────
 function getFxValues() {
@@ -4378,10 +4523,11 @@ function toggleToolbarPanel(panelId, btnId) {
   var btn   = document.getElementById(btnId);
   var isOpen = panel.style.display !== 'none';
   // Close both first
-  ['tbBgPanel','tbAccPanel'].forEach(function(id) {
-    document.getElementById(id).style.display = 'none';
+  ['tbBgPanel','tbAccPanel','tbLogoPanel'].forEach(function(id) {
+    var p = document.getElementById(id);
+    if (p) p.style.display = 'none';
   });
-  ['tbBgBtn','tbAccBtn'].forEach(function(id) {
+  ['tbBgBtn','tbAccBtn','tbLogoBtn'].forEach(function(id) {
     var b = document.getElementById(id);
     if (b) { b.style.background=''; b.style.color=''; b.style.borderColor=''; }
   });
@@ -4390,8 +4536,9 @@ function toggleToolbarPanel(panelId, btnId) {
     btn.style.background = '#eef2ff';
     btn.style.color = 'var(--primary)';
     btn.style.borderColor = 'var(--primary)';
-    if (panelId === 'tbBgPanel')  renderToolbarBgPanel();
-    if (panelId === 'tbAccPanel') renderToolbarAccPanel();
+    if (panelId === 'tbBgPanel')   renderToolbarBgPanel();
+    if (panelId === 'tbAccPanel')  renderToolbarAccPanel();
+    if (panelId === 'tbLogoPanel') renderLogoGrid();
   }
 }
 
