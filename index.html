@@ -810,7 +810,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
         <button class="btn" onclick="goStep(3)">← Düzenle</button>
         <button class="btn excel" onclick="addToCatalog()">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-          Kataloğa ekle
+          <span id="catalogBtnLabel">Kataloğa ekle</span>
         </button>
         <button class="btn" data-market="etsy" style="display:none" onclick="etsyAddCurrentToQueue()">
           ＋ Etsy kuyruğuna ekle
@@ -1293,6 +1293,11 @@ function applyMarketUI() {
 
   var sb = document.getElementById('sendBtnLabel');
   if (sb) sb.textContent = etsy ? "Etsy'ye taslak gönder" : "Trendyol'a yükle";
+
+  // Etsy'de gonderilen ilan zaten kataloga yaziliyor; buton yalnizca
+  // henuz gonderilmemis kayitlari saklamak icin.
+  var cb = document.getElementById('catalogBtnLabel');
+  if (cb) cb.textContent = etsy ? 'Kataloğa kaydet (göndermeden)' : 'Kataloğa ekle';
 
   // etsyState bu noktadan sonra tanimlaniyor — acilistaki ilk cagrida henuz yok.
   var ready = (typeof etsyState !== 'undefined') && !!etsyState;
@@ -5283,7 +5288,18 @@ function etsySendCurrent() {
   etsySaveQueue();
   etsyRenderQueue();
   setSt('sendSt','load','<span class="spin">&#x27F3;</span> Etsy\'ye taslak gonderiliyor...');
-  etsyRunQueue();
+
+  // Kuyruk kendi durum alanini kullaniyor — 4. adimdaki mesaji burada kapatiyoruz,
+  // aksi halde ilan olussa bile "gonderiliyor" yazili kalirdi.
+  etsyRunQueue(function() {
+    if (item.status === 'done') {
+      setSt('sendSt','ok','&#x2713; Taslak olusturuldu'
+        + (item.listing_url ? ' — <a href="'+eEsc(item.listing_url)+'" target="_blank" rel="noopener">Etsy\'de ac</a>' : '')
+        + (item.warn ? '<br><span style="color:#d97706">&#x26A0; '+eEsc(item.warn)+'</span>' : ''));
+    } else {
+      setSt('sendSt','err','Gonderilemedi: ' + eEsc(item.error || 'bilinmeyen hata'));
+    }
+  });
 }
 
 function etsyAddCurrentToQueue() {
@@ -5298,33 +5314,56 @@ function etsyAddCurrentToQueue() {
   setSt('sendSt','ok','&#x2713; Kuyruga eklendi — toplam ' + etsyState.queue.length + ' urun. 7. adimda topluca gonderebilirsiniz.');
 }
 
-// Etsy modunda katalog kaydi ayni dosyaya, market isaretiyle yazilir.
-function etsyAddToCatalog() {
+// Bir kuyruk kaydini katalog satirina cevirir.
+// Barkod katalogda benzersiz anahtar: SKU varsa onu kullan, yoksa listing_id.
+function etsyCatalogEntry(it) {
   var def = etsyCollectDefaults();
-  setSt('catalogSt','load','<span class="spin">&#x27F3;</span> Kataloga ekleniyor...');
-  var entry = {
-    market: 'etsy',
-    title: gv('f_title'), description: gv('f_desc'),
-    barcode: gv('f_barcode') || ('ETSY-' + Date.now()),
-    category: etsyState.taxonomyPath || '',
-    taxonomyId: def.taxonomy_id,
-    etsyTags: gv('f_etsyTags'), etsyMaterials: gv('f_etsyMaterials'),
-    color: gv('f_color'), material: gv('f_material'),
-    height: gv('f_height'), width: gv('f_width'), weight: gv('f_weight'),
-    quantity: parseInt(gv('f_etsyQty'), 10) || 1,
-    salePrice: parseFloat(gv('f_etsyPrice')) || 0,
-    currency: etsyState.currency,
-    status: 'Taslak', images: s.urls
+  return {
+    market:       'etsy',
+    title:        it.title,
+    description:  it.description,
+    barcode:      it.sku || (it.listing_id ? 'ETSY-' + it.listing_id : 'ETSY-' + Date.now()),
+    stockCode:    it.sku || '',
+    category:     etsyState.taxonomyPath || it.category || '',
+    taxonomyId:   def.taxonomy_id,
+    etsyTags:      (it.tags || []).join(', '),
+    etsyMaterials: (it.materials || []).join(', '),
+    color:        it.color || '',
+    material:     it.material || '',
+    height:       it.height || '', width: it.width || '', weight: it.weight || '',
+    quantity:     parseInt(it.quantity, 10) || 1,
+    salePrice:    parseFloat(it.price) || 0,
+    currency:     etsyState.currency,
+    listingId:    it.listing_id || null,
+    listingUrl:   it.listing_url || '',
+    status:       it.listing_id ? 'Yuklendi' : 'Taslak',
+    images:       it.images || []
   };
-  fetch(PROXY + '?action=catalog-add', {
-    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(entry)
-  }).then(function(r){ return r.json(); }).then(function(d) {
-    if (d.ok) setSt('catalogSt','ok','&#x2713; Kataloga eklendi — toplam ' + d.total + ' urun');
-    else if (d.error === 'DUPLIKAT_BARKOD') setSt('catalogSt','err','&#x26A0; Bu barkod zaten katalogda: ' + eEsc(d.existing.title));
-    else setSt('catalogSt','err','Hata: ' + eEsc(JSON.stringify(d)));
-  }).catch(function(e) {
-    setSt('catalogSt','err','Hata: ' + eEsc(e.message));
+}
+
+function etsySaveToCatalog(it) {
+  return fetch(PROXY + '?action=catalog-add', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(etsyCatalogEntry(it))
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    // Ayni SKU ile daha once kaydedilmisse sorun degil — ilan yine olustu
+    if (!d.ok && d.error !== 'DUPLIKAT_BARKOD') throw new Error(d.error || 'katalog hatasi');
+    it.catalogSaved = true;
+    return d;
   });
+}
+
+// Manuel "Kataloga ekle" — henuz gonderilmemis formu kaydeder.
+function etsyAddToCatalog() {
+  setSt('catalogSt','load','<span class="spin">&#x27F3;</span> Kataloga ekleniyor...');
+  etsySaveToCatalog(etsyItemFromForm())
+    .then(function(d) {
+      if (d.ok) setSt('catalogSt','ok','&#x2713; Kataloga eklendi — toplam ' + d.total + ' urun');
+      else setSt('catalogSt','ok','Bu kayit zaten katalogda: ' + eEsc((d.existing||{}).title || ''));
+    })
+    .catch(function(e) { setSt('catalogSt','err','Hata: ' + eEsc(e.message)); });
 }
 
 // ── ETSY: ILAN LISTESI (6. ADIM) ──────────────────────────────────────────
@@ -5647,6 +5686,7 @@ function etsyRenderQueue() {
           + '<td><input type="number" min="1" value="'+eEsc(it.quantity)+'" onchange="etsyEdit('+i+',\'quantity\',this.value)" style="width:100%;padding:5px 7px;font-size:12px;border:1px solid #e2e8f0;border-radius:6px;font-family:inherit"></td>'
           + '<td><span style="color:'+st[1]+';font-weight:600;font-size:12px">'+st[0]+'</span>'
           + (it.listing_url ? ' <a href="'+eEsc(it.listing_url)+'" target="_blank" rel="noopener" style="font-size:11px">ac</a>' : '')
+          + (it.catalogSaved ? '<div style="font-size:11px;color:#16a34a;margin-top:2px">✓ katalogda</div>' : '')
           + (it.error ? '<div style="font-size:11px;color:#dc2626;margin-top:3px">'+eEsc(it.error)+'</div>' : '')
           + (it.warn ? '<div style="font-size:11px;color:#d97706;margin-top:3px">'+eEsc(it.warn)+'</div>' : '')
           + '</td>'
@@ -5882,13 +5922,19 @@ function etsyValidateItem(it, def) {
   return null;
 }
 
-function etsyRunQueue() {
+// onDone(sonuc) — tek urun gonderimi gibi cagiranlarin kendi durumunu
+// guncelleyebilmesi icin kuyruk bittiginde tetiklenir.
+function etsyRunQueue(onDone) {
   if (etsyState.running) return;
   var def = etsyCollectDefaults();
   etsySaveDefaults(false);
 
   var targets = etsyState.queue.filter(function(it) { return it.status !== 'done'; });
-  if (!targets.length) { setSt('etsyQueueSt','ok','Yuklenecek urun yok.'); return; }
+  if (!targets.length) {
+    setSt('etsyQueueSt','ok','Yuklenecek urun yok.');
+    if (onDone) onDone({ done: 0, failed: 0, targets: [] });
+    return;
+  }
 
   // Tum kuyrugu once dogrula — yarim kalan yuklemeyi bastan onle
   var bad = [];
@@ -5899,6 +5945,7 @@ function etsyRunQueue() {
   if (bad.length) {
     etsySaveQueue(); etsyRenderQueue();
     setSt('etsyQueueSt','err','&#x26A0; '+bad.length+' urun eksik bilgi yuzunden gonderilemez. Duzeltip tekrar deneyin.');
+    if (onDone) onDone({ done: 0, failed: bad.length, targets: targets, invalid: true });
     return;
   }
 
@@ -5923,9 +5970,10 @@ function etsyRunQueue() {
       if (btn) { btn.disabled = false; btn.textContent = "Tümünü Etsy'ye Yükle"; }
       setSt('etsyQueueSt', failed ? 'err' : 'ok',
         (failed ? '&#x26A0; ' : '&#x2713; ') + done + ' taslak ilan olusturuldu, ' + failed + ' hata.'
-        + (done ? ' Ilanlar Etsy panelinizde <strong>taslak</strong> olarak bekliyor.' : ''));
+        + (done ? ' Ilanlar Etsy panelinizde <strong>taslak</strong> olarak bekliyor ve kataloga kaydedildi.' : ''));
       etsySaveQueue();
       etsyRenderQueue();
+      if (onDone) onDone({ done: done, failed: failed, targets: targets });
       return;
     }
 
@@ -6008,6 +6056,10 @@ function etsyRunQueue() {
       return skuStep.then(propNext).then(uploadNext).then(function() {
         if (propWarn.length) it.warn = propWarn.length + ' opsiyonel ozellik yazilamadi';
       });
+    }).then(function() {
+      // Basarili ilan katalogda otomatik yer alsin — ayrica "Kataloga ekle"
+      // demeye gerek kalmasin. Katalog kaydi ilanin kendisini etkilemez.
+      return etsySaveToCatalog(it).catch(function() {});
     }).then(function() {
       it.status = 'done';
       done++;
