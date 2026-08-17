@@ -501,6 +501,30 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, listing_id: listing.listing_id, url: listing.url, state: listing.state });
     }
 
+    // SKU createDraftListing'de yok — envanter kaydina yaziliyor. Varyasyonsuz
+    // ilanda tek urun/tek teklif olur; fiyat ve adet burada tekrar verilmeli.
+    if (action === 'set-sku') {
+      const { listing_id, sku, price, quantity, readiness_state_id } = await req.json();
+      if (!listing_id || !sku) return json({ error: 'listing_id and sku required' }, 400);
+
+      const offering: Record<string, unknown> = {
+        price:      Number(price),
+        quantity:   Math.max(1, parseInt(String(quantity), 10) || 1),
+        is_enabled: true,
+      };
+      if (readiness_state_id) offering.readiness_state_id = Number(readiness_state_id);
+
+      const tok = await getToken();
+      const res = await etsy(`/listings/${listing_id}/inventory`, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          products: [{ sku: String(sku), property_values: [], offerings: [offering] }],
+        }),
+      }, tok);
+      return json({ ok: true, sku: res.products?.[0]?.sku ?? sku });
+    }
+
     // ── Attach one image (fetched server-side from a public URL) ──────────
     if (action === 'upload-image') {
       const { listing_id, imageUrl, rank, alt_text } = await req.json();
@@ -569,6 +593,21 @@ Color: ${color ?? ''} | Material: ${material ?? ''}
 Height: ${height ?? ''} cm | Width: ${width ?? ''} cm | Weight: ${weight ?? ''} g
 ${kwSection}
 
+FACTUAL LIMITS — these override every other rule:
+- Use ONLY the facts given above. If a detail is not supplied, leave it out entirely.
+- Never invent: a workshop location, city or country; a forming technique (do not write
+  "wheel-thrown", "hand-built", "slip-cast" or similar unless it is stated); a firing
+  temperature or kiln type; a glaze type or food/dishwasher/microwave safety; a clay body
+  beyond the material given; production time; awards, history or founding story; the number
+  of pieces made; sourcing or sustainability claims.
+- Dimensions and weight: repeat the supplied numbers exactly. Do not convert into imperial
+  units, do not estimate a missing one, do not describe a dimension that was not provided.
+- Care instructions: only the generic and always-true (wipe with a damp cloth, hand wash with
+  mild soap, avoid prolonged standing water). Never claim dishwasher, microwave or oven safety.
+- "Each piece varies slightly because it is handmade" is allowed — it follows from handmade.
+- If the supplied information is too thin for the word count, write a shorter description.
+  A short accurate description is correct; padding it with plausible invention is not.
+
 HOW ETSY SEARCH WORKS — follow this, it drives every rule below:
 - Etsy matches a buyer's query against the title, tags and attributes. Multi-word phrases
   matter far more than isolated words: "ceramic vase" is a query, "ceramic" alone is not.
@@ -595,14 +634,16 @@ TAGS (exactly 13, each max 20 characters):
 DESCRIPTION (150-250 words, plain text, no HTML, no markdown):
 - First sentence must restate the main keyword phrase naturally — it is what Google shows
   and what the buyer reads first.
-- Then cover, in short paragraphs: what it is and how it is handmade; exact dimensions;
-  how it fits a room or occasion; care instructions; that each piece varies slightly
-  because it is handmade.
+- Then cover, in short paragraphs, using only supplied facts: what it is; the exact
+  dimensions given; how it fits a room or occasion; generic care; that each piece varies
+  slightly because it is handmade.
 - Weave 3-5 secondary keyword phrases in as ordinary prose. Never list keywords, never
   write a keyword block at the end.
-- Warm, concrete, specific. No hype adjectives, no invented claims.
+- Warm and concrete, but only about things you were told. No hype adjectives.
+- 150-250 words is a target, not a quota: never reach it by inventing detail.
 
-MATERIALS: 3-6 real material words, letters and spaces only.
+MATERIALS: 3-6 words, derived from the material actually supplied. Do not add materials
+that were not mentioned.
 
 Return ONLY JSON, nothing else:
 {"title":"...","description":"...","tags":["..."],"materials":["..."]}`;

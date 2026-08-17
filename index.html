@@ -732,9 +732,13 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
         </div>
 
         <!-- Etsy'ye özel alanlar -->
-        <div class="grid2" data-market="etsy" style="display:none">
+        <div class="grid3" data-market="etsy" style="display:none">
           <div class="field"><label>Fiyat <span id="etsyPriceCur">USD</span> <span class="tag req">zorunlu</span></label><input type="number" id="f_etsyPrice" step="0.01" min="0" placeholder="49.00"></div>
           <div class="field"><label>Stok adedi <span class="tag req">zorunlu</span></label><input type="number" id="f_etsyQty" value="1" min="1"></div>
+          <div class="field">
+            <label>SKU <span style="font-size:12px;color:#aaa;font-weight:400">(katalog stok kodu)</span></label>
+            <input type="text" id="f_etsySku" placeholder="NUN-STK-001">
+          </div>
         </div>
         <div class="field" data-market="etsy" style="display:none">
           <label>Etiketler <span class="tag req">zorunlu</span> <span style="font-size:12px;color:#aaa;font-weight:400">(virgülle ayır, en fazla 13, her biri 20 karakter)</span></label>
@@ -914,6 +918,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
         <div class="attr-row" style="align-items:flex-start"><div class="attr-name" style="padding-top:7px">Açıklama (EN) *</div><textarea id="em_desc" rows="4" style="flex:1;padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit;outline:none"></textarea></div>
         <div class="attr-row"><div class="attr-name" id="em_priceLabel">Fiyat (TRY) *</div><input type="number" id="em_price" step="0.01" min="0"></div>
         <div class="attr-row"><div class="attr-name">Adet</div><input type="number" id="em_qty" min="1" value="1"></div>
+        <div class="attr-row"><div class="attr-name">SKU</div><input type="text" id="em_sku" placeholder="NUN-STK-001"></div>
         <div class="attr-row"><div class="attr-name">Etiketler (virgüllü)</div><input type="text" id="em_tags" placeholder="ceramic vase, handmade pottery, ..."></div>
         <div class="attr-row"><div class="attr-name">Malzemeler (virgüllü)</div><input type="text" id="em_materials" placeholder="stoneware, glaze, clay"></div>
         <div class="attr-row" style="align-items:flex-start"><div class="attr-name" style="padding-top:7px">Görsel URL'leri</div><textarea id="em_images" rows="3" placeholder="Her satıra bir URL" style="flex:1;padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit;outline:none"></textarea></div>
@@ -4889,6 +4894,7 @@ function loadDesignFromCatalog(i) {
   setv('f_barcode',  c.barcode);
   setv('f_mainId',   c.productMainId);
   setv('f_stock',    c.stockCode);
+  setv('f_etsySku',  c.stockCode || c.barcode);
   setv('f_qty',      c.quantity);
   setv('f_list',     c.listPrice);
   setv('f_sale',     c.salePrice);
@@ -5224,6 +5230,8 @@ function etsyItemFromForm() {
     description: gv('f_desc').trim(),
     price:       gv('f_etsyPrice'),
     quantity:    gv('f_etsyQty') || 1,
+    // SKU katalogla eslesmeli: once acik alan, yoksa stok kodu, yoksa barkod
+    sku:         (gv('f_etsySku') || gv('f_stock') || gv('f_barcode') || '').trim(),
     tags:        gv('f_etsyTags').split(',').map(function(t){return t.trim();}).filter(Boolean),
     materials:   gv('f_etsyMaterials').split(',').map(function(t){return t.trim();}).filter(Boolean),
     images:      s.urls.slice(0, 10),
@@ -5242,6 +5250,7 @@ function etsyBuildPreview() {
   var payload = {
     title: item.title, description: item.description,
     price: parseFloat(item.price) || 0, quantity: parseInt(item.quantity, 10) || 1,
+    sku: item.sku || '(yok)',
     tags: item.tags, materials: item.materials,
     taxonomy_id: def.taxonomy_id, taxonomy: def.taxonomy_path,
     shipping_profile_id: def.shipping_profile_id,
@@ -5752,6 +5761,7 @@ function etsyAddSelectedFromCatalog() {
       weight:      c.weight || '',
       title:       c.title || '',
       description: '',
+      sku:         c.stockCode || c.barcode || '',
       tags:        [],
       materials:   c.material ? [c.material] : [],
       images:      (c.images || []).slice(0, 10),
@@ -5799,9 +5809,10 @@ function etsyAddManual() {
     images: images.slice(0, 10),
     price: price,
     quantity: gv('em_qty') || def.quantity || 1,
+    sku: gv('em_sku').trim(),
     status: 'translated', error: ''
   });
-  ['em_title','em_desc','em_price','em_tags','em_materials','em_images'].forEach(function(id) {
+  ['em_title','em_desc','em_price','em_sku','em_tags','em_materials','em_images'].forEach(function(id) {
     document.getElementById(id).value = '';
   });
   etsySaveQueue();
@@ -5948,6 +5959,17 @@ function etsyRunQueue() {
       it.listing_id  = d.listing_id;
       it.listing_url = d.url;
 
+      // SKU createDraftListing'de yok — envantere ayri yaziliyor.
+      var skuStep = it.sku
+        ? etsyApi('set-sku', { method:'POST', body: {
+            listing_id: d.listing_id, sku: it.sku,
+            price: parseFloat(it.price), quantity: parseInt(it.quantity, 10) || 1,
+            readiness_state_id: def.readiness_state_id
+          }}).then(function(r) {
+            if (!r.ok) throw new Error('SKU yazilamadi: ' + (r.error || 'bilinmiyor'));
+          })
+        : Promise.resolve();
+
       // Ozellikler ilan olustuktan sonra tek tek yazilir (Etsy toplu kabul etmiyor).
       // Opsiyonel olduklari icin hatalari ilani basarisiz saymaz, sadece not edilir.
       var props = it.properties || [];
@@ -5982,7 +6004,8 @@ function etsyRunQueue() {
         });
       };
 
-      return propNext().then(uploadNext).then(function() {
+      // Sira onemli: SKU envanteri yazar, sonra ozellikler, en son gorseller
+      return skuStep.then(propNext).then(uploadNext).then(function() {
         if (propWarn.length) it.warn = propWarn.length + ' opsiyonel ozellik yazilamadi';
       });
     }).then(function() {
