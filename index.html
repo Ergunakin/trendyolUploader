@@ -2422,47 +2422,88 @@ function renderLogoGrid() {
   }).join('');
 }
 
-// Secilen logoyu tuvale yerlestirir. Konum/boyut korunur, ilk seferde sag alta oturur.
+// Logoyu sabit bir kutuya sigdirir. Genisligi miras almak yanlis olur: kare bir
+// logodan genis bir logoya gecince yukseklik okunamayacak kadar kucuk kalirdi.
+function fitLogoBox(img, boxW, boxH) {
+  var ratio = img.width / img.height;
+  var w = boxW, hgt = Math.round(w / ratio);
+  if (hgt > boxH) { hgt = boxH; w = Math.round(hgt * ratio); }
+  return { w: Math.max(1, w), h: Math.max(1, hgt) };
+}
+
+// Cikti tuvalden EW/CW kat buyuk cizilir; kaynak bundan kucukse buyutulur ve bulanir.
+function checkLogoResolution(img, drawW) {
+  var neededW = Math.round(drawW * (EW / CW));
+  if (img.width >= neededW) return '';
+  return 'Logo cozunurlugu dusuk: kaynak ' + img.width + ' px, cikti icin ' + neededW
+       + ' px gerekiyor. Daha buyuk bir dosya yukleyin, aksi halde bulanik cikar.';
+}
+
+// Secilen logoyu tuvale yerlestirir. Konum korunur, ilk seferde sag alta oturur.
 function applyLogo(name, opts) {
   opts = opts || {};
   var img = new Image(); img.crossOrigin = 'anonymous';
   img.onload = function() {
-    var prev = objs.logo;
+    var prev    = objs.logo;
     var hadLogo = !!prev.img;
-    var ratio = img.width / img.height;
-    var w = hadLogo ? prev.w : Math.min(120, CW - 32);
+
+    // Onceki logonun kapladigi kutuyu koru — oranini degil.
+    var boxW = hadLogo ? Math.max(prev.w, prev.h) : Math.round(CW * 0.30);
+    var boxH = Math.round(boxW * 0.75);
+    var fit  = fitLogoBox(img, Math.min(boxW, CW - 32), Math.min(boxH, CH - 32));
 
     objs.logo.img = img;
-    objs.logo.w = w;
-    objs.logo.h = Math.max(1, Math.round(w / ratio));
+    objs.logo.w = fit.w;
+    objs.logo.h = fit.h;
     if (!hadLogo) {
       objs.logo.x = CW - objs.logo.w - 16;
       objs.logo.y = CH - objs.logo.h - 16;
+    } else {
+      // Kutu degisince tasmayi onle
+      objs.logo.x = Math.min(objs.logo.x, CW - objs.logo.w);
+      objs.logo.y = Math.min(objs.logo.y, CH - objs.logo.h);
     }
 
     selectedLogo = name;
     try { localStorage.setItem(LOGO_KEY, name); } catch (e) {}
 
-    var sz = document.getElementById('logoSize');
-    if (sz) { sz.value = objs.logo.w; document.getElementById('logoSizeVal').textContent = objs.logo.w; }
-
+    syncLogoSlider();
     renderLogoGrid();
     renderCanvas();
-    if (!opts.silent) setSt('logoSt','ok','Logo: ' + name);
-    else setSt('logoSt','ok','Logo yuklendi');
+
+    var warn = checkLogoResolution(img, objs.logo.w);
+    if (warn) setSt('logoSt','err', warn);
+    else setSt('logoSt','ok', opts.silent ? 'Logo yuklendi' : ('Logo: ' + name
+      + ' (' + img.width + '×' + img.height + ')'));
   };
   img.onerror = function() { setSt('logoSt','err','Logo yuklenemedi: ' + name); };
   img.src = logoUrlOf(name) + '?t=' + Date.now();
 }
 
+// Kaydirici araligini tuval genisligine gore ayarlar.
+function syncLogoSlider() {
+  var sz = document.getElementById('logoSize');
+  if (!sz) return;
+  sz.min = 40;
+  sz.max = Math.round(CW * 0.9);
+  sz.value = objs.logo.w;
+  var lbl = document.getElementById('logoSizeVal');
+  if (lbl) lbl.textContent = objs.logo.w;
+}
+
 function setLogoSize(v) {
   var w = parseInt(v, 10) || 120;
-  document.getElementById('logoSizeVal').textContent = w;
+  var lbl = document.getElementById('logoSizeVal');
+  if (lbl) lbl.textContent = w;
   if (!objs.logo.img) return;
   var ratio = objs.logo.img.width / objs.logo.img.height;
   objs.logo.w = w;
   objs.logo.h = Math.max(1, Math.round(w / ratio));
   renderCanvas();
+
+  var warn = checkLogoResolution(objs.logo.img, w);
+  if (warn) setSt('logoSt','err', warn);
+  else setSt('logoSt','ok', 'Logo ' + objs.logo.w + '×' + objs.logo.h);
 }
 
 function onLogoFilePicked(ev) {
@@ -2894,6 +2935,9 @@ function saveComposition() {
   var wc = document.getElementById('workCanvas');
   wc.width = EW; wc.height = EH;
   var ctx = wc.getContext('2d');
+  // Cikti tuvalden buyuk — olceklemede en iyi filtrelemeyi kullan
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   var sx = EW/CW, sy = EH/CH;
   ctx.clearRect(0,0,EW,EH);
   ctx.drawImage(bgImg, 0, 0, EW, EH);
@@ -4443,6 +4487,9 @@ function renderWorkCanvas() {
   var wc = document.getElementById('workCanvas');
   wc.width = EW; wc.height = EH;
   var ctx = wc.getContext('2d');
+  // Cikti tuvalden buyuk — olceklemede en iyi filtrelemeyi kullan
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   var sx = EW/CW, sy = EH/CH;
   ctx.clearRect(0,0,EW,EH);
   if (bgImg) ctx.drawImage(bgImg, 0, 0, EW, EH);
