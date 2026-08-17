@@ -158,10 +158,16 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
 <div class="topbar">
   <h1>🏺 MAAT SERAMİK</h1>
   <span class="sub">·</span>
-  <span style="font-size:13px;color:var(--muted)">Trendyol Ürün Yükleme Paneli</span>
+  <span style="font-size:13px;color:var(--muted)" id="marketSub">Trendyol Ürün Yükleme Paneli</span>
   <span class="badge indigo" id="brandBadge">Marka ID: 2922973</span>
+  <div style="display:flex;gap:2px;background:#f1f5f9;border:1px solid var(--border);border-radius:9px;padding:3px;margin-left:14px">
+    <button id="mkBtn_trendyol" onclick="setMarket('trendyol')"
+      style="padding:5px 14px;font-size:12px;border:none;border-radius:7px;cursor:pointer;font-family:inherit;transition:all .15s">Trendyol</button>
+    <button id="mkBtn_etsy" onclick="setMarket('etsy')"
+      style="padding:5px 14px;font-size:12px;border:none;border-radius:7px;cursor:pointer;font-family:inherit;transition:all .15s">Etsy</button>
+  </div>
   <div style="flex:1"></div>
-  <button class="btn sm" onclick="location.reload()" style="gap:6px;color:#6366f1;border-color:#c7d2fe;background:#eef2ff">
+  <button class="btn sm" onclick="openNewDesign()" style="gap:6px;color:#6366f1;border-color:#c7d2fe;background:#eef2ff">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
     Yeni Tasarım
   </button>
@@ -176,7 +182,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
     <div class="step" onclick="goStep(4)" id="s4">4 · Gönder</div>
     <div class="step" onclick="goStep(5)" id="s5">5 · Katalog</div>
     <div class="step" onclick="goStep(6)" id="s6">6 · Trendyol</div>
-    <div class="step" onclick="goStep(7)" id="s7">7 · Etsy</div>
+    <div class="step" onclick="goStep(7)" id="s7" data-market="etsy" style="display:none">7 · Etsy Kuyruğu</div>
   </div>
   </div><!-- /narrow stepper -->
 
@@ -290,15 +296,16 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
 
         <!-- Canvas merkeze hizalı -->
         <div style="display:flex;gap:14px;justify-content:center;align-items:flex-start">
-          <div style="width:400px;flex-shrink:0">
+          <div style="flex-shrink:0" id="canvasWrap">
             <canvas id="editCanvas" width="400" height="600"
-              style="display:block;width:400px;border:1px solid var(--border);border-radius:10px;cursor:crosshair;touch-action:none;box-shadow:var(--shadow-md)"
+              style="display:block;border:1px solid var(--border);border-radius:10px;cursor:crosshair;touch-action:none;box-shadow:var(--shadow-md)"
               onmousedown="onMouseDown(event)" onmousemove="onMouseMove(event)"
               onmouseup="onMouseUp(event)"    onmouseleave="onMouseUp(event)"
               ondblclick="onDblClick(event)"
               ontouchstart="onTouchStart(event)" ontouchmove="onTouchMove(event)" ontouchend="onMouseUp(event)">
             </canvas>
             <p style="font-size:11px;color:#94a3b8;margin-top:6px;text-align:center" id="objInfo">Ürün, süsleme veya logo'ya tıkla</p>
+            <p style="font-size:11px;color:#cbd5e1;margin-top:2px;text-align:center">Çıktı: <span id="imgFormatNote">1200×1800 (2:3 dikey)</span></p>
           </div>
 
           <!-- Araçlar yan panel -->
@@ -474,7 +481,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
     <!-- ALT: Trendyol'a Yüklenecek -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none" onclick="toggleSection('savedSection','savedChevron')">
-        <div class="card-title" style="margin-bottom:0"><span class="icon">📤</span> Trendyol'a Yüklenecek Görseller <span id="savedCount" style="font-size:12px;color:#94a3b8;font-weight:400"></span></div>
+        <div class="card-title" id="savedCardTitle" style="margin-bottom:0"><span class="icon">📤</span> Trendyol'a Yüklenecek Görseller <span id="savedCount" style="font-size:12px;color:#94a3b8;font-weight:400"></span></div>
         <div style="display:flex;align-items:center;gap:8px">
           <button class="btn sm primary" onclick="event.stopPropagation();uploadSaved()" id="uploadSavedBtn" style="display:none">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -539,6 +546,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
 
   <!-- STEP 2: KATEGORİ -->
   <div class="panel narrow" id="p2">
+    <div data-market="trendyol">
     <div class="card">
       <h3>Kategori seç</h3>
       <div style="display:flex;gap:8px;margin-bottom:0">
@@ -555,160 +563,9 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
       <h3>Zorunlu özellikler</h3>
       <div id="attrSt"><p class="muted">Kategori seçildikten sonra burası dolar</p></div>
     </div>
-    <div class="btn-row">
-      <button class="btn" onclick="goStep(1)">&#8592; Geri</button>
-      <button class="btn primary" onclick="goStep(3)">Ürün bilgisi &#8594;</button>
-    </div>
-  </div>
+    </div><!-- /data-market trendyol -->
 
-  <!-- STEP 3 -->
-  <div class="panel narrow" id="p3">
-    <!-- Görsel önizleme -->
-    <div class="card" id="step3PreviewCard">
-      <h3>Görsel önizleme</h3>
-      <div style="display:flex;gap:16px;overflow-x:auto;padding-bottom:4px;margin-top:10px" id="step3PreviewRow">
-        <p class="muted" id="step3PreviewEmpty">1. adımda görseller hazırlanınca burada görünür</p>
-      </div>
-    </div>
-
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <h3>Temel bilgiler</h3>
-        <button class="ai-btn" onclick="aiGenerate()">✦ AI ile doldur</button>
-      </div>
-      <div style="margin-bottom:4px">
-        <label style="font-size:13px;font-weight:500;color:#444;display:block;margin-bottom:5px">
-          Ürünü tarif et <span style="font-size:12px;color:#aaa;font-weight:400">(opsiyonel — AI bunu kullanır)</span>
-        </label>
-        <textarea id="f_desc_hint" placeholder="Örnek: Kahverengi renkte, 18 cm yüksekliğinde, 10 cm çapında stoneware vazo" style="width:100%;padding:9px 12px;font-size:13px;border:1px solid #ddd;border-radius:8px;font-family:inherit;resize:vertical;min-height:64px;outline:none;color:#111" onfocus="this.style.borderColor='#111'" onblur="this.style.borderColor='#ddd'"></textarea>
-      </div>
-      <div id="aiSt"></div>
-      <div style="display:flex;flex-direction:column;gap:13px;margin-top:12px">
-        <div class="field">
-          <label>Ürün adı <span class="tag req">zorunlu</span></label>
-          <input type="text" id="f_title" placeholder="El Yapımı Stoneware Vazo — MAAT SERAMİK" maxlength="100" oninput="document.getElementById('tc').textContent=this.value.length+'/100'">
-          <span style="font-size:12px;color:#aaa" id="tc">0/100</span>
-        </div>
-        <div class="grid2">
-          <div class="field"><label>Barkod <span class="tag req">zorunlu</span></label><input type="text" id="f_barcode" placeholder="NUN-001"></div>
-          <div class="field"><label>Model kodu <span class="tag req">zorunlu</span></label><input type="text" id="f_mainId" placeholder="MAAT-VAZE-001"></div>
-        </div>
-        <div class="grid3">
-          <div class="field"><label>Stok adedi <span class="tag req">zorunlu</span></label><input type="number" id="f_qty" value="1" min="0"></div>
-          <div class="field"><label>Liste fiyatı ₺ <span class="tag req">zorunlu</span></label><input type="number" id="f_list" placeholder="750"></div>
-          <div class="field"><label>Satış fiyatı ₺ <span class="tag req">zorunlu</span></label><input type="number" id="f_sale" placeholder="599"></div>
-        </div>
-        <div class="grid3">
-          <div class="field"><label>KDV <span class="tag req">zorunlu</span></label>
-            <select id="f_vat"><option value="10">%10</option><option value="20" selected>%20</option><option value="1">%1</option><option value="0">%0</option></select>
-          </div>
-          <div class="field"><label>Desi <span class="tag req">zorunlu</span></label><input type="number" id="f_desi" value="3" step="0.1"></div>
-          <div class="field"><label>Stok kodu</label><input type="text" id="f_stock" placeholder="NUN-STK-001"></div>
-        </div>
-        <div class="grid2">
-          <div class="field"><label>Renk</label><input type="text" id="f_color" placeholder="Toprak Kırmızısı" oninput="renderAttrFields()"></div>
-          <div class="field"><label>Malzeme</label><input type="text" id="f_material" placeholder="Stoneware"></div>
-        </div>
-        <div class="grid3">
-          <div class="field"><label>Yükseklik (cm)</label><input type="number" id="f_height" placeholder="35" step="0.1"></div>
-          <div class="field"><label>Genişlik (cm)</label><input type="number" id="f_width" placeholder="18" step="0.1"></div>
-          <div class="field"><label>Ağırlık (gr)</label><input type="number" id="f_weight" placeholder="950"></div>
-        </div>
-        <div class="field"><label>Açıklama <span class="tag req">zorunlu</span></label><textarea id="f_desc" placeholder="Ürün açıklaması..."></textarea></div>
-      </div>
-    </div>
-    <div class="card">
-      <h3>Kategori özellikleri</h3>
-      <div id="attrFields"><p class="muted">Önceki adımda kategori seç</p></div>
-    </div>
-    <div class="btn-row">
-      <button class="btn" onclick="goStep(2)">← Geri</button>
-      <button class="btn primary" onclick="prepareStep4()">Önizle ve yükle →</button>
-    </div>
-  </div>
-
-  <!-- STEP 4 -->
-  <div class="panel narrow" id="p4">
-    <div class="card">
-      <h3>Payload önizleme</h3>
-      <div class="mono" id="preview">—</div>
-    </div>
-    <div class="card">
-      <h3>İşlemler</h3>
-      <div id="sendSt"></div>
-      <div class="btn-row" style="margin-top:14px">
-        <button class="btn" onclick="goStep(3)">← Düzenle</button>
-        <button class="btn excel" onclick="addToCatalog()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-          Kataloğa ekle
-        </button>
-        <button class="btn success" onclick="sendProduct()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          Trendyol'a yükle
-        </button>
-      </div>
-      <div id="catalogSt"></div>
-      <div id="batchBox"></div>
-    </div>
-  </div>
-
-  <!-- STEP 5: KATALOG -->
-  <div class="panel narrow" id="p5">
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <h3>Ürün Kataloğu</h3>
-        <button class="btn" onclick="loadCatalog()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-          Yenile
-        </button>
-      </div>
-      <div id="catalogSt2"></div>
-      <div id="catalogTable"></div>
-    </div>
-    <div class="btn-row">
-      <button class="btn" onclick="goStep(4)">← Geri</button>
-      <button class="btn excel" onclick="downloadCatalogExcel()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Excel olarak indir
-      </button>
-    </div>
-  </div>
-
-  <!-- STEP 6: TRENDYOL ÜRÜNLERİM -->
-  <div class="panel narrow" id="p6">
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <h3>Trendyol Ürünlerim</h3>
-        <div style="display:flex;gap:8px;align-items:center">
-          <select id="tyStatus" style="padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit">
-            <option value="">Tümü</option>
-            <option value="WAITING">Onay Bekliyor</option>
-            <option value="APPROVED">Satışta</option>
-            <option value="REJECTED">Reddedildi</option>
-            <option value="PASSIVE">Pasif</option>
-          </select>
-          <input type="text" id="tyBarcode" placeholder="Barkod ara..." style="padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit;width:140px">
-          <button class="btn primary" onclick="loadTrendyolProducts(0)" style="padding:7px 14px">Listele</button>
-        </div>
-      </div>
-      <div id="tySt"></div>
-    </div>
-    <div class="card" id="tyProductsCard" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div id="tyCount" style="font-size:13px;color:#888"></div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <button class="btn" id="tyPrevBtn" onclick="tyChangePage(-1)" style="padding:5px 10px;font-size:13px">&#8592; Önceki</button>
-          <span id="tyPageInfo" style="font-size:13px;color:#888;padding:0 4px"></span>
-          <button class="btn" id="tyNextBtn" onclick="tyChangePage(1)" style="padding:5px 10px;font-size:13px">Sonraki &#8594;</button>
-        </div>
-      </div>
-      <div id="tyProductList"></div>
-    </div>
-  </div>
-
-  <!-- STEP 7: ETSY -->
-  <div class="panel narrow" id="p7">
-
+    <div data-market="etsy" style="display:none">
     <!-- Bağlantı -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -765,18 +622,28 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
           </select>
         </div>
         <div class="attr-row">
-          <div class="attr-name">Varsayılan fiyat (USD)</div>
+          <div class="attr-name" id="e_priceLabel">Varsayılan fiyat (TRY)</div>
           <input type="number" id="e_price" step="0.01" min="0" value="0" placeholder="örn. 39.00">
         </div>
         <div class="attr-row">
           <div class="attr-name">Varsayılan adet</div>
           <input type="number" id="e_qty" min="1" value="1">
         </div>
-        <div class="attr-row">
-          <div class="attr-name">Hazırlık süresi (gün)</div>
-          <div style="flex:1;display:flex;gap:8px">
-            <input type="number" id="e_procMin" min="1" value="3" placeholder="min" style="flex:1">
-            <input type="number" id="e_procMax" min="1" value="7" placeholder="maks" style="flex:1">
+        <div class="attr-row" style="align-items:flex-start">
+          <div class="attr-name" style="padding-top:7px">İşlem profili *</div>
+          <div style="flex:1">
+            <select id="e_readiness" style="width:100%;padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit"></select>
+            <div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap">
+              <select id="e_newReadyState" style="padding:6px 9px;font-size:12px;border:1px solid #ddd;border-radius:7px;font-family:inherit">
+                <option value="made_to_order">Siparişe özel</option>
+                <option value="ready_to_ship">Stoktan gönderim</option>
+              </select>
+              <input type="number" id="e_procMin" min="1" value="3" placeholder="min" style="width:70px;padding:6px 9px;font-size:12px">
+              <input type="number" id="e_procMax" min="1" value="7" placeholder="maks" style="width:70px;padding:6px 9px;font-size:12px">
+              <span style="font-size:12px;color:#64748b">gün</span>
+              <button class="btn sm" onclick="etsyCreateProcessingProfile()">＋ Yeni profil oluştur</button>
+            </div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:5px">Etsy fiziksel ilanlarda işlem profili zorunlu tutuyor. Profil dükkan ayarlarınıza kaydedilir.</div>
           </div>
         </div>
         <div class="attr-row">
@@ -784,12 +651,204 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
           <div style="flex:1"><input type="checkbox" id="e_autoRenew" style="flex:0"> <span style="font-size:12px;color:#64748b">İlan süresi dolunca 4 ay yenilensin</span></div>
         </div>
         <div class="btn-row" style="margin-top:10px">
-          <button class="btn" onclick="etsyLoadRefData()">↻ Profilleri yenile</button>
+          <button class="btn" onclick="etsyCheckStatus(true)">↻ Dükkan bilgisi ve profilleri yenile</button>
           <button class="btn primary" onclick="etsySaveDefaults(true)">Varsayılanları kaydet</button>
         </div>
         <div id="etsyDefSt"></div>
       </div>
     </div>
+
+    </div><!-- /data-market etsy -->
+
+    <div class="btn-row">
+      <button class="btn" onclick="goStep(1)">&#8592; Geri</button>
+      <button class="btn primary" onclick="goStep(3)">Ürün bilgisi &#8594;</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="panel narrow" id="p3">
+    <!-- Görsel önizleme -->
+    <div class="card" id="step3PreviewCard">
+      <h3>Görsel önizleme</h3>
+      <div style="display:flex;gap:16px;overflow-x:auto;padding-bottom:4px;margin-top:10px" id="step3PreviewRow">
+        <p class="muted" id="step3PreviewEmpty">1. adımda görseller hazırlanınca burada görünür</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3>Temel bilgiler</h3>
+        <button class="ai-btn" onclick="aiGenerate()">✦ AI ile doldur</button>
+      </div>
+      <div style="margin-bottom:4px">
+        <label style="font-size:13px;font-weight:500;color:#444;display:block;margin-bottom:5px">
+          Ürünü tarif et <span style="font-size:12px;color:#aaa;font-weight:400">(opsiyonel — AI bunu kullanır)</span>
+        </label>
+        <textarea id="f_desc_hint" placeholder="Örnek: Kahverengi renkte, 18 cm yüksekliğinde, 10 cm çapında stoneware vazo" style="width:100%;padding:9px 12px;font-size:13px;border:1px solid #ddd;border-radius:8px;font-family:inherit;resize:vertical;min-height:64px;outline:none;color:#111" onfocus="this.style.borderColor='#111'" onblur="this.style.borderColor='#ddd'"></textarea>
+      </div>
+      <div id="aiSt"></div>
+      <div style="display:flex;flex-direction:column;gap:13px;margin-top:12px">
+        <div class="field">
+          <label id="titleLabel">Ürün adı <span class="tag req">zorunlu</span></label>
+          <input type="text" id="f_title" placeholder="El Yapımı Stoneware Vazo — MAAT SERAMİK" maxlength="140" oninput="updateTitleCount()">
+          <span style="font-size:12px;color:#aaa" id="tc">0/100</span>
+        </div>
+        <div class="grid2" data-market="trendyol">
+          <div class="field"><label>Barkod <span class="tag req">zorunlu</span></label><input type="text" id="f_barcode" placeholder="NUN-001"></div>
+          <div class="field"><label>Model kodu <span class="tag req">zorunlu</span></label><input type="text" id="f_mainId" placeholder="MAAT-VAZE-001"></div>
+        </div>
+        <div class="grid3" data-market="trendyol">
+          <div class="field"><label>Stok adedi <span class="tag req">zorunlu</span></label><input type="number" id="f_qty" value="1" min="0"></div>
+          <div class="field"><label>Liste fiyatı ₺ <span class="tag req">zorunlu</span></label><input type="number" id="f_list" placeholder="750"></div>
+          <div class="field"><label>Satış fiyatı ₺ <span class="tag req">zorunlu</span></label><input type="number" id="f_sale" placeholder="599"></div>
+        </div>
+        <div class="grid3" data-market="trendyol">
+          <div class="field"><label>KDV <span class="tag req">zorunlu</span></label>
+            <select id="f_vat"><option value="10">%10</option><option value="20" selected>%20</option><option value="1">%1</option><option value="0">%0</option></select>
+          </div>
+          <div class="field"><label>Desi <span class="tag req">zorunlu</span></label><input type="number" id="f_desi" value="3" step="0.1"></div>
+          <div class="field"><label>Stok kodu</label><input type="text" id="f_stock" placeholder="NUN-STK-001"></div>
+        </div>
+
+        <!-- Etsy'ye özel alanlar -->
+        <div class="grid2" data-market="etsy" style="display:none">
+          <div class="field"><label>Fiyat <span id="etsyPriceCur">USD</span> <span class="tag req">zorunlu</span></label><input type="number" id="f_etsyPrice" step="0.01" min="0" placeholder="49.00"></div>
+          <div class="field"><label>Stok adedi <span class="tag req">zorunlu</span></label><input type="number" id="f_etsyQty" value="1" min="1"></div>
+        </div>
+        <div class="field" data-market="etsy" style="display:none">
+          <label>Etiketler <span class="tag req">zorunlu</span> <span style="font-size:12px;color:#aaa;font-weight:400">(virgülle ayır, en fazla 13, her biri 20 karakter)</span></label>
+          <input type="text" id="f_etsyTags" placeholder="ceramic vase, handmade pottery, stoneware vase" oninput="updateEtsyTagCount()">
+          <span style="font-size:12px;color:#aaa" id="etsyTagCount">0/13</span>
+        </div>
+        <div class="field" data-market="etsy" style="display:none">
+          <label>Malzemeler <span style="font-size:12px;color:#aaa;font-weight:400">(virgülle ayır)</span></label>
+          <input type="text" id="f_etsyMaterials" placeholder="stoneware, glaze, clay">
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Renk</label><input type="text" id="f_color" placeholder="Toprak Kırmızısı" oninput="renderAttrFields()"></div>
+          <div class="field"><label>Malzeme</label><input type="text" id="f_material" placeholder="Stoneware"></div>
+        </div>
+        <div class="grid3">
+          <div class="field"><label>Yükseklik (cm)</label><input type="number" id="f_height" placeholder="35" step="0.1"></div>
+          <div class="field"><label>Genişlik (cm)</label><input type="number" id="f_width" placeholder="18" step="0.1"></div>
+          <div class="field"><label>Ağırlık (gr)</label><input type="number" id="f_weight" placeholder="950"></div>
+        </div>
+        <div class="field"><label id="descLabel">Açıklama <span class="tag req">zorunlu</span></label><textarea id="f_desc" placeholder="Ürün açıklaması..."></textarea></div>
+      </div>
+    </div>
+    <div class="card" data-market="trendyol">
+      <h3>Kategori özellikleri</h3>
+      <div id="attrFields"><p class="muted">Önceki adımda kategori seç</p></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="goStep(2)">← Geri</button>
+      <button class="btn primary" onclick="prepareStep4()">Önizle ve yükle →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="panel narrow" id="p4">
+    <div class="card">
+      <h3>Payload önizleme</h3>
+      <div class="mono" id="preview">—</div>
+    </div>
+    <div class="card">
+      <h3>İşlemler</h3>
+      <div id="sendSt"></div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn" onclick="goStep(3)">← Düzenle</button>
+        <button class="btn excel" onclick="addToCatalog()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          Kataloğa ekle
+        </button>
+        <button class="btn" data-market="etsy" style="display:none" onclick="etsyAddCurrentToQueue()">
+          ＋ Etsy kuyruğuna ekle
+        </button>
+        <button class="btn success" onclick="sendProduct()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <span id="sendBtnLabel">Trendyol'a yükle</span>
+        </button>
+      </div>
+      <div id="catalogSt"></div>
+      <div id="batchBox"></div>
+    </div>
+  </div>
+
+  <!-- STEP 5: KATALOG -->
+  <div class="panel narrow" id="p5">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3>Ürün Kataloğu</h3>
+        <button class="btn" onclick="loadCatalog()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+          Yenile
+        </button>
+      </div>
+      <div id="catalogSt2"></div>
+      <div id="catalogTable"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="goStep(4)">← Geri</button>
+      <button class="btn excel" onclick="downloadCatalogExcel()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Excel olarak indir
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 6: TRENDYOL ÜRÜNLERİM -->
+  <div class="panel narrow" id="p6">
+
+    <!-- Etsy taslakları -->
+    <div class="card" data-market="etsy" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3>Etsy Taslaklarım</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="etsyListState" style="padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit">
+            <option value="draft">Taslak</option>
+            <option value="active">Yayında</option>
+            <option value="inactive">Pasif</option>
+          </select>
+          <button class="btn primary" onclick="loadEtsyListings()" style="padding:7px 14px">Listele</button>
+        </div>
+      </div>
+      <div id="etsyListSt"></div>
+      <div id="etsyListBox"></div>
+    </div>
+
+    <div class="card" data-market="trendyol">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3>Trendyol Ürünlerim</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="tyStatus" style="padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit">
+            <option value="">Tümü</option>
+            <option value="WAITING">Onay Bekliyor</option>
+            <option value="APPROVED">Satışta</option>
+            <option value="REJECTED">Reddedildi</option>
+            <option value="PASSIVE">Pasif</option>
+          </select>
+          <input type="text" id="tyBarcode" placeholder="Barkod ara..." style="padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit;width:140px">
+          <button class="btn primary" onclick="loadTrendyolProducts(0)" style="padding:7px 14px">Listele</button>
+        </div>
+      </div>
+      <div id="tySt"></div>
+    </div>
+    <div class="card" id="tyProductsCard" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div id="tyCount" style="font-size:13px;color:#888"></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn" id="tyPrevBtn" onclick="tyChangePage(-1)" style="padding:5px 10px;font-size:13px">&#8592; Önceki</button>
+          <span id="tyPageInfo" style="font-size:13px;color:#888;padding:0 4px"></span>
+          <button class="btn" id="tyNextBtn" onclick="tyChangePage(1)" style="padding:5px 10px;font-size:13px">Sonraki &#8594;</button>
+        </div>
+      </div>
+      <div id="tyProductList"></div>
+    </div>
+  </div>
+
+  <!-- STEP 7: ETSY -->
+  <div class="panel narrow" id="p7">
 
     <!-- Kuyruk -->
     <div class="card" id="etsyQueueCard" style="display:none">
@@ -807,7 +866,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
       <div id="etsyManualBox" style="display:none;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
         <div class="attr-row"><div class="attr-name">Başlık (EN) *</div><input type="text" id="em_title" placeholder="Handmade Ceramic Vase..."></div>
         <div class="attr-row" style="align-items:flex-start"><div class="attr-name" style="padding-top:7px">Açıklama (EN) *</div><textarea id="em_desc" rows="4" style="flex:1;padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit;outline:none"></textarea></div>
-        <div class="attr-row"><div class="attr-name">Fiyat (USD) *</div><input type="number" id="em_price" step="0.01" min="0"></div>
+        <div class="attr-row"><div class="attr-name" id="em_priceLabel">Fiyat (TRY) *</div><input type="number" id="em_price" step="0.01" min="0"></div>
         <div class="attr-row"><div class="attr-name">Adet</div><input type="number" id="em_qty" min="1" value="1"></div>
         <div class="attr-row"><div class="attr-name">Etiketler (virgüllü)</div><input type="text" id="em_tags" placeholder="ceramic vase, handmade pottery, ..."></div>
         <div class="attr-row"><div class="attr-name">Malzemeler (virgüllü)</div><input type="text" id="em_materials" placeholder="stoneware, glaze, clay"></div>
@@ -838,6 +897,33 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
 
     <div class="btn-row">
       <button class="btn" onclick="goStep(6)">← Trendyol</button>
+    </div>
+  </div>
+
+  <!-- Yeni Tasarım seçim diyaloğu -->
+  <div id="newDesignModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9100;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:14px;width:min(780px,94vw);max-height:86vh;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <h3 style="font-size:15px;font-weight:700;margin:0">✨ Yeni Tasarım</h3>
+        <button class="btn sm" onclick="closeNewDesign()">✕</button>
+      </div>
+
+      <div style="padding:18px 20px;display:flex;gap:12px;border-bottom:1px solid var(--border)">
+        <button class="btn primary" onclick="startBlankDesign()" style="flex:1;justify-content:center;padding:14px">
+          🆕 Sıfırdan başla
+        </button>
+        <button class="btn" onclick="showCatalogSource()" style="flex:1;justify-content:center;padding:14px">
+          🗂 Trendyol kataloğundan seç
+        </button>
+      </div>
+
+      <div id="ndCatalogBox" style="display:none;flex:1;overflow:hidden;flex-direction:column">
+        <div style="padding:12px 20px;border-bottom:1px solid var(--border)">
+          <input type="text" id="ndQ" placeholder="Başlık veya barkod ara..." style="width:100%;padding:8px 12px;font-size:13px;border:1px solid #ddd;border-radius:8px;font-family:inherit;outline:none" oninput="renderNewDesignCatalog()">
+          <p class="muted" style="font-size:12px;margin:8px 0 0">Seçtiğiniz ürünün bilgileri ve fotoğrafları panele düzenlenebilir şekilde gelir.</p>
+        </div>
+        <div id="ndList" style="flex:1;overflow-y:auto;padding:8px 20px"></div>
+      </div>
     </div>
   </div>
 
@@ -1051,8 +1137,140 @@ const SKEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 // ── APP STATE ─────────────────────────────────────────────────────────────
 const s = { imgs:[], urls:[], brandId:null, brandName:'', catId:null, catName:'', attrs:[], cats:[], _selIdx:0 };
 
-// Canvas boyutlari
-const CW = 400, CH = 600, EW = 1200, EH = 1800;
+// ── PAZARYERI MODU ────────────────────────────────────────────────────────
+// Trendyol 2:3 dikey gorsel ister, Etsy kare gorselde en iyi sonucu verir.
+const MARKETS = {
+  trendyol: { label: 'Trendyol', dative: "Trendyol'a", cw: 400, ch: 600, ew: 1200, eh: 1800, color: '#f97316' },
+  etsy:     { label: 'Etsy',     dative: "Etsy'ye",     cw: 460, ch: 460, ew: 2000, eh: 2000, color: '#f56400' }
+};
+var MARKET = 'trendyol';
+try { MARKET = localStorage.getItem('market') || 'trendyol'; } catch (e) {}
+if (!MARKETS[MARKET]) MARKET = 'trendyol';
+function isEtsy() { return MARKET === 'etsy'; }
+
+// Canvas boyutlari — moda gore degisir
+var CW = MARKETS[MARKET].cw, CH = MARKETS[MARKET].ch;
+var EW = MARKETS[MARKET].ew, EH = MARKETS[MARKET].eh;
+
+// Modu degistirir: tuval oranini, etiketleri ve panel icerigini yeniden kurar.
+function setMarket(m, opts) {
+  opts = opts || {};
+  if (!MARKETS[m]) return;
+  var changed = (m !== MARKET);
+  MARKET = m;
+  try { localStorage.setItem('market', m); } catch (e) {}
+
+  var cfg = MARKETS[m];
+  CW = cfg.cw; CH = cfg.ch; EW = cfg.ew; EH = cfg.eh;
+
+  var canvas = document.getElementById('editCanvas');
+  if (canvas) {
+    canvas.width  = CW;
+    canvas.height = CH;
+    canvas.style.width = CW + 'px';
+    var wrap = document.getElementById('canvasWrap');
+    if (wrap) wrap.style.width = CW + 'px';
+  }
+
+  // Oran degistiginde eski konumlar anlamsiz kalir — nesneleri yeniden ortala.
+  if (changed && typeof objs !== 'undefined' && objs) {
+    Object.keys(objs).forEach(function(k) {
+      var o = objs[k];
+      if (!o || !o.w) return;
+      if (o.w > CW) { var r = CW / o.w; o.w = CW; o.h = Math.round(o.h * r); }
+      if (o.h > CH) { var r2 = CH / o.h; o.h = CH; o.w = Math.round(o.w * r2); }
+      o.x = Math.round((CW - o.w) / 2);
+      o.y = Math.round((CH - o.h) / 2);
+    });
+  }
+
+  applyMarketUI();
+  if (typeof renderCanvas === 'function') renderCanvas();
+  if (changed && !opts.silent && typeof goStep === 'function') goStep(1);
+}
+
+// Moda gore gorunur metin, renk ve alanlari gunceller.
+function applyMarketUI() {
+  var etsy = isEtsy();
+  var cfg  = MARKETS[MARKET];
+
+  var sub = document.getElementById('marketSub');
+  if (sub) sub.textContent = cfg.label + ' Ürün Yükleme Paneli';
+
+  ['trendyol','etsy'].forEach(function(m) {
+    var btn = document.getElementById('mkBtn_' + m);
+    if (!btn) return;
+    var on = (m === MARKET);
+    btn.style.background   = on ? MARKETS[m].color : 'transparent';
+    btn.style.color        = on ? '#fff' : '#94a3b8';
+    btn.style.fontWeight   = on ? '700' : '500';
+  });
+
+  var badge = document.getElementById('brandBadge');
+  if (badge) badge.textContent = etsy ? 'Etsy · MaatPottery' : 'Marka ID: 2922973';
+
+  var savedTitle = document.getElementById('savedCardTitle');
+  if (savedTitle) savedTitle.innerHTML = '<span class="icon">📤</span> '
+    + cfg.dative + ' Yüklenecek Görseller <span id="savedCount" style="font-size:12px;color:#94a3b8;font-weight:400"></span>';
+
+  // Adim etiketleri
+  var s6 = document.getElementById('s6');
+  if (s6) s6.textContent = etsy ? '6 · Etsy Taslaklarım' : '6 · Trendyol';
+
+  // Kosullu acilan kart — data-market ile zorla gosterilmemeli
+  var tp = document.getElementById('tyProductsCard');
+  if (tp && etsy) tp.style.display = 'none';
+
+  // Etsy'ye ozel / Trendyol'a ozel alanlari goster-gizle
+  document.querySelectorAll('[data-market]').forEach(function(el) {
+    el.style.display = (el.getAttribute('data-market') === MARKET) ? '' : 'none';
+  });
+
+  var fmt = document.getElementById('imgFormatNote');
+  if (fmt) fmt.textContent = EW + '×' + EH + ' (' + (etsy ? 'kare' : '2:3 dikey') + ')';
+
+  var tl = document.getElementById('titleLabel');
+  if (tl) tl.innerHTML = (etsy ? 'Başlık (İngilizce)' : 'Ürün adı') + ' <span class="tag req">zorunlu</span>';
+
+  var hint = document.getElementById('f_desc_hint');
+  if (hint) hint.placeholder = etsy
+    ? 'Türkçe tarif edin, AI İngilizce başlık/açıklama/etiket üretir. Örn: Kahverengi, 18 cm stoneware vazo'
+    : 'Örnek: Kahverengi renkte, 18 cm yüksekliğinde, 10 cm çapında stoneware vazo';
+
+  var dlab = document.getElementById('descLabel');
+  if (dlab) dlab.innerHTML = (etsy ? 'Açıklama (İngilizce)' : 'Açıklama') + ' <span class="tag req">zorunlu</span>';
+
+  var sb = document.getElementById('sendBtnLabel');
+  if (sb) sb.textContent = etsy ? "Etsy'ye taslak gönder" : "Trendyol'a yükle";
+
+  // etsyState bu noktadan sonra tanimlaniyor — acilistaki ilk cagrida henuz yok.
+  var ready = (typeof etsyState !== 'undefined') && !!etsyState;
+
+  var cur = document.getElementById('etsyPriceCur');
+  if (cur) cur.textContent = ready ? etsyState.currency : 'USD';
+
+  updateTitleCount();
+  if (etsy && ready) etsyInit();
+}
+
+// Etsy basligi 140, Trendyol 100 karakter siniri kullanir.
+function updateTitleCount() {
+  var el = document.getElementById('f_title');
+  var tc = document.getElementById('tc');
+  if (!el || !tc) return;
+  var max = isEtsy() ? 140 : 100;
+  el.maxLength = max;
+  tc.textContent = el.value.length + '/' + max;
+  tc.style.color = el.value.length > max ? '#dc2626' : '#aaa';
+}
+
+function updateEtsyTagCount() {
+  var el = document.getElementById('etsyTagCount');
+  if (!el) return;
+  var n = gv('f_etsyTags').split(',').map(function(t){return t.trim();}).filter(Boolean).length;
+  el.textContent = n + '/13';
+  el.style.color = n > 13 ? '#dc2626' : '#aaa';
+}
 
 // Varsayılan efekt değerleri
 var DEFAULT_FX = { shadow:false, vignette:false, brightness:100, contrast:100, vigStrength:0.35, shadowStrength:0.55, shadowOffsetX:8, shadowOffsetY:10 };
@@ -1076,6 +1294,9 @@ let savedImages = [];
 // Marka ID hardcoded
 s.brandId = 2922973; s.brandName = 'MAAT SERAMİK';
 document.getElementById('brandBadge').textContent = 'Marka ID: 2922973';
+
+// Kayitli pazaryeri modunu uygula (tuval orani, etiketler, alan gorunurlugu)
+setMarket(MARKET, { silent: true });
 
 // Efekt kontrolleri — değişimde activeObj.fx'e kaydet + canvas yenile
 function isProductKey(k) { return k === 'product' || (k && k.startsWith('prod_')); }
@@ -1161,12 +1382,26 @@ function validateRequiredForSend() {
   clearReqHighlights();
   var missing = [], markIds = [];
 
-  [['f_title','Ürün adı'],['f_barcode','Barkod'],['f_mainId','Model kodu'],
-   ['f_qty','Stok adedi'],['f_list','Liste fiyatı'],['f_sale','Satış fiyatı'],
-   ['f_desi','Desi'],['f_desc','Açıklama']].forEach(function(f) {
+  var required = isEtsy()
+    ? [['f_title','Başlık'],['f_desc','Açıklama'],['f_etsyPrice','Fiyat'],
+       ['f_etsyQty','Stok adedi'],['f_etsyTags','Etiketler']]
+    : [['f_title','Ürün adı'],['f_barcode','Barkod'],['f_mainId','Model kodu'],
+       ['f_qty','Stok adedi'],['f_list','Liste fiyatı'],['f_sale','Satış fiyatı'],
+       ['f_desi','Desi'],['f_desc','Açıklama']];
+
+  required.forEach(function(f) {
     var el = document.getElementById(f[0]);
     if (!el || !String(el.value).trim()) { missing.push(f[1]); markIds.push(f[0]); }
   });
+
+  if (isEtsy()) {
+    var def = etsyCollectDefaults();
+    if (!def.taxonomy_id)         missing.push('Etsy kategorisi (2. adım)');
+    if (!def.shipping_profile_id) missing.push('Kargo profili (2. adım)');
+    if (!def.readiness_state_id)  missing.push('İşlem profili (2. adım)');
+    if (!s.urls.length)           missing.push('Görsel');
+    return etsyFinishValidation(missing, markIds);
+  }
 
   (s.attrs || []).forEach(function(a) {
     if (!a.required) return;
@@ -1203,6 +1438,23 @@ function validateRequiredForSend() {
   return false;
 }
 
+// Etsy modunda ortak vurgulama/uyari akisini paylasir.
+function etsyFinishValidation(missing, markIds) {
+  if (!missing.length) return true;
+  var p3 = document.getElementById('p3');
+  if (!p3 || p3.className.indexOf('active') === -1) goStep(3);
+  setTimeout(function() {
+    var first = null;
+    markIds.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) { el.classList.add('miss-field'); if (!first) first = el; }
+    });
+    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 60);
+  showReqToast(missing);
+  return false;
+}
+
 // Alan doldurulunca vurguyu kaldır
 document.addEventListener('input', function(e) {
   if (e.target && e.target.classList) e.target.classList.remove('miss-field');
@@ -1220,7 +1472,7 @@ function goStep(n) {
   if (n === 3) { renderAttrFields(); renderStep3Preview(); }
   if (n === 4) buildPreview();
   if (n === 5) loadCatalog();
-  if (n === 6) loadTrendyolProducts(0);
+  if (n === 6) { if (isEtsy()) loadEtsyListings(); else loadTrendyolProducts(0); }
   if (n === 7) etsyInit();
 }
 
@@ -3278,6 +3530,7 @@ function buildPayload() {
 }
 
 function buildPreview() {
+  if (isEtsy()) return etsyBuildPreview();
   var p = buildPayload();
   document.getElementById('preview').textContent = JSON.stringify(p,null,2);
   var item = p.items[0];
@@ -3297,6 +3550,7 @@ function prepareStep4() { buildPreview(); goStep(4); }
 
 // ── KATALOGA EKLE ─────────────────────────────────────────────────────────
 function addToCatalog() {
+  if (isEtsy()) return etsyAddToCatalog();
   setSt('catalogSt','load','<span class="spin">&#x27F3;</span> Kataloğa ekleniyor...');
   var entry = {
     title:gv('f_title'), barcode:gv('f_barcode'), productMainId:gv('f_mainId'),
@@ -3325,6 +3579,7 @@ function addToCatalog() {
 
 // ── TRENDYOL'A GONDER ────────────────────────────────────────────────────
 function sendProduct() {
+  if (isEtsy()) return etsySendCurrent();
   var payload = buildPayload();
   setSt('sendSt','load','<span class="spin">&#x27F3;</span> Trendyol a gonderiliyor...');
   fetch(PROXY+'?action=create-product',{
@@ -3375,12 +3630,17 @@ function loadCatalog() {
   setSt('catalogSt2','load','<span class="spin">&#x27F3;</span> Yukleniyor...');
   fetch(PROXY+'?action=catalog-list')
   .then(function(r){return r.json();})
-  .then(function(catalog){
+  .then(function(all){
+    // Ayni katalog dosyasi iki pazaryerini tutar; kayitlar market alaniyla ayrilir.
+    // Eski kayitlarda market yok — onlari Trendyol sayiyoruz.
+    var catalog = all.filter(function(p) {
+      return isEtsy() ? (p.market === 'etsy') : (p.market !== 'etsy');
+    });
     if(!catalog.length){
       document.getElementById('catalogSt2').innerHTML='';
-      document.getElementById('catalogTable').innerHTML='<p class="muted">Katalogda urun yok</p>'; return;
+      document.getElementById('catalogTable').innerHTML='<p class="muted">Bu pazaryeri icin katalogda urun yok</p>'; return;
     }
-    setSt('catalogSt2','ok',catalog.length+' urun');
+    setSt('catalogSt2','ok',catalog.length+' urun ('+MARKETS[MARKET].label+')');
     function pill(st){
       var m={'Taslak':'taslak','Yuklendi':'yuklendi','Onaylandi':'onaylandi','Reddedildi':'reddedildi'};
       return '<span class="pill '+(m[st]||'taslak')+'">'+(st||'Taslak')+'</span>';
@@ -3396,7 +3656,7 @@ function loadCatalog() {
           +'<td><code style="font-size:12px">'+(p.barcode||'—')+'</code></td>'
           +'<td><code style="font-size:12px">'+(p.productMainId||'—')+'</code></td>'
           +'<td style="font-size:12px;color:#666;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(p.category||'—')+'</td>'
-          +'<td style="text-align:right;font-weight:500">'+(p.salePrice?p.salePrice.toLocaleString('tr-TR')+'&#x20BA;':'—')+'</td>'
+          +'<td style="text-align:right;font-weight:500">'+(p.salePrice?p.salePrice.toLocaleString('tr-TR')+' '+(p.currency||(isEtsy()?etsyState.currency:'\u20BA'))+'':'—')+'</td>'
           +'<td style="text-align:center">'+(p.quantity||0)+'</td>'
           +'<td>'+pill(p.status)+'</td></tr>';
       }).join('')
@@ -3439,6 +3699,7 @@ function setSt(id,type,msg) { var el=document.getElementById(id); if(el) el.inne
 
 // ── AI GENERATE ───────────────────────────────────────────────────────────
 function aiGenerate() {
+  if (isEtsy()) return etsyAiGenerate();
   var btn = document.querySelector('.ai-btn');
   if (btn) { btn.textContent='Olusturuluyor...'; btn.disabled=true; }
   setSt('aiSt','load','<span class="spin">&#x27F3;</span> AI ile bilgiler olusturuluyor...');
@@ -4332,6 +4593,107 @@ function pickLocalFile() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// YENİ TASARIM
+// ═══════════════════════════════════════════════════════════════════════════
+var ndCatalog = [];
+
+function openNewDesign() {
+  document.getElementById('newDesignModal').style.display = 'flex';
+  document.getElementById('ndCatalogBox').style.display = 'none';
+}
+
+function closeNewDesign() {
+  document.getElementById('newDesignModal').style.display = 'none';
+}
+
+function startBlankDesign() {
+  location.reload();
+}
+
+function showCatalogSource() {
+  var box = document.getElementById('ndCatalogBox');
+  box.style.display = 'flex';
+  document.getElementById('ndList').innerHTML = '<p class="muted">Katalog yukleniyor...</p>';
+  fetch(PROXY + '?action=catalog-list')
+    .then(function(r) { return r.json(); })
+    .then(function(list) {
+      ndCatalog = Array.isArray(list) ? list : [];
+      renderNewDesignCatalog();
+    })
+    .catch(function(e) {
+      document.getElementById('ndList').innerHTML = '<p class="muted">Katalog yuklenemedi: '+eEsc(e.message)+'</p>';
+    });
+}
+
+function renderNewDesignCatalog() {
+  var q = (gv('ndQ')||'').toLowerCase().trim();
+  var rows = ndCatalog.filter(function(c) {
+    if (!q) return true;
+    return (c.title||'').toLowerCase().indexOf(q) !== -1
+        || (c.barcode||'').toLowerCase().indexOf(q) !== -1;
+  });
+  var box = document.getElementById('ndList');
+  if (!rows.length) { box.innerHTML = '<p class="muted">Eslesen urun yok</p>'; return; }
+  box.innerHTML = rows.map(function(c) {
+    var i = ndCatalog.indexOf(c);
+    var img = (c.images && c.images[0])
+      ? '<img src="'+eEsc(c.images[0])+'" style="width:48px;height:48px;object-fit:cover;border-radius:6px">'
+      : '<div style="width:48px;height:48px;border-radius:6px;background:#f1f5f9"></div>';
+    return '<div onclick="loadDesignFromCatalog('+i+')" style="display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #f1f5f9;cursor:pointer">'
+      + img
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-size:13px;font-weight:600;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+eEsc(c.title)+'</div>'
+      + '<div style="font-size:11px;color:#94a3b8">'+eEsc(c.barcode||'')+' · '+eEsc(c.category||'')+' · '+(c.images?c.images.length:0)+' gorsel</div>'
+      + '</div>'
+      + '<span style="font-size:12px;color:var(--primary);font-weight:600">Sec →</span>'
+      + '</div>';
+  }).join('');
+}
+
+// Katalog kaydini panele yukler — tum alanlar duzenlenebilir kalir.
+function loadDesignFromCatalog(i) {
+  var c = ndCatalog[i];
+  if (!c) return;
+
+  var setv = function(id, v) {
+    var el = document.getElementById(id);
+    if (el && v !== undefined && v !== null) el.value = v;
+  };
+
+  setv('f_title',    c.title);
+  setv('f_desc',     c.description || '');
+  setv('f_barcode',  c.barcode);
+  setv('f_mainId',   c.productMainId);
+  setv('f_stock',    c.stockCode);
+  setv('f_qty',      c.quantity);
+  setv('f_list',     c.listPrice);
+  setv('f_sale',     c.salePrice);
+  setv('f_vat',      c.vatRate);
+  setv('f_desi',     c.desi);
+  setv('f_color',    c.color);
+  setv('f_material', c.material);
+  setv('f_height',   c.height);
+  setv('f_width',    c.width);
+  setv('f_weight',   c.weight);
+
+  var tc = document.getElementById('tc');
+  if (tc) tc.textContent = (c.title||'').length + '/100';
+
+  // Gorseller: kuyruga hazir gelsin, kullanici cikarabilsin/ekleyebilsin
+  // isGalleryItem: zaten yuklenmis URL'ler — tekrar yuklenmeden s.urls'e senkronlanir
+  s.urls = (c.images || []).slice();
+  savedImages = s.urls.map(function(u) { return { dataUrl: u, isGalleryItem: true, snap: null }; });
+  updateSavedGrid();
+
+  // Trendyol kategorisi biliniyorsa tasi
+  if (c.categoryId) { s.catId = c.categoryId; s.catName = c.categoryName || c.category || ''; }
+
+  closeNewDesign();
+  goStep(1);
+  setSt('uploadSt','ok','&#x2713; "'+eEsc(c.title)+'" katalogdan yuklendi — bilgiler ve gorseller duzenlenebilir');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // ETSY
 // ═══════════════════════════════════════════════════════════════════════════
 var ETSY_PROXY = SUPA + '/functions/v1/etsy-proxy';
@@ -4339,8 +4701,9 @@ var ETSY_PROXY = SUPA + '/functions/v1/etsy-proxy';
 var etsyState = {
   connected: false,
   shopId: null,
-  taxonomy: [],        // {id, path}
-  taxonomyLoaded: false,
+  currency: 'TRY',
+  taxTimer: null,
+  taxSeq: 0,
   queue: [],           // kuyruk kayitlari
   running: false,
   catalog: [],         // picker icin
@@ -4363,6 +4726,180 @@ function etsyApi(action, opts) {
   }).then(function(r) { return r.json(); });
 }
 
+// ── ETSY: 3. ADIM (URUN BILGISI) ──────────────────────────────────────────
+// Etsy modunda AI dogrudan Ingilizce ilan icerigi uretir.
+function etsyAiGenerate() {
+  var btn = document.querySelector('.ai-btn');
+  if (btn) { btn.textContent = 'Olusturuluyor...'; btn.disabled = true; }
+  setSt('aiSt','load','<span class="spin">&#x27F3;</span> Etsy icin Ingilizce icerik olusturuluyor...');
+
+  etsyApi('ai-listing', { method:'POST', body: {
+    title:       gv('f_title'),
+    description: (gv('f_desc_hint') || gv('f_desc') || '').trim(),
+    category:    etsyState.taxonomyPath || s.catName || '',
+    color:       gv('f_color'),
+    material:    gv('f_material'),
+    height:      gv('f_height'),
+    width:       gv('f_width'),
+    weight:      gv('f_weight')
+  }}).then(function(d) {
+    if (!d.ok || !d.result) throw new Error(d.error || 'bilinmeyen hata');
+    var r = d.result;
+    var setv = function(id, v) { var el = document.getElementById(id); if (el && v != null) el.value = v; };
+    setv('f_title', r.title);
+    setv('f_desc',  r.description);
+    setv('f_etsyTags',      (r.tags || []).join(', '));
+    setv('f_etsyMaterials', (r.materials || []).join(', '));
+    updateTitleCount();
+    updateEtsyTagCount();
+    setSt('aiSt','ok','&#x2713; Ingilizce icerik hazir — duzenleyebilirsiniz');
+  }).catch(function(e) {
+    setSt('aiSt','err','AI hatasi: ' + eEsc(e.message));
+  }).then(function() {
+    if (btn) { btn.textContent = '✦ AI ile doldur'; btn.disabled = false; }
+  });
+}
+
+// 3. adimdaki formu bir Etsy kuyruk kaydina donusturur.
+function etsyItemFromForm() {
+  return {
+    id:          etsyNewId(),
+    source:      'form',
+    title:       gv('f_title').trim(),
+    description: gv('f_desc').trim(),
+    price:       gv('f_etsyPrice'),
+    quantity:    gv('f_etsyQty') || 1,
+    tags:        gv('f_etsyTags').split(',').map(function(t){return t.trim();}).filter(Boolean),
+    materials:   gv('f_etsyMaterials').split(',').map(function(t){return t.trim();}).filter(Boolean),
+    images:      s.urls.slice(0, 10),
+    height:      gv('f_height'),
+    width:       gv('f_width'),
+    weight:      gv('f_weight'),
+    status:      'translated',
+    error:       ''
+  };
+}
+
+function etsyBuildPreview() {
+  var def  = etsyCollectDefaults();
+  var item = etsyItemFromForm();
+  var payload = {
+    title: item.title, description: item.description,
+    price: parseFloat(item.price) || 0, quantity: parseInt(item.quantity, 10) || 1,
+    tags: item.tags, materials: item.materials,
+    taxonomy_id: def.taxonomy_id, taxonomy: def.taxonomy_path,
+    shipping_profile_id: def.shipping_profile_id,
+    return_policy_id:    def.return_policy_id,
+    shop_section_id:     def.shop_section_id,
+    readiness_state_id:  def.readiness_state_id,
+    who_made: def.who_made, when_made: def.when_made,
+    state: 'draft', images: item.images
+  };
+  document.getElementById('preview').textContent = JSON.stringify(payload, null, 2);
+
+  var warns = [];
+  if (!def.taxonomy_id)          warns.push('Etsy kategorisi secilmedi (2. adim)');
+  if (!def.shipping_profile_id)  warns.push('kargo profili secilmedi (2. adim)');
+  if (!def.readiness_state_id)   warns.push('islem profili secilmedi (2. adim)');
+  if (!item.images.length)       warns.push('gorsel yok');
+  if (!item.title)               warns.push('baslik bos');
+  if (!item.description)         warns.push('aciklama bos');
+  if (!(parseFloat(item.price) > 0)) warns.push('fiyat girilmedi');
+  if (item.tags.length > 13)     warns.push('en fazla 13 etiket olabilir');
+
+  if (warns.length) setSt('sendSt','err','&#x26A0; ' + warns.join('<br>&#x26A0; '));
+  else              setSt('sendSt','ok','&#x2713; Etsy taslak payload hazir');
+}
+
+// Tek urunu dogrudan Etsy'ye taslak olarak gonderir (kuyruk mantigini yeniden kullanir).
+function etsySendCurrent() {
+  var item = etsyItemFromForm();
+  etsyState.queue.push(item);
+  etsySaveQueue();
+  etsyRenderQueue();
+  setSt('sendSt','load','<span class="spin">&#x27F3;</span> Etsy\'ye taslak gonderiliyor...');
+  etsyRunQueue();
+}
+
+function etsyAddCurrentToQueue() {
+  var item = etsyItemFromForm();
+  if (!item.title || !item.description || !(parseFloat(item.price) > 0)) {
+    setSt('sendSt','err','&#x26A0; Baslik, aciklama ve fiyat zorunlu');
+    return;
+  }
+  etsyState.queue.push(item);
+  etsySaveQueue();
+  etsyRenderQueue();
+  setSt('sendSt','ok','&#x2713; Kuyruga eklendi — toplam ' + etsyState.queue.length + ' urun. 7. adimda topluca gonderebilirsiniz.');
+}
+
+// Etsy modunda katalog kaydi ayni dosyaya, market isaretiyle yazilir.
+function etsyAddToCatalog() {
+  var def = etsyCollectDefaults();
+  setSt('catalogSt','load','<span class="spin">&#x27F3;</span> Kataloga ekleniyor...');
+  var entry = {
+    market: 'etsy',
+    title: gv('f_title'), description: gv('f_desc'),
+    barcode: gv('f_barcode') || ('ETSY-' + Date.now()),
+    category: etsyState.taxonomyPath || '',
+    taxonomyId: def.taxonomy_id,
+    etsyTags: gv('f_etsyTags'), etsyMaterials: gv('f_etsyMaterials'),
+    color: gv('f_color'), material: gv('f_material'),
+    height: gv('f_height'), width: gv('f_width'), weight: gv('f_weight'),
+    quantity: parseInt(gv('f_etsyQty'), 10) || 1,
+    salePrice: parseFloat(gv('f_etsyPrice')) || 0,
+    currency: etsyState.currency,
+    status: 'Taslak', images: s.urls
+  };
+  fetch(PROXY + '?action=catalog-add', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(entry)
+  }).then(function(r){ return r.json(); }).then(function(d) {
+    if (d.ok) setSt('catalogSt','ok','&#x2713; Kataloga eklendi — toplam ' + d.total + ' urun');
+    else if (d.error === 'DUPLIKAT_BARKOD') setSt('catalogSt','err','&#x26A0; Bu barkod zaten katalogda: ' + eEsc(d.existing.title));
+    else setSt('catalogSt','err','Hata: ' + eEsc(JSON.stringify(d)));
+  }).catch(function(e) {
+    setSt('catalogSt','err','Hata: ' + eEsc(e.message));
+  });
+}
+
+// ── ETSY: ILAN LISTESI (6. ADIM) ──────────────────────────────────────────
+function loadEtsyListings() {
+  setSt('etsyListSt','load','<span class="spin">&#x27F3;</span> Etsy ilanlari yukleniyor...');
+  document.getElementById('etsyListBox').innerHTML = '';
+  var state = gv('etsyListState') || 'draft';
+
+  etsyApi('listings', { query: '&state=' + encodeURIComponent(state) }).then(function(d) {
+    if (d.error) { setSt('etsyListSt','err','Hata: ' + eEsc(d.error)); return; }
+    var rows = d.results || [];
+    if (!rows.length) { setSt('etsyListSt','ok','Bu durumda ilan yok'); return; }
+    setSt('etsyListSt','ok', rows.length + ' ilan');
+
+    document.getElementById('etsyListBox').innerHTML =
+      '<div style="overflow-x:auto"><table class="catalog-table"><thead><tr>'
+      + '<th style="width:54px">Gorsel</th><th>Baslik</th><th style="width:100px">Fiyat</th>'
+      + '<th style="width:60px">Stok</th><th style="width:80px">Durum</th><th style="width:60px"></th>'
+      + '</tr></thead><tbody>'
+      + rows.map(function(r) {
+          var pr    = r.price || {};
+          var img   = (r.images && r.images[0]) ? r.images[0].url_75x75 : null;
+          var thumb = img ? '<img src="'+eEsc(img)+'" style="width:42px;height:42px;object-fit:cover;border-radius:6px">'
+                          : '<span style="color:#cbd5e1">—</span>';
+          return '<tr><td>'+thumb+'</td>'
+            + '<td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+eEsc(r.title)+'</td>'
+            + '<td style="text-align:right;font-weight:500">'
+              + (pr.amount != null ? (pr.amount / (pr.divisor || 100)).toFixed(2) + ' ' + eEsc(pr.currency_code||'') : '—')
+            + '</td>'
+            + '<td style="text-align:center">'+(r.quantity != null ? r.quantity : '—')+'</td>'
+            + '<td><span class="pill '+(r.state === 'active' ? 'onaylandi' : 'taslak')+'">'+eEsc(r.state)+'</span></td>'
+            + '<td><a href="'+eEsc(r.url||'#')+'" target="_blank" rel="noopener" style="font-size:12px">ac</a></td>'
+            + '</tr>';
+        }).join('')
+      + '</tbody></table></div>';
+  }).catch(function(e) {
+    setSt('etsyListSt','err','Hata: ' + eEsc(e.message));
+  });
+}
+
 // ── BAGLANTI ──────────────────────────────────────────────────────────────
 function etsyInit() {
   etsyLoadQueue();
@@ -4371,9 +4908,9 @@ function etsyInit() {
   etsyCheckStatus();
 }
 
-function etsyCheckStatus() {
+function etsyCheckStatus(refresh) {
   setSt('etsyConnSt','load','<span class="spin">&#x27F3;</span> Baglanti kontrol ediliyor...');
-  return etsyApi('status').then(function(d) {
+  return etsyApi('status', refresh ? { query: '&refresh=1' } : {}).then(function(d) {
     etsyState.connected = !!d.connected;
     etsyState.shopId    = d.shop_id || null;
     var show = function(id, on) { var el=document.getElementById(id); if(el) el.style.display = on ? '' : 'none'; };
@@ -4382,7 +4919,9 @@ function etsyCheckStatus() {
     show('etsyDefaultsCard',   !!d.connected);
     show('etsyQueueCard',      !!d.connected);
     if (d.connected) {
-      setSt('etsyConnSt','ok','&#x2713; Bagli — Dukkan: <strong>'+eEsc(d.shop_name||'?')+'</strong> (ID '+d.shop_id+')');
+      etsyState.currency = d.currency || 'TRY';
+      etsyApplyCurrencyLabels();
+      setSt('etsyConnSt','ok','&#x2713; Bagli — Dukkan: <strong>'+eEsc(d.shop_name||'?')+'</strong> (ID '+d.shop_id+') · Para birimi: <strong>'+eEsc(etsyState.currency)+'</strong>');
       etsyLoadRefData();
       etsyLoadTaxonomy();
     } else {
@@ -4391,6 +4930,17 @@ function etsyCheckStatus() {
   }).catch(function(e) {
     setSt('etsyConnSt','err','Hata: '+eEsc(e.message));
   });
+}
+
+// Etsy fiyatlari dukkan para biriminde kabul eder — etiketleri ona gore yaz.
+function etsyApplyCurrencyLabels() {
+  var c = etsyState.currency;
+  var lbl = document.getElementById('e_priceLabel');
+  if (lbl) lbl.textContent = 'Varsayilan fiyat (' + c + ')';
+  var mlbl = document.getElementById('em_priceLabel');
+  if (mlbl) mlbl.textContent = 'Fiyat (' + c + ') *';
+  var th = document.getElementById('etsyPriceTh');
+  if (th) th.textContent = 'Fiyat ' + c;
 }
 
 function etsyConnect() {
@@ -4433,8 +4983,14 @@ function etsyLoadRefData() {
   Promise.all([
     etsyApi('shipping-profiles'),
     etsyApi('return-policies'),
-    etsyApi('sections')
+    etsyApi('sections'),
+    etsyApi('processing-profiles')
   ]).then(function(res) {
+    var procs = res[3].results || [];
+    etsyFillSelect('e_readiness', procs, 'readiness_state_id', function(p) {
+      return (p.readiness_state === 'ready_to_ship' ? 'Stoktan gonderim' : 'Siparise ozel')
+        + ' — ' + (p.processing_days_display_label || (p.min_processing_days+'-'+p.max_processing_days+' gun'));
+    }, procs.length ? 'Seciniz...' : 'Profil yok — asagidan olusturun');
     etsyFillSelect('e_shipping', res[0].results || [], 'shipping_profile_id',
       function(p){ return p.title + ' (' + (p.min_delivery_days||'?') + '-' + (p.max_delivery_days||'?') + ' gun)'; }, 'Seciniz...');
     etsyFillSelect('e_return', res[1].results || [], 'return_policy_id',
@@ -4448,27 +5004,56 @@ function etsyLoadRefData() {
   });
 }
 
-function etsyLoadTaxonomy() {
-  if (etsyState.taxonomyLoaded) return;
-  etsyApi('taxonomy').then(function(d) {
-    etsyState.taxonomy = d.results || [];
-    etsyState.taxonomyLoaded = true;
+function etsyCreateProcessingProfile() {
+  var body = {
+    readiness_state:     gv('e_newReadyState'),
+    min_processing_time: parseInt(gv('e_procMin'), 10) || 3,
+    max_processing_time: parseInt(gv('e_procMax'), 10) || 7
+  };
+  if (body.min_processing_time > body.max_processing_time) {
+    setSt('etsyDefSt','err','&#x26A0; Minimum sure maksimumdan buyuk olamaz'); return;
+  }
+  setSt('etsyDefSt','load','<span class="spin">&#x27F3;</span> Islem profili olusturuluyor...');
+  etsyApi('create-processing-profile', { method:'POST', body: body }).then(function(d) {
+    if (d.ok) {
+      setSt('etsyDefSt','ok','&#x2713; Islem profili olusturuldu');
+      etsyLoadRefData();
+    } else if (d.conflict) {
+      setSt('etsyDefSt','ok','Ayni profil zaten var — listeden secin');
+      etsyLoadRefData();
+    } else {
+      setSt('etsyDefSt','err','Profil olusturulamadi: '+eEsc(d.error||'bilinmiyor'));
+    }
+  }).catch(function(e) {
+    setSt('etsyDefSt','err','Profil olusturulamadi: '+eEsc(e.message));
   });
 }
 
+function etsyLoadTaxonomy() { /* arama sunucu tarafinda yapiliyor */ }
+
+// Taksonomi 3000+ dugum — tamamini indirmek yerine sunucuda aratiyoruz.
 function etsyFilterTaxonomy() {
-  var q  = (gv('e_taxQ')||'').toLowerCase().trim();
+  var q   = (gv('e_taxQ')||'').trim();
   var box = document.getElementById('e_taxResults');
-  if (!q) { box.style.display='none'; return; }
-  var hits = etsyState.taxonomy.filter(function(n) {
-    return n.path.toLowerCase().indexOf(q) !== -1;
-  }).slice(0, 40);
-  box.innerHTML = hits.length
-    ? hits.map(function(n) {
-        return '<div class="cat-item" onclick="etsyPickTaxonomy('+n.id+',\''+eEsc(n.path).replace(/'/g,"\\'")+'\')">'+eEsc(n.path)+'</div>';
-      }).join('')
-    : '<div class="cat-item">Sonuc yok</div>';
-  box.style.display = '';
+  clearTimeout(etsyState.taxTimer);
+  if (q.length < 2) { box.style.display='none'; return; }
+
+  etsyState.taxTimer = setTimeout(function() {
+    var seq = ++etsyState.taxSeq;
+    box.innerHTML = '<div class="cat-item">Araniyor...</div>';
+    box.style.display = '';
+    etsyApi('taxonomy', { query: '&q=' + encodeURIComponent(q) }).then(function(d) {
+      if (seq !== etsyState.taxSeq) return;  // eski istek gec geldiyse yoksay
+      var hits = (d.results || []).slice(0, 40);
+      box.innerHTML = hits.length
+        ? hits.map(function(n) {
+            return '<div class="cat-item" onclick="etsyPickTaxonomy('+n.id+',\''+eEsc(n.path).replace(/'/g,"\\'")+'\')">'+eEsc(n.path)+'</div>';
+          }).join('')
+        : '<div class="cat-item">Sonuc yok</div>';
+    }).catch(function(e) {
+      box.innerHTML = '<div class="cat-item">Hata: '+eEsc(e.message)+'</div>';
+    });
+  }, 300);
 }
 
 function etsyPickTaxonomy(id, path) {
@@ -4489,12 +5074,11 @@ function etsyCollectDefaults() {
     shop_section_id:     gv('e_section'),
     taxonomy_id:         etsyState.taxonomyId || '',
     taxonomy_path:       etsyState.taxonomyPath || '',
+    readiness_state_id:  gv('e_readiness'),
     who_made:            gv('e_whoMade'),
     when_made:           gv('e_whenMade'),
     price:               gv('e_price'),
     quantity:            gv('e_qty'),
-    processing_min:      gv('e_procMin'),
-    processing_max:      gv('e_procMax'),
     should_auto_renew:   !!(document.getElementById('e_autoRenew')||{}).checked
   };
 }
@@ -4513,9 +5097,9 @@ function etsyLoadDefaults() {
   etsyState.taxonomyPath = d.taxonomy_path || '';
   var sel = document.getElementById('e_taxSel');
   if (sel && d.taxonomy_id) sel.textContent = '✓ ' + d.taxonomy_path + ' (ID ' + d.taxonomy_id + ')';
-  ['e_whoMade','e_whenMade','e_price','e_qty','e_procMin','e_procMax'].forEach(function(id) {
-    var key = { e_whoMade:'who_made', e_whenMade:'when_made', e_price:'price',
-                e_qty:'quantity', e_procMin:'processing_min', e_procMax:'processing_max' }[id];
+  ['e_whoMade','e_whenMade','e_price','e_qty'].forEach(function(id) {
+    var key = { e_whoMade:'who_made', e_whenMade:'when_made',
+                e_price:'price', e_qty:'quantity' }[id];
     var el = document.getElementById(id);
     if (el && d[key] !== undefined && d[key] !== '') el.value = d[key];
   });
@@ -4527,7 +5111,8 @@ function etsyLoadDefaults() {
 function etsyApplyDefaults() {
   var d = etsyState.defaults;
   if (!d) return;
-  [['e_shipping','shipping_profile_id'],['e_return','return_policy_id'],['e_section','shop_section_id']]
+  [['e_shipping','shipping_profile_id'],['e_return','return_policy_id'],
+   ['e_section','shop_section_id'],['e_readiness','readiness_state_id']]
     .forEach(function(pair) {
       var el = document.getElementById(pair[0]);
       if (el && d[pair[1]]) el.value = d[pair[1]];
@@ -4573,7 +5158,7 @@ function etsyRenderQueue() {
 
   box.innerHTML = '<div style="overflow-x:auto"><table class="catalog-table"><thead><tr>'
     + '<th style="width:34px"></th><th style="width:54px">Gorsel</th><th>Baslik (EN)</th>'
-    + '<th style="width:90px">Fiyat $</th><th style="width:64px">Adet</th>'
+    + '<th style="width:90px">Fiyat '+eEsc(etsyState.currency)+'</th><th style="width:64px">Adet</th>'
     + '<th style="width:150px">Durum</th><th style="width:70px"></th>'
     + '</tr></thead><tbody>'
     + q.map(function(it, i) {
@@ -4818,6 +5403,7 @@ function etsyValidateItem(it, def) {
   if (!it.images || !it.images.length) return 'gorsel yok';
   if (!def.taxonomy_id)       return 'Etsy kategorisi (taxonomy) secilmedi';
   if (!def.shipping_profile_id) return 'kargo profili secilmedi';
+  if (!def.readiness_state_id)  return 'islem profili secilmedi';
   return null;
 }
 
@@ -4888,8 +5474,7 @@ function etsyRunQueue() {
       who_made:            def.who_made,
       when_made:           def.when_made,
       is_supply:           false,
-      processing_min:      def.processing_min,
-      processing_max:      def.processing_max,
+      readiness_state_id:  def.readiness_state_id,
       should_auto_renew:   def.should_auto_renew,
       item_height:         it.height,
       item_width:          it.width,

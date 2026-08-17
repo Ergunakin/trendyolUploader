@@ -136,11 +136,12 @@ async function etsy(path: string, init: RequestInit = {}, record?: any): Promise
 
 /** Resolves and caches the shop_id for the connected user. */
 async function getShopId(record: any): Promise<number> {
-  if (record.shop_id) return record.shop_id;
+  if (record.shop_id && record.currency_code) return record.shop_id;
   const me   = await etsy('/users/me', {}, record);
   const shop = await etsy(`/shops/${me.shop_id}`, {}, record);
-  record.shop_id   = me.shop_id;
-  record.shop_name = shop.shop_name;
+  record.shop_id       = me.shop_id;
+  record.shop_name     = shop.shop_name;
+  record.currency_code = shop.currency_code;
   await writeJson(TOKEN_PATH, record);
   return me.shop_id;
 }
@@ -177,8 +178,8 @@ function listingForm(item: any): URLSearchParams {
   set('shipping_profile_id', item.shipping_profile_id);
   set('return_policy_id',    item.return_policy_id);
   set('shop_section_id',     item.shop_section_id);
-  set('processing_min',      item.processing_min);
-  set('processing_max',      item.processing_max);
+  // Fiziksel ilanlarda Etsy processing_min/max yerine işlem profili istiyor.
+  set('readiness_state_id',  item.readiness_state_id);
   set('should_auto_renew',   item.should_auto_renew ? 'true' : 'false');
 
   const tags      = cleanList(item.tags, TAG_RE, 20, 13);
@@ -283,12 +284,18 @@ Deno.serve(async (req: Request) => {
       const record = await readJson(TOKEN_PATH);
       if (!record?.access_token) return json({ connected: false });
       try {
-        const tok    = await getToken();
+        const tok = await getToken();
+        // ?refresh=1 — dükkan adı/para birimi Etsy'de değiştiyse önbelleği tazeler
+        if (url.searchParams.get('refresh')) {
+          delete tok.shop_id;
+          delete tok.currency_code;
+        }
         const shopId = await getShopId(tok);
         return json({
           connected: true,
           shop_id:   shopId,
           shop_name: tok.shop_name ?? null,
+          currency:  tok.currency_code ?? null,
           user_id:   tok.user_id ?? null,
           scope:     tok.scope ?? null,
         });
@@ -313,6 +320,38 @@ Deno.serve(async (req: Request) => {
       const tok = await getToken();
       const shopId = await getShopId(tok);
       return json(await etsy(`/shops/${shopId}/policies/return`, {}, tok));
+    }
+
+    // Etsy fiziksel ilanlarda readiness_state_id (işlem profili) zorunlu tutuyor.
+    if (action === 'processing-profiles') {
+      const tok = await getToken();
+      const shopId = await getShopId(tok);
+      return json(await etsy(`/shops/${shopId}/readiness-state-definitions?limit=100`, {}, tok));
+    }
+
+    // Dükkanda uygun profil yoksa oluşturur; aynısı varsa 409 döner ve mevcut liste kullanılır.
+    if (action === 'create-processing-profile') {
+      const { readiness_state, min_processing_time, max_processing_time } = await req.json();
+      const tok    = await getToken();
+      const shopId = await getShopId(tok);
+      const body = new URLSearchParams({
+        readiness_state:      readiness_state || 'made_to_order',
+        min_processing_time:  String(min_processing_time ?? 3),
+        max_processing_time:  String(max_processing_time ?? 7),
+        processing_time_unit: 'days',
+      });
+      try {
+        const p = await etsy(`/shops/${shopId}/readiness-state-definitions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString(),
+        }, tok);
+        return json({ ok: true, profile: p });
+      } catch (e) {
+        const msg = String(e instanceof Error ? e.message : e);
+        if (msg.startsWith('ETSY_409')) return json({ ok: false, conflict: true, error: msg });
+        throw e;
+      }
     }
 
     if (action === 'sections') {
