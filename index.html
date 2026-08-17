@@ -176,6 +176,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
     <div class="step" onclick="goStep(4)" id="s4">4 · Gönder</div>
     <div class="step" onclick="goStep(5)" id="s5">5 · Katalog</div>
     <div class="step" onclick="goStep(6)" id="s6">6 · Trendyol</div>
+    <div class="step" onclick="goStep(7)" id="s7">7 · Etsy</div>
   </div>
   </div><!-- /narrow stepper -->
 
@@ -705,6 +706,160 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
     </div>
   </div>
 
+  <!-- STEP 7: ETSY -->
+  <div class="panel narrow" id="p7">
+
+    <!-- Bağlantı -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h3 style="margin:0">🛍 Etsy Bağlantısı</h3>
+        <div style="display:flex;gap:6px">
+          <button class="btn primary" id="etsyConnectBtn" onclick="etsyConnect()">Etsy'ye Bağlan</button>
+          <button class="btn" id="etsyDisconnectBtn" onclick="etsyDisconnect()" style="display:none">Bağlantıyı Kes</button>
+        </div>
+      </div>
+      <div id="etsyConnSt"></div>
+    </div>
+
+    <!-- Varsayılanlar -->
+    <div class="card" id="etsyDefaultsCard" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none" onclick="toggleSection('etsyDefaultsBody','etsyDefaultsChevron')">
+        <div class="card-title" style="margin-bottom:0"><span class="icon">⚙️</span> İlan Varsayılanları</div>
+        <span id="etsyDefaultsChevron" style="font-size:14px;color:#94a3b8;transition:transform .2s">▼</span>
+      </div>
+      <div id="etsyDefaultsBody" style="margin-top:12px">
+        <div class="attr-row">
+          <div class="attr-name">Kargo profili *</div>
+          <select id="e_shipping" style="flex:1;padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit"></select>
+        </div>
+        <div class="attr-row">
+          <div class="attr-name">İade politikası</div>
+          <select id="e_return" style="flex:1;padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit"></select>
+        </div>
+        <div class="attr-row">
+          <div class="attr-name">Dükkan bölümü</div>
+          <select id="e_section" style="flex:1;padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit"></select>
+        </div>
+        <div class="attr-row" style="align-items:flex-start">
+          <div class="attr-name" style="padding-top:7px">Kategori (taxonomy) *</div>
+          <div style="flex:1">
+            <input type="text" id="e_taxQ" placeholder="Ara: vase, bowl, mug..." oninput="etsyFilterTaxonomy()">
+            <div id="e_taxSel" style="font-size:12px;color:#15803d;font-weight:600;margin-top:6px"></div>
+            <div class="cat-results" id="e_taxResults" style="display:none"></div>
+          </div>
+        </div>
+        <div class="attr-row">
+          <div class="attr-name">Kim üretti</div>
+          <select id="e_whoMade" style="flex:1;padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit">
+            <option value="i_did">Ben yaptım</option>
+            <option value="collective">Ekibimiz yaptı</option>
+            <option value="someone_else">Başkası yaptı</option>
+          </select>
+        </div>
+        <div class="attr-row">
+          <div class="attr-name">Ne zaman üretildi</div>
+          <select id="e_whenMade" style="flex:1;padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit">
+            <option value="made_to_order">Siparişe özel üretim</option>
+            <option value="2020_2026">2020–2026</option>
+            <option value="2010_2019">2010–2019</option>
+          </select>
+        </div>
+        <div class="attr-row">
+          <div class="attr-name">Varsayılan fiyat (USD)</div>
+          <input type="number" id="e_price" step="0.01" min="0" value="0" placeholder="örn. 39.00">
+        </div>
+        <div class="attr-row">
+          <div class="attr-name">Varsayılan adet</div>
+          <input type="number" id="e_qty" min="1" value="1">
+        </div>
+        <div class="attr-row">
+          <div class="attr-name">Hazırlık süresi (gün)</div>
+          <div style="flex:1;display:flex;gap:8px">
+            <input type="number" id="e_procMin" min="1" value="3" placeholder="min" style="flex:1">
+            <input type="number" id="e_procMax" min="1" value="7" placeholder="maks" style="flex:1">
+          </div>
+        </div>
+        <div class="attr-row">
+          <div class="attr-name">Otomatik yenileme</div>
+          <div style="flex:1"><input type="checkbox" id="e_autoRenew" style="flex:0"> <span style="font-size:12px;color:#64748b">İlan süresi dolunca 4 ay yenilensin</span></div>
+        </div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn" onclick="etsyLoadRefData()">↻ Profilleri yenile</button>
+          <button class="btn primary" onclick="etsySaveDefaults(true)">Varsayılanları kaydet</button>
+        </div>
+        <div id="etsyDefSt"></div>
+      </div>
+    </div>
+
+    <!-- Kuyruk -->
+    <div class="card" id="etsyQueueCard" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <h3 style="margin:0">📤 Etsy Yükleme Kuyruğu <span id="etsyQueueCount" style="font-size:12px;color:#94a3b8;font-weight:400"></span></h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn" onclick="etsyOpenCatalogPicker()">＋ Katalogdan Ekle</button>
+          <button class="btn" onclick="etsyToggleManual()">＋ Manuel Ekle</button>
+          <button class="btn" onclick="etsyTranslateAll()">✨ AI ile İngilizce'ye Çevir</button>
+          <button class="btn success" id="etsyRunBtn" onclick="etsyRunQueue()">Tümünü Etsy'ye Yükle</button>
+        </div>
+      </div>
+
+      <!-- Manuel ekleme formu -->
+      <div id="etsyManualBox" style="display:none;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
+        <div class="attr-row"><div class="attr-name">Başlık (EN) *</div><input type="text" id="em_title" placeholder="Handmade Ceramic Vase..."></div>
+        <div class="attr-row" style="align-items:flex-start"><div class="attr-name" style="padding-top:7px">Açıklama (EN) *</div><textarea id="em_desc" rows="4" style="flex:1;padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit;outline:none"></textarea></div>
+        <div class="attr-row"><div class="attr-name">Fiyat (USD) *</div><input type="number" id="em_price" step="0.01" min="0"></div>
+        <div class="attr-row"><div class="attr-name">Adet</div><input type="number" id="em_qty" min="1" value="1"></div>
+        <div class="attr-row"><div class="attr-name">Etiketler (virgüllü)</div><input type="text" id="em_tags" placeholder="ceramic vase, handmade pottery, ..."></div>
+        <div class="attr-row"><div class="attr-name">Malzemeler (virgüllü)</div><input type="text" id="em_materials" placeholder="stoneware, glaze, clay"></div>
+        <div class="attr-row" style="align-items:flex-start"><div class="attr-name" style="padding-top:7px">Görsel URL'leri</div><textarea id="em_images" rows="3" placeholder="Her satıra bir URL" style="flex:1;padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit;outline:none"></textarea></div>
+        <div class="btn-row" style="margin-top:8px">
+          <button class="btn" onclick="etsyToggleManual()">Vazgeç</button>
+          <button class="btn primary" onclick="etsyAddManual()">Kuyruğa ekle</button>
+          <button class="btn" onclick="etsyFillManualFromStep3()">Adım 3'teki üründen doldur</button>
+        </div>
+      </div>
+
+      <div id="etsyProgress" style="display:none;margin-bottom:12px">
+        <div style="height:8px;background:#e2e8f0;border-radius:20px;overflow:hidden">
+          <div id="etsyProgressBar" style="height:100%;width:0;background:var(--success);transition:width .3s"></div>
+        </div>
+        <div id="etsyProgressText" style="font-size:12px;color:#64748b;margin-top:6px"></div>
+      </div>
+
+      <div id="etsyQueueSt"></div>
+      <div id="etsyQueueList"></div>
+
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn" onclick="etsyRetryFailed()">↻ Başarısızları Tekrar Dene</button>
+        <button class="btn" onclick="etsyClearDone()">✓ Tamamlananları Temizle</button>
+        <button class="btn" onclick="etsyClearQueue()">✕ Kuyruğu Boşalt</button>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" onclick="goStep(6)">← Trendyol</button>
+    </div>
+  </div>
+
+  <!-- Etsy: Katalogdan seçme modalı -->
+  <div id="etsyPickerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:14px;width:min(860px,94vw);max-height:86vh;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <h3 style="font-size:15px;font-weight:700;margin:0">🗂 Katalogdan Ürün Seç</h3>
+        <button class="btn sm" onclick="etsyClosePicker()">✕</button>
+      </div>
+      <div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center">
+        <input type="text" id="etsyPickerQ" placeholder="Başlık veya barkod ara..." style="flex:1;padding:8px 12px;font-size:13px;border:1px solid #ddd;border-radius:8px;font-family:inherit;outline:none" oninput="etsyRenderPicker()">
+        <button class="btn sm" onclick="etsyPickerToggleAll()">Tümünü seç</button>
+      </div>
+      <div id="etsyPickerList" style="flex:1;overflow-y:auto;padding:8px 20px"></div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px">
+        <button class="btn" onclick="etsyClosePicker()">Vazgeç</button>
+        <button class="btn primary" onclick="etsyAddSelectedFromCatalog()">Kuyruğa Ekle</button>
+      </div>
+    </div>
+  </div>
+
 <script>
 // ── HAZIR GÖRSEL GALERİSİ ─────────────────────────────────────────────────
 var gallerySelected = {}; // path -> true
@@ -1055,7 +1210,7 @@ document.addEventListener('input', function(e) {
 
 function goStep(n) {
   if (n === 4 && !validateRequiredForSend()) return;
-  [1,2,3,4,5,6].forEach(function(i) {
+  [1,2,3,4,5,6,7].forEach(function(i) {
     var el_s = document.getElementById('s'+i);
     var el_p = document.getElementById('p'+i);
     var cls = i < n ? 'done' : i === n ? 'active' : '';
@@ -1066,6 +1221,7 @@ function goStep(n) {
   if (n === 4) buildPreview();
   if (n === 5) loadCatalog();
   if (n === 6) loadTrendyolProducts(0);
+  if (n === 7) etsyInit();
 }
 
 // ── STEP 3 PREVIEW ───────────────────────────────────────────────────────
@@ -4173,6 +4329,618 @@ function pickModalImage(url, fname) {
 function pickLocalFile() {
   document.getElementById('fi').click();
   closeFotoModal();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ETSY
+// ═══════════════════════════════════════════════════════════════════════════
+var ETSY_PROXY = SUPA + '/functions/v1/etsy-proxy';
+
+var etsyState = {
+  connected: false,
+  shopId: null,
+  taxonomy: [],        // {id, path}
+  taxonomyLoaded: false,
+  queue: [],           // kuyruk kayitlari
+  running: false,
+  catalog: [],         // picker icin
+  pickerSel: {},
+  dragIdx: null
+};
+
+function eEsc(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function etsyApi(action, opts) {
+  opts = opts || {};
+  var qs = action.indexOf('?') === -1 ? '?action=' + action : '?action=' + action;
+  return fetch(ETSY_PROXY + qs + (opts.query || ''), {
+    method: opts.method || 'GET',
+    headers: opts.body ? { 'Content-Type': 'application/json' } : undefined,
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  }).then(function(r) { return r.json(); });
+}
+
+// ── BAGLANTI ──────────────────────────────────────────────────────────────
+function etsyInit() {
+  etsyLoadQueue();
+  etsyLoadDefaults();
+  etsyRenderQueue();
+  etsyCheckStatus();
+}
+
+function etsyCheckStatus() {
+  setSt('etsyConnSt','load','<span class="spin">&#x27F3;</span> Baglanti kontrol ediliyor...');
+  return etsyApi('status').then(function(d) {
+    etsyState.connected = !!d.connected;
+    etsyState.shopId    = d.shop_id || null;
+    var show = function(id, on) { var el=document.getElementById(id); if(el) el.style.display = on ? '' : 'none'; };
+    show('etsyConnectBtn',    !d.connected);
+    show('etsyDisconnectBtn',  !!d.connected);
+    show('etsyDefaultsCard',   !!d.connected);
+    show('etsyQueueCard',      !!d.connected);
+    if (d.connected) {
+      setSt('etsyConnSt','ok','&#x2713; Bagli — Dukkan: <strong>'+eEsc(d.shop_name||'?')+'</strong> (ID '+d.shop_id+')');
+      etsyLoadRefData();
+      etsyLoadTaxonomy();
+    } else {
+      setSt('etsyConnSt','err','Etsy hesabi bagli degil.'+(d.error && d.error!=='NOT_CONNECTED' ? ' ('+eEsc(d.error)+')' : ''));
+    }
+  }).catch(function(e) {
+    setSt('etsyConnSt','err','Hata: '+eEsc(e.message));
+  });
+}
+
+function etsyConnect() {
+  setSt('etsyConnSt','load','<span class="spin">&#x27F3;</span> Etsy yetkilendirme baslatiliyor...');
+  etsyApi('oauth-start').then(function(d) {
+    if (!d.url) { setSt('etsyConnSt','err','Hata: '+eEsc(JSON.stringify(d))); return; }
+    var w = window.open(d.url, 'etsy-oauth', 'width=640,height=780');
+    if (!w) { setSt('etsyConnSt','err','Pop-up engellendi. Tarayici izinlerini kontrol edin.'); return; }
+    setSt('etsyConnSt','load','<span class="spin">&#x27F3;</span> Acilan pencerede Etsy hesabinizla izin verin...');
+    var timer = setInterval(function() {
+      if (w.closed) { clearInterval(timer); etsyCheckStatus(); }
+    }, 800);
+  });
+}
+
+window.addEventListener('message', function(ev) {
+  if (ev.data === 'etsy-connected') etsyCheckStatus();
+});
+
+function etsyDisconnect() {
+  if (!confirm('Etsy baglantisi kesilecek. Devam edilsin mi?')) return;
+  etsyApi('disconnect').then(function() { etsyCheckStatus(); });
+}
+
+// ── REFERANS VERILER ──────────────────────────────────────────────────────
+function etsyFillSelect(id, items, valueKey, labelFn, emptyLabel) {
+  var sel = document.getElementById(id);
+  if (!sel) return;
+  var prev = sel.value;
+  var html = emptyLabel ? '<option value="">'+eEsc(emptyLabel)+'</option>' : '';
+  items.forEach(function(it) {
+    html += '<option value="'+it[valueKey]+'">'+eEsc(labelFn(it))+'</option>';
+  });
+  sel.innerHTML = html;
+  if (prev) sel.value = prev;
+}
+
+function etsyLoadRefData() {
+  setSt('etsyDefSt','load','<span class="spin">&#x27F3;</span> Profiller yukleniyor...');
+  Promise.all([
+    etsyApi('shipping-profiles'),
+    etsyApi('return-policies'),
+    etsyApi('sections')
+  ]).then(function(res) {
+    etsyFillSelect('e_shipping', res[0].results || [], 'shipping_profile_id',
+      function(p){ return p.title + ' (' + (p.min_delivery_days||'?') + '-' + (p.max_delivery_days||'?') + ' gun)'; }, 'Seciniz...');
+    etsyFillSelect('e_return', res[1].results || [], 'return_policy_id',
+      function(p){ return (p.accepts_returns ? 'Iade kabul' : 'Iade yok') + (p.return_deadline ? ' — '+p.return_deadline+' gun' : ''); }, 'Yok');
+    etsyFillSelect('e_section', res[2].results || [], 'shop_section_id',
+      function(p){ return p.title; }, 'Yok');
+    etsyApplyDefaults();
+    setSt('etsyDefSt','ok','&#x2713; Profiller yuklendi');
+  }).catch(function(e) {
+    setSt('etsyDefSt','err','Profiller yuklenemedi: '+eEsc(e.message));
+  });
+}
+
+function etsyLoadTaxonomy() {
+  if (etsyState.taxonomyLoaded) return;
+  etsyApi('taxonomy').then(function(d) {
+    etsyState.taxonomy = d.results || [];
+    etsyState.taxonomyLoaded = true;
+  });
+}
+
+function etsyFilterTaxonomy() {
+  var q  = (gv('e_taxQ')||'').toLowerCase().trim();
+  var box = document.getElementById('e_taxResults');
+  if (!q) { box.style.display='none'; return; }
+  var hits = etsyState.taxonomy.filter(function(n) {
+    return n.path.toLowerCase().indexOf(q) !== -1;
+  }).slice(0, 40);
+  box.innerHTML = hits.length
+    ? hits.map(function(n) {
+        return '<div class="cat-item" onclick="etsyPickTaxonomy('+n.id+',\''+eEsc(n.path).replace(/'/g,"\\'")+'\')">'+eEsc(n.path)+'</div>';
+      }).join('')
+    : '<div class="cat-item">Sonuc yok</div>';
+  box.style.display = '';
+}
+
+function etsyPickTaxonomy(id, path) {
+  etsyState.taxonomyId   = id;
+  etsyState.taxonomyPath = path;
+  document.getElementById('e_taxSel').textContent = '✓ ' + path + ' (ID ' + id + ')';
+  document.getElementById('e_taxResults').style.display = 'none';
+  etsySaveDefaults(false);
+}
+
+// ── VARSAYILANLAR ─────────────────────────────────────────────────────────
+var ETSY_DEF_KEY = 'etsyDefaults';
+
+function etsyCollectDefaults() {
+  return {
+    shipping_profile_id: gv('e_shipping'),
+    return_policy_id:    gv('e_return'),
+    shop_section_id:     gv('e_section'),
+    taxonomy_id:         etsyState.taxonomyId || '',
+    taxonomy_path:       etsyState.taxonomyPath || '',
+    who_made:            gv('e_whoMade'),
+    when_made:           gv('e_whenMade'),
+    price:               gv('e_price'),
+    quantity:            gv('e_qty'),
+    processing_min:      gv('e_procMin'),
+    processing_max:      gv('e_procMax'),
+    should_auto_renew:   !!(document.getElementById('e_autoRenew')||{}).checked
+  };
+}
+
+function etsySaveDefaults(notify) {
+  try { localStorage.setItem(ETSY_DEF_KEY, JSON.stringify(etsyCollectDefaults())); } catch(e) {}
+  if (notify) setSt('etsyDefSt','ok','&#x2713; Varsayilanlar kaydedildi');
+}
+
+function etsyLoadDefaults() {
+  var d;
+  try { d = JSON.parse(localStorage.getItem(ETSY_DEF_KEY) || 'null'); } catch(e) { d = null; }
+  if (!d) return;
+  etsyState.defaults     = d;
+  etsyState.taxonomyId   = d.taxonomy_id || null;
+  etsyState.taxonomyPath = d.taxonomy_path || '';
+  var sel = document.getElementById('e_taxSel');
+  if (sel && d.taxonomy_id) sel.textContent = '✓ ' + d.taxonomy_path + ' (ID ' + d.taxonomy_id + ')';
+  ['e_whoMade','e_whenMade','e_price','e_qty','e_procMin','e_procMax'].forEach(function(id) {
+    var key = { e_whoMade:'who_made', e_whenMade:'when_made', e_price:'price',
+                e_qty:'quantity', e_procMin:'processing_min', e_procMax:'processing_max' }[id];
+    var el = document.getElementById(id);
+    if (el && d[key] !== undefined && d[key] !== '') el.value = d[key];
+  });
+  var ar = document.getElementById('e_autoRenew');
+  if (ar) ar.checked = !!d.should_auto_renew;
+}
+
+// Selectler asenkron doldugu icin kaydedilen secimleri sonradan uygular.
+function etsyApplyDefaults() {
+  var d = etsyState.defaults;
+  if (!d) return;
+  [['e_shipping','shipping_profile_id'],['e_return','return_policy_id'],['e_section','shop_section_id']]
+    .forEach(function(pair) {
+      var el = document.getElementById(pair[0]);
+      if (el && d[pair[1]]) el.value = d[pair[1]];
+    });
+}
+
+// ── KUYRUK ────────────────────────────────────────────────────────────────
+var ETSY_QUEUE_KEY = 'etsyQueue';
+
+function etsySaveQueue() {
+  try { localStorage.setItem(ETSY_QUEUE_KEY, JSON.stringify(etsyState.queue)); } catch(e) {}
+}
+
+function etsyLoadQueue() {
+  try { etsyState.queue = JSON.parse(localStorage.getItem(ETSY_QUEUE_KEY) || '[]'); }
+  catch(e) { etsyState.queue = []; }
+  // Yarim kalan calisma durumlarini sifirla
+  etsyState.queue.forEach(function(it) { if (it.status === 'running') it.status = 'pending'; });
+}
+
+function etsyNewId() {
+  return 'e' + Date.now() + Math.random().toString(36).slice(2, 7);
+}
+
+function etsyRenderQueue() {
+  var box = document.getElementById('etsyQueueList');
+  if (!box) return;
+  var q = etsyState.queue;
+  document.getElementById('etsyQueueCount').textContent = q.length ? '(' + q.length + ' urun)' : '';
+
+  if (!q.length) {
+    box.innerHTML = '<p class="muted" style="font-size:13px">Kuyruk bos. Katalogdan veya manuel olarak urun ekleyin.</p>';
+    return;
+  }
+
+  var STATUS = {
+    pending:   ['Bekliyor',   '#64748b'],
+    running:   ['Yukleniyor', '#d97706'],
+    done:      ['Taslak olustu', '#16a34a'],
+    error:     ['Hata',       '#dc2626'],
+    translated:['Ceviri hazir','#2563eb']
+  };
+
+  box.innerHTML = '<div style="overflow-x:auto"><table class="catalog-table"><thead><tr>'
+    + '<th style="width:34px"></th><th style="width:54px">Gorsel</th><th>Baslik (EN)</th>'
+    + '<th style="width:90px">Fiyat $</th><th style="width:64px">Adet</th>'
+    + '<th style="width:150px">Durum</th><th style="width:70px"></th>'
+    + '</tr></thead><tbody>'
+    + q.map(function(it, i) {
+        var st  = STATUS[it.status] || STATUS.pending;
+        var thumb = (it.images && it.images[0])
+          ? '<img src="'+eEsc(it.images[0])+'" style="width:42px;height:42px;object-fit:cover;border-radius:6px">'
+          : '<span style="color:#cbd5e1">—</span>';
+        return '<tr draggable="true" ondragstart="etsyDragStart('+i+')" ondragover="event.preventDefault()" ondrop="etsyDrop('+i+')">'
+          + '<td style="cursor:grab;color:#cbd5e1">⠿</td>'
+          + '<td>'+thumb+'</td>'
+          + '<td><input type="text" value="'+eEsc(it.title)+'" onchange="etsyEdit('+i+',\'title\',this.value)" style="width:100%;padding:5px 7px;font-size:12px;border:1px solid #e2e8f0;border-radius:6px;font-family:inherit">'
+          + (it.images && it.images.length ? '<span style="font-size:11px;color:#94a3b8">'+it.images.length+' gorsel</span>' : '<span style="font-size:11px;color:#dc2626">gorsel yok</span>')
+          + (it.tr_title ? ' <span style="font-size:11px;color:#94a3b8">· TR: '+eEsc(it.tr_title.slice(0,40))+'</span>' : '')
+          + '</td>'
+          + '<td><input type="number" step="0.01" value="'+eEsc(it.price)+'" onchange="etsyEdit('+i+',\'price\',this.value)" style="width:100%;padding:5px 7px;font-size:12px;border:1px solid #e2e8f0;border-radius:6px;font-family:inherit"></td>'
+          + '<td><input type="number" min="1" value="'+eEsc(it.quantity)+'" onchange="etsyEdit('+i+',\'quantity\',this.value)" style="width:100%;padding:5px 7px;font-size:12px;border:1px solid #e2e8f0;border-radius:6px;font-family:inherit"></td>'
+          + '<td><span style="color:'+st[1]+';font-weight:600;font-size:12px">'+st[0]+'</span>'
+          + (it.listing_url ? ' <a href="'+eEsc(it.listing_url)+'" target="_blank" rel="noopener" style="font-size:11px">ac</a>' : '')
+          + (it.error ? '<div style="font-size:11px;color:#dc2626;margin-top:3px">'+eEsc(it.error)+'</div>' : '')
+          + '</td>'
+          + '<td><button class="btn sm" onclick="etsyRemove('+i+')">✕</button></td>'
+          + '</tr>';
+      }).join('')
+    + '</tbody></table></div>';
+}
+
+function etsyEdit(i, field, value) {
+  if (!etsyState.queue[i]) return;
+  etsyState.queue[i][field] = value;
+  etsySaveQueue();
+}
+
+function etsyRemove(i) {
+  etsyState.queue.splice(i, 1);
+  etsySaveQueue();
+  etsyRenderQueue();
+}
+
+function etsyDragStart(i) { etsyState.dragIdx = i; }
+
+function etsyDrop(i) {
+  var from = etsyState.dragIdx;
+  if (from === null || from === i) return;
+  var moved = etsyState.queue.splice(from, 1)[0];
+  etsyState.queue.splice(i, 0, moved);
+  etsyState.dragIdx = null;
+  etsySaveQueue();
+  etsyRenderQueue();
+}
+
+function etsyClearQueue() {
+  if (!confirm('Kuyruk tamamen bosaltilsin mi?')) return;
+  etsyState.queue = [];
+  etsySaveQueue();
+  etsyRenderQueue();
+}
+
+function etsyClearDone() {
+  etsyState.queue = etsyState.queue.filter(function(it) { return it.status !== 'done'; });
+  etsySaveQueue();
+  etsyRenderQueue();
+}
+
+// ── KATALOGDAN EKLE ───────────────────────────────────────────────────────
+function etsyOpenCatalogPicker() {
+  etsyState.pickerSel = {};
+  document.getElementById('etsyPickerModal').style.display = 'flex';
+  document.getElementById('etsyPickerList').innerHTML = '<p class="muted">Katalog yukleniyor...</p>';
+  fetch(PROXY + '?action=catalog-list')
+    .then(function(r) { return r.json(); })
+    .then(function(list) {
+      etsyState.catalog = Array.isArray(list) ? list : [];
+      etsyRenderPicker();
+    })
+    .catch(function(e) {
+      document.getElementById('etsyPickerList').innerHTML = '<p class="muted">Katalog yuklenemedi: '+eEsc(e.message)+'</p>';
+    });
+}
+
+function etsyClosePicker() {
+  document.getElementById('etsyPickerModal').style.display = 'none';
+}
+
+function etsyRenderPicker() {
+  var q = (gv('etsyPickerQ')||'').toLowerCase().trim();
+  var rows = etsyState.catalog.filter(function(c) {
+    if (!q) return true;
+    return (c.title||'').toLowerCase().indexOf(q) !== -1
+        || (c.barcode||'').toLowerCase().indexOf(q) !== -1;
+  });
+  var box = document.getElementById('etsyPickerList');
+  if (!rows.length) { box.innerHTML = '<p class="muted">Eslesen urun yok</p>'; return; }
+  box.innerHTML = rows.map(function(c) {
+    var idx = etsyState.catalog.indexOf(c);
+    var img = (c.images && c.images[0])
+      ? '<img src="'+eEsc(c.images[0])+'" style="width:44px;height:44px;object-fit:cover;border-radius:6px">'
+      : '<div style="width:44px;height:44px;border-radius:6px;background:#f1f5f9"></div>';
+    return '<label style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9;cursor:pointer">'
+      + '<input type="checkbox" '+(etsyState.pickerSel[idx]?'checked':'')+' onchange="etsyState.pickerSel['+idx+']=this.checked">'
+      + img
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-size:13px;font-weight:600;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+eEsc(c.title)+'</div>'
+      + '<div style="font-size:11px;color:#94a3b8">'+eEsc(c.barcode||'')+' · '+eEsc(c.category||'')+' · '+(c.images?c.images.length:0)+' gorsel</div>'
+      + '</div></label>';
+  }).join('');
+}
+
+function etsyPickerToggleAll() {
+  var allOn = etsyState.catalog.every(function(c, i) { return etsyState.pickerSel[i]; });
+  etsyState.catalog.forEach(function(c, i) { etsyState.pickerSel[i] = !allOn; });
+  etsyRenderPicker();
+}
+
+function etsyAddSelectedFromCatalog() {
+  var def = etsyCollectDefaults();
+  var added = 0;
+  etsyState.catalog.forEach(function(c, idx) {
+    if (!etsyState.pickerSel[idx]) return;
+    etsyState.queue.push({
+      id:          etsyNewId(),
+      source:      'catalog',
+      tr_title:    c.title,
+      tr_desc:     c.description || '',
+      category:    c.category || '',
+      color:       c.color || '',
+      material:    c.material || '',
+      height:      c.height || '',
+      width:       c.width || '',
+      weight:      c.weight || '',
+      title:       c.title || '',
+      description: '',
+      tags:        [],
+      materials:   c.material ? [c.material] : [],
+      images:      (c.images || []).slice(0, 10),
+      price:       def.price || '',
+      quantity:    def.quantity || 1,
+      status:      'pending',
+      error:       ''
+    });
+    added++;
+  });
+  etsySaveQueue();
+  etsyRenderQueue();
+  etsyClosePicker();
+  setSt('etsyQueueSt','ok','&#x2713; '+added+' urun kuyruga eklendi. Gondermeden once "AI ile Ingilizce\'ye Cevir" calistirin.');
+}
+
+// ── MANUEL EKLE ───────────────────────────────────────────────────────────
+function etsyToggleManual() {
+  var box = document.getElementById('etsyManualBox');
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+function etsyFillManualFromStep3() {
+  document.getElementById('em_title').value = gv('f_title');
+  document.getElementById('em_desc').value  = (gv('f_desc')||'').replace(/<[^>]+>/g, ' ').trim();
+  document.getElementById('em_images').value = (s.urls || []).join('\n');
+  document.getElementById('em_materials').value = gv('f_material');
+}
+
+function etsyAddManual() {
+  var def   = etsyCollectDefaults();
+  var title = gv('em_title').trim();
+  var desc  = gv('em_desc').trim();
+  var price = gv('em_price');
+  if (!title || !desc || !price) {
+    setSt('etsyQueueSt','err','&#x26A0; Baslik, aciklama ve fiyat zorunlu');
+    return;
+  }
+  var images = gv('em_images').split('\n').map(function(u){return u.trim();}).filter(Boolean);
+  etsyState.queue.push({
+    id: etsyNewId(), source: 'manual',
+    title: title, description: desc,
+    tags:      gv('em_tags').split(',').map(function(t){return t.trim();}).filter(Boolean),
+    materials: gv('em_materials').split(',').map(function(t){return t.trim();}).filter(Boolean),
+    images: images.slice(0, 10),
+    price: price,
+    quantity: gv('em_qty') || def.quantity || 1,
+    status: 'translated', error: ''
+  });
+  ['em_title','em_desc','em_price','em_tags','em_materials','em_images'].forEach(function(id) {
+    document.getElementById(id).value = '';
+  });
+  etsySaveQueue();
+  etsyRenderQueue();
+  setSt('etsyQueueSt','ok','&#x2713; Urun kuyruga eklendi');
+}
+
+// ── AI CEVIRI ─────────────────────────────────────────────────────────────
+function etsyTranslateAll() {
+  var targets = etsyState.queue.filter(function(it) {
+    return it.source === 'catalog' && it.status !== 'done' && !it.description;
+  });
+  if (!targets.length) {
+    setSt('etsyQueueSt','ok','Cevrilecek yeni urun yok.');
+    return;
+  }
+  setSt('etsyQueueSt','load','<span class="spin">&#x27F3;</span> 0/'+targets.length+' cevriliyor...');
+
+  var i = 0;
+  var next = function() {
+    if (i >= targets.length) {
+      etsySaveQueue();
+      etsyRenderQueue();
+      setSt('etsyQueueSt','ok','&#x2713; '+targets.length+' urun icin Ingilizce icerik hazir');
+      return;
+    }
+    var it = targets[i];
+    setSt('etsyQueueSt','load','<span class="spin">&#x27F3;</span> '+(i+1)+'/'+targets.length+' cevriliyor: '+eEsc(it.tr_title||''));
+    etsyApi('ai-listing', { method:'POST', body: {
+      title: it.tr_title, description: it.tr_desc, category: it.category,
+      color: it.color, material: it.material,
+      height: it.height, width: it.width, weight: it.weight
+    }}).then(function(d) {
+      if (d.ok && d.result) {
+        it.title       = d.result.title || it.title;
+        it.description = d.result.description || '';
+        it.tags        = d.result.tags || [];
+        it.materials   = d.result.materials || it.materials;
+        it.status      = 'translated';
+        it.error       = '';
+      } else {
+        it.error = 'Ceviri hatasi: ' + (d.error || 'bilinmiyor');
+      }
+    }).catch(function(e) {
+      it.error = 'Ceviri hatasi: ' + e.message;
+    }).then(function() {
+      i++;
+      etsySaveQueue();
+      etsyRenderQueue();
+      next();
+    });
+  };
+  next();
+}
+
+// ── TOPLU YUKLEME ─────────────────────────────────────────────────────────
+function etsyValidateItem(it, def) {
+  if (!it.title)              return 'baslik bos';
+  if (!it.description)        return 'aciklama bos (once AI ceviri calistirin)';
+  if (!(parseFloat(it.price) > 0)) return 'fiyat girilmedi';
+  if (!it.images || !it.images.length) return 'gorsel yok';
+  if (!def.taxonomy_id)       return 'Etsy kategorisi (taxonomy) secilmedi';
+  if (!def.shipping_profile_id) return 'kargo profili secilmedi';
+  return null;
+}
+
+function etsyRunQueue() {
+  if (etsyState.running) return;
+  var def = etsyCollectDefaults();
+  etsySaveDefaults(false);
+
+  var targets = etsyState.queue.filter(function(it) { return it.status !== 'done'; });
+  if (!targets.length) { setSt('etsyQueueSt','ok','Yuklenecek urun yok.'); return; }
+
+  // Tum kuyrugu once dogrula — yarim kalan yuklemeyi bastan onle
+  var bad = [];
+  targets.forEach(function(it) {
+    var err = etsyValidateItem(it, def);
+    if (err) { it.status = 'error'; it.error = err; bad.push(it); }
+  });
+  if (bad.length) {
+    etsySaveQueue(); etsyRenderQueue();
+    setSt('etsyQueueSt','err','&#x26A0; '+bad.length+' urun eksik bilgi yuzunden gonderilemez. Duzeltip tekrar deneyin.');
+    return;
+  }
+
+  etsyState.running = true;
+  var btn = document.getElementById('etsyRunBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Yukleniyor...'; }
+  document.getElementById('etsyProgress').style.display = '';
+
+  var done = 0, failed = 0;
+  var tick = function() {
+    var pct = Math.round((done + failed) / targets.length * 100);
+    document.getElementById('etsyProgressBar').style.width = pct + '%';
+    document.getElementById('etsyProgressText').textContent =
+      (done + failed) + '/' + targets.length + ' — ' + done + ' basarili, ' + failed + ' hatali';
+  };
+  tick();
+
+  var i = 0;
+  var next = function() {
+    if (i >= targets.length) {
+      etsyState.running = false;
+      if (btn) { btn.disabled = false; btn.textContent = "Tümünü Etsy'ye Yükle"; }
+      setSt('etsyQueueSt', failed ? 'err' : 'ok',
+        (failed ? '&#x26A0; ' : '&#x2713; ') + done + ' taslak ilan olusturuldu, ' + failed + ' hata.'
+        + (done ? ' Ilanlar Etsy panelinizde <strong>taslak</strong> olarak bekliyor.' : ''));
+      etsySaveQueue();
+      etsyRenderQueue();
+      return;
+    }
+
+    var it = targets[i];
+    it.status = 'running';
+    it.error  = '';
+    etsyRenderQueue();
+    setSt('etsyQueueSt','load','<span class="spin">&#x27F3;</span> '+(i+1)+'/'+targets.length+' yukleniyor: '+eEsc(it.title));
+
+    etsyApi('create-listing', { method:'POST', body: {
+      title:               it.title,
+      description:         it.description,
+      price:               parseFloat(it.price),
+      quantity:            parseInt(it.quantity, 10) || 1,
+      tags:                it.tags,
+      materials:           it.materials,
+      taxonomy_id:         def.taxonomy_id,
+      shipping_profile_id: def.shipping_profile_id,
+      return_policy_id:    def.return_policy_id,
+      shop_section_id:     def.shop_section_id,
+      who_made:            def.who_made,
+      when_made:           def.when_made,
+      is_supply:           false,
+      processing_min:      def.processing_min,
+      processing_max:      def.processing_max,
+      should_auto_renew:   def.should_auto_renew,
+      item_height:         it.height,
+      item_width:          it.width,
+      item_weight:         it.weight
+    }}).then(function(d) {
+      if (!d.ok || !d.listing_id) throw new Error(d.error || JSON.stringify(d).slice(0, 200));
+      it.listing_id  = d.listing_id;
+      it.listing_url = d.url;
+
+      // Gorselleri sirasiyla yukle — Etsy rank sirasi kuyruktaki sirayi korur
+      var imgs = it.images.slice(0, 10);
+      var j = 0;
+      var uploadNext = function() {
+        if (j >= imgs.length) return Promise.resolve();
+        return etsyApi('upload-image', { method:'POST', body: {
+          listing_id: d.listing_id, imageUrl: imgs[j], rank: j + 1, alt_text: it.title
+        }}).then(function(r) {
+          if (!r.ok) throw new Error('Gorsel '+(j+1)+': '+(r.error||'yuklenemedi'));
+          j++;
+          return uploadNext();
+        });
+      };
+      return uploadNext();
+    }).then(function() {
+      it.status = 'done';
+      done++;
+    }).catch(function(e) {
+      it.status = 'error';
+      it.error  = String(e.message || e).slice(0, 220);
+      failed++;
+    }).then(function() {
+      i++;
+      tick();
+      etsySaveQueue();
+      etsyRenderQueue();
+      // Etsy rate limitine takilmamak icin istekler arasi kisa bekleme
+      setTimeout(next, 600);
+    });
+  };
+  next();
+}
+
+function etsyRetryFailed() {
+  var n = 0;
+  etsyState.queue.forEach(function(it) {
+    if (it.status === 'error') { it.status = it.description ? 'translated' : 'pending'; it.error = ''; n++; }
+  });
+  etsySaveQueue();
+  etsyRenderQueue();
+  if (n) etsyRunQueue();
+  else setSt('etsyQueueSt','ok','Tekrar denenecek hatali urun yok.');
 }
 
 </script>
