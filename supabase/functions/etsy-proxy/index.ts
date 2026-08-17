@@ -382,6 +382,35 @@ Deno.serve(async (req: Request) => {
       return json({ count: filtered.length, results: filtered.slice(0, 300) });
     }
 
+    // Secilen kategoriye ait ozellikler (materyal, renk, occasion, holiday...)
+    if (action === 'taxonomy-properties') {
+      const taxId = url.searchParams.get('taxonomyId');
+      if (!taxId) return json({ error: 'taxonomyId required' }, 400);
+      const tok = await getToken();
+      return json(await etsy(`/seller-taxonomy/nodes/${taxId}/properties`, {}, tok));
+    }
+
+    // Bir ilanin tek bir ozelligini yazar (value_ids + values birlikte gerekir).
+    if (action === 'set-listing-property') {
+      const { listing_id, property_id, value_ids, values, scale_id } = await req.json();
+      if (!listing_id || !property_id) return json({ error: 'listing_id and property_id required' }, 400);
+
+      const body = new URLSearchParams();
+      (value_ids || []).forEach((v: number) => body.append('value_ids', String(v)));
+      // Parantez karakterlerine Etsy izin vermiyor
+      (values || []).forEach((v: string) => body.append('values', String(v).replace(/[()]/g, '')));
+      if (scale_id) body.set('scale_id', String(scale_id));
+
+      const tok    = await getToken();
+      const shopId = await getShopId(tok);
+      const res = await etsy(`/shops/${shopId}/listings/${listing_id}/properties/${property_id}`, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body:    body.toString(),
+      }, tok);
+      return json({ ok: true, property: res });
+    }
+
     // ── Create a draft listing ────────────────────────────────────────────
     if (action === 'create-listing') {
       const item   = await req.json();

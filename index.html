@@ -742,7 +742,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
           <span style="font-size:12px;color:#aaa" id="etsyTagCount">0/13</span>
         </div>
         <div class="field" data-market="etsy" style="display:none">
-          <label>Malzemeler <span style="font-size:12px;color:#aaa;font-weight:400">(virgülle ayır)</span></label>
+          <label>Malzemeler <span style="font-size:12px;color:#aaa;font-weight:400">(serbest metin, virgülle ayır)</span></label>
           <input type="text" id="f_etsyMaterials" placeholder="stoneware, glaze, clay">
         </div>
         <div class="grid2">
@@ -760,6 +760,16 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
     <div class="card" data-market="trendyol">
       <h3>Kategori özellikleri</h3>
       <div id="attrFields"><p class="muted">Önceki adımda kategori seç</p></div>
+    </div>
+
+    <div class="card" data-market="etsy" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <h3 style="margin:0">Etsy özellikleri <span style="font-size:12px;color:#aaa;font-weight:400">(tümü opsiyonel)</span></h3>
+        <button class="btn sm" onclick="loadEtsyProperties(true)">↻ Yenile</button>
+      </div>
+      <p class="muted" style="font-size:12px;margin:0 0 8px">Seçilen Etsy kategorisine göre değişir. Varsayılanlar otomatik işaretlenir.</p>
+      <div id="etsyPropSt"></div>
+      <div id="etsyPropFields"></div>
     </div>
     <div class="btn-row">
       <button class="btn" onclick="goStep(2)">← Geri</button>
@@ -1489,7 +1499,11 @@ function goStep(n) {
     if (el_s) el_s.className = 'step' + (cls ? ' '+cls : '');
     if (el_p) el_p.className = 'panel' + (i === n ? ' active' : '');
   });
-  if (n === 3) { renderAttrFields(); renderStep3Preview(); }
+  if (n === 3) {
+    renderStep3Preview();
+    if (isEtsy()) loadEtsyProperties(false);
+    else renderAttrFields();
+  }
   if (n === 4) buildPreview();
   if (n === 5) loadCatalog();
   if (n === 6) { if (isEtsy()) loadEtsyListings(); else loadTrendyolProducts(0); }
@@ -4920,6 +4934,144 @@ function etsyApi(action, opts) {
   }).then(function(r) { return r.json(); });
 }
 
+// ── ETSY: KATEGORI OZELLIKLERI ────────────────────────────────────────────
+// Ozellik listesi kategoriye gore degisir (vazoda Style var, duvar dekorunda
+// Mount type). Bu yuzden alanlari Etsy'den gelen tanima gore uretiyoruz.
+var etsyProps       = [];   // taksonomiden gelen tanimlar
+var etsyPropValues  = {};   // property_id -> [{value_id, name}]
+var etsyPropsTaxId  = null;
+
+// Kategoriye ozellik geldiginde otomatik isaretlenecek varsayilanlar.
+var ETSY_PROP_DEFAULTS = {
+  'Materials':   ['Stoneware'],
+  'Mount type':  ['Tabletop']
+};
+
+function loadEtsyProperties(force) {
+  var taxId = etsyState.taxonomyId;
+  var box   = document.getElementById('etsyPropFields');
+  if (!box) return;
+
+  if (!taxId) {
+    box.innerHTML = '';
+    setSt('etsyPropSt','err','&#x26A0; Once 2. adimda Etsy kategorisi secin');
+    return;
+  }
+  if (!force && etsyPropsTaxId === taxId) return;
+
+  setSt('etsyPropSt','load','<span class="spin">&#x27F3;</span> Kategori ozellikleri yukleniyor...');
+  etsyApi('taxonomy-properties', { query: '&taxonomyId=' + encodeURIComponent(taxId) })
+    .then(function(d) {
+      if (d.error) throw new Error(d.error);
+      // Custom Property ve deger listesi olmayan olcu alanlarini gosterme
+      etsyProps = (d.results || []).filter(function(pr) {
+        return pr.supports_attributes !== false
+          && pr.display_name.indexOf('Custom Property') === -1
+          && (pr.possible_values || []).length > 0;
+      });
+      etsyPropsTaxId = taxId;
+      applyEtsyPropDefaults();
+      setSt('etsyPropSt','ok','&#x2713; ' + etsyProps.length + ' ozellik');
+    })
+    .catch(function(e) {
+      setSt('etsyPropSt','err','Ozellikler alinamadi: ' + eEsc(e.message));
+    });
+}
+
+function renderEtsyPropFields() {
+  var box = document.getElementById('etsyPropFields');
+  if (!box) return;
+  if (!etsyProps.length) { box.innerHTML = '<p class="muted">Bu kategoride secilebilir ozellik yok</p>'; return; }
+
+  box.innerHTML = etsyProps.map(function(pr) {
+    var multi = pr.is_multivalued && (pr.max_values_allowed || 1) > 1;
+    var sel   = etsyPropValues[pr.property_id] || [];
+    var max   = pr.max_values_allowed || 1;
+
+    var chips = sel.map(function(v) {
+      return '<span style="display:inline-flex;align-items:center;gap:5px;background:#eef2ff;color:var(--primary);'
+        + 'border-radius:20px;padding:3px 9px;font-size:12px;font-weight:600;margin:0 4px 4px 0">'
+        + eEsc(v.name)
+        + '<button onclick="etsyPropRemove('+pr.property_id+','+v.value_id+')" '
+        + 'style="border:none;background:none;color:inherit;cursor:pointer;font-size:13px;line-height:1;padding:0">×</button>'
+        + '</span>';
+    }).join('');
+
+    var opts = '<option value="">Seçiniz...</option>' + (pr.possible_values || []).map(function(v) {
+      return '<option value="'+v.value_id+'">'+eEsc(v.name)+'</option>';
+    }).join('');
+
+    return '<div class="attr-row" style="align-items:flex-start">'
+      + '<div class="attr-name" style="padding-top:7px">' + eEsc(pr.display_name)
+      + (multi ? ' <span style="font-size:11px;color:#94a3b8">(en fazla '+max+')</span>' : '') + '</div>'
+      + '<div style="flex:1">'
+      + '<select onchange="etsyPropAdd('+pr.property_id+', this)" '
+      + 'style="width:100%;padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:7px;font-family:inherit">'
+      + opts + '</select>'
+      + (chips ? '<div style="margin-top:7px">'+chips+'</div>' : '')
+      + '</div></div>';
+  }).join('');
+}
+
+function etsyPropAdd(propId, sel) {
+  var valueId = parseInt(sel.value, 10);
+  sel.value = '';
+  if (!valueId) return;
+
+  var pr = etsyProps.filter(function(p){ return p.property_id === propId; })[0];
+  if (!pr) return;
+  var val = (pr.possible_values || []).filter(function(v){ return v.value_id === valueId; })[0];
+  if (!val) return;
+
+  var cur   = etsyPropValues[propId] || [];
+  var multi = pr.is_multivalued && (pr.max_values_allowed || 1) > 1;
+  var max   = pr.max_values_allowed || 1;
+
+  if (cur.some(function(v){ return v.value_id === valueId; })) return;
+  if (!multi) cur = [];
+  else if (cur.length >= max) {
+    setSt('etsyPropSt','err','&#x26A0; ' + pr.display_name + ' icin en fazla ' + max + ' deger secilebilir');
+    return;
+  }
+  cur.push({ value_id: val.value_id, name: val.name });
+  etsyPropValues[propId] = cur;
+  renderEtsyPropFields();
+}
+
+function etsyPropRemove(propId, valueId) {
+  etsyPropValues[propId] = (etsyPropValues[propId] || []).filter(function(v){ return v.value_id !== valueId; });
+  renderEtsyPropFields();
+}
+
+// Yeni kategori secilince varsayilanlari (Stoneware, Tabletop) isaretle.
+function applyEtsyPropDefaults() {
+  etsyProps.forEach(function(pr) {
+    var wanted = ETSY_PROP_DEFAULTS[pr.display_name];
+    if (!wanted || (etsyPropValues[pr.property_id] || []).length) return;
+    var hits = (pr.possible_values || []).filter(function(v) {
+      return wanted.indexOf(v.name) !== -1;
+    });
+    if (hits.length) {
+      etsyPropValues[pr.property_id] = hits.map(function(v){ return { value_id: v.value_id, name: v.name }; });
+    }
+  });
+  renderEtsyPropFields();
+}
+
+// Kuyruk kaydina gomulecek bicime cevirir.
+function collectEtsyProps() {
+  return Object.keys(etsyPropValues)
+    .filter(function(pid){ return (etsyPropValues[pid] || []).length; })
+    .map(function(pid) {
+      var vals = etsyPropValues[pid];
+      return {
+        property_id: parseInt(pid, 10),
+        value_ids:   vals.map(function(v){ return v.value_id; }),
+        values:      vals.map(function(v){ return v.name; })
+      };
+    });
+}
+
 // ── ETSY: 3. ADIM (URUN BILGISI) ──────────────────────────────────────────
 // Etsy modunda AI dogrudan Ingilizce ilan icerigi uretir.
 function etsyAiGenerate() {
@@ -4969,6 +5121,7 @@ function etsyItemFromForm() {
     height:      gv('f_height'),
     width:       gv('f_width'),
     weight:      gv('f_weight'),
+    properties:  collectEtsyProps(),
     status:      'translated',
     error:       ''
   };
@@ -5251,11 +5404,16 @@ function etsyFilterTaxonomy() {
 }
 
 function etsyPickTaxonomy(id, path) {
+  var changed = (etsyState.taxonomyId !== id);
   etsyState.taxonomyId   = id;
   etsyState.taxonomyPath = path;
   document.getElementById('e_taxSel').textContent = '✓ ' + path + ' (ID ' + id + ')';
   document.getElementById('e_taxResults').style.display = 'none';
   etsySaveDefaults(false);
+
+  // Ozellikler kategoriye bagli — kategori degistiyse secimler gecersiz kalir
+  if (changed) etsyPropValues = {};
+  loadEtsyProperties(true);
 }
 
 // ── VARSAYILANLAR ─────────────────────────────────────────────────────────
@@ -5372,6 +5530,7 @@ function etsyRenderQueue() {
           + '<td><span style="color:'+st[1]+';font-weight:600;font-size:12px">'+st[0]+'</span>'
           + (it.listing_url ? ' <a href="'+eEsc(it.listing_url)+'" target="_blank" rel="noopener" style="font-size:11px">ac</a>' : '')
           + (it.error ? '<div style="font-size:11px;color:#dc2626;margin-top:3px">'+eEsc(it.error)+'</div>' : '')
+          + (it.warn ? '<div style="font-size:11px;color:#d97706;margin-top:3px">'+eEsc(it.warn)+'</div>' : '')
           + '</td>'
           + '<td><button class="btn sm" onclick="etsyRemove('+i+')">✕</button></td>'
           + '</tr>';
@@ -5678,6 +5837,26 @@ function etsyRunQueue() {
       it.listing_id  = d.listing_id;
       it.listing_url = d.url;
 
+      // Ozellikler ilan olustuktan sonra tek tek yazilir (Etsy toplu kabul etmiyor).
+      // Opsiyonel olduklari icin hatalari ilani basarisiz saymaz, sadece not edilir.
+      var props = it.properties || [];
+      var pi = 0, propWarn = [];
+      var propNext = function() {
+        if (pi >= props.length) return Promise.resolve();
+        var pr = props[pi];
+        return etsyApi('set-listing-property', { method:'POST', body: {
+          listing_id: d.listing_id, property_id: pr.property_id,
+          value_ids: pr.value_ids, values: pr.values
+        }}).then(function(r) {
+          if (!r.ok) propWarn.push('ozellik ' + pr.property_id);
+        }).catch(function() {
+          propWarn.push('ozellik ' + pr.property_id);
+        }).then(function() {
+          pi++;
+          return propNext();
+        });
+      };
+
       // Gorselleri sirasiyla yukle — Etsy rank sirasi kuyruktaki sirayi korur
       var imgs = it.images.slice(0, 10);
       var j = 0;
@@ -5691,7 +5870,10 @@ function etsyRunQueue() {
           return uploadNext();
         });
       };
-      return uploadNext();
+
+      return propNext().then(uploadNext).then(function() {
+        if (propWarn.length) it.warn = propWarn.length + ' opsiyonel ozellik yazilamadi';
+      });
     }).then(function() {
       it.status = 'done';
       done++;
