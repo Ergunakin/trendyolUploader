@@ -411,6 +411,83 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, property: res });
     }
 
+    // ── Anahtar kelime arastirmasi ────────────────────────────────────────
+    // Etsy arama hacmi vermiyor (Marketplace Insights API'de yok). Onun yerine
+    // bir terim icin en ust siradaki ilanlari cekip etiket/baslik frekansi
+    // cikariyoruz: bunlar fiilen siralamayi kazanan kelimeler.
+    if (action === 'keyword-research') {
+      const q     = url.searchParams.get('q') || '';
+      const taxId = url.searchParams.get('taxonomyId') || '';
+      if (!q) return json({ error: 'q required' }, 400);
+
+      const params = new URLSearchParams({ keywords: q, limit: '100', sort_on: 'score' });
+      if (taxId) params.set('taxonomy_id', taxId);
+
+      const tok  = await getToken();
+      // Ilanlar kendi para birimlerinde donuyor; ortalamanin anlamli olmasi icin
+      // hepsini dukkan para birimine cevirt.
+      const shopCurrency = tok.currency_code || 'USD';
+      params.set('currency', shopCurrency);
+      const data = await etsy(`/listings/active?${params.toString()}`, {}, tok);
+      const rows = data.results || [];
+
+      const STOP = new Set([
+        'the','and','for','with','from','your','you','our','this','that','are','was',
+        'has','have','can','all','new','one','two','set','made','gift','gifts','etsy',
+      ]);
+
+      const tagFreq   = new Map<string, number>();
+      const wordFreq  = new Map<string, number>();
+      const bigrams   = new Map<string, number>();
+      const bump = (m: Map<string, number>, k: string) => m.set(k, (m.get(k) ?? 0) + 1);
+
+      let priceSum = 0, priceCount = 0, favSum = 0;
+
+      for (const r of rows) {
+        for (const t of (r.tags ?? [])) {
+          const k = String(t).toLocaleLowerCase('en').trim();
+          if (k) bump(tagFreq, k);
+        }
+
+        const words = String(r.title ?? '')
+          .toLocaleLowerCase('en')
+          .replace(/[^\p{L}\p{Nd}\s-]/gu, ' ')
+          .split(/\s+/)
+          .filter((w) => w.length > 2 && !STOP.has(w));
+
+        for (const w of words) bump(wordFreq, w);
+        for (let i = 0; i < words.length - 1; i++) bump(bigrams, `${words[i]} ${words[i + 1]}`);
+
+        const p = r.converted_price ?? r.price;
+        if (p?.amount != null && (r.converted_price || p.currency_code === shopCurrency)) {
+          priceSum += p.amount / (p.divisor || 100);
+          priceCount++;
+        }
+        favSum += r.num_favorers ?? 0;
+      }
+
+      const top = (m: Map<string, number>, n: number, minCount = 2) =>
+        [...m.entries()]
+          .filter(([, c]) => c >= minCount)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, n)
+          .map(([term, count]) => ({ term, count }));
+
+      return json({
+        ok: true,
+        query: q,
+        analyzed: rows.length,
+        totalMatches: data.count ?? null,
+        topTags:    top(tagFreq, 30),
+        topPhrases: top(bigrams, 20),
+        topWords:   top(wordFreq, 25),
+        avgPrice:   priceCount ? +(priceSum / priceCount).toFixed(2) : null,
+        currency:   shopCurrency,
+        pricedFrom: priceCount,
+        avgFavorers: rows.length ? Math.round(favSum / rows.length) : null,
+      });
+    }
+
     // ── Create a draft listing ────────────────────────────────────────────
     if (action === 'create-listing') {
       const item   = await req.json();
@@ -469,22 +546,63 @@ Deno.serve(async (req: Request) => {
     // ── AI: Turkish product data → English Etsy content ───────────────────
     if (action === 'ai-listing') {
       if (!CLAUDE_KEY) return json({ error: 'CLAUDE_API_KEY env var not set' }, 500);
-      const { title, description, category, color, material, height, width, weight } = await req.json();
+      const { title, description, category, color, material, height, width, weight, keywords } = await req.json();
+
+      // keywords: keyword-research'ten gelen, o kategoride fiilen siralanan terimler.
+      const kwList = (keywords ?? []).slice(0, 30);
+      const kwSection = kwList.length
+        ? `\nRANKING KEYWORDS (these terms appear most often in the tags and titles of the
+listings Etsy currently ranks highest for this product type, ordered by frequency):
+${kwList.map((k: any, i: number) => `${i + 1}. ${typeof k === 'string' ? k : k.term}`).join('\n')}
+
+Use this data as evidence of real buyer demand, not as a word list to copy verbatim.`
+        : '\n(No keyword data available — rely on standard Etsy search behaviour.)';
 
       const prompt = `You write Etsy listings for "MAAT SERAMİK", a Turkish handmade ceramics studio.
-Translate and rewrite the following Turkish product for an English-speaking Etsy audience.
+Translate and rewrite the following Turkish product for an English-speaking Etsy audience,
+optimised for Etsy search.
 
 Turkish title: ${title ?? ''}
 Turkish description: ${(description ?? '').replace(/<[^>]+>/g, ' ').slice(0, 1200)}
 Category: ${category ?? ''}
 Color: ${color ?? ''} | Material: ${material ?? ''}
 Height: ${height ?? ''} cm | Width: ${width ?? ''} cm | Weight: ${weight ?? ''} g
+${kwSection}
 
-RULES:
-- title: English, 60-140 characters, front-load the main keyword, no ALL CAPS, no emoji, no brand name stuffing.
-- description: plain text (no HTML), 120-200 words, warm and concrete: what it is, how it is made, size, care, gifting idea.
-- tags: exactly 13 tags, each max 20 characters, lowercase, letters/numbers/spaces/hyphens only, no duplicates, no single generic words like "gift" alone.
-- materials: 3-6 material words, letters and spaces only.
+HOW ETSY SEARCH WORKS — follow this, it drives every rule below:
+- Etsy matches a buyer's query against the title, tags and attributes. Multi-word phrases
+  matter far more than isolated words: "ceramic vase" is a query, "ceramic" alone is not.
+- Exact phrase matches rank strongest, so a tag must read like something a buyer types.
+- The first ~40 characters of the title carry the most weight and are what shows in search
+  results and on mobile.
+- Repeating the same keyword everywhere does not stack; coverage of DIFFERENT real queries does.
+- Descriptions are weighted lightly for ranking but heavily for conversion, and conversion
+  feeds back into ranking. Write for the human first.
+
+TITLE (60-140 characters):
+- Open with the exact phrase a buyer would search for this item, then add differentiating
+  qualifiers (style, colour, use, recipient).
+- Read as a natural phrase, not a keyword dump. Separate ideas with commas or a pipe.
+- No ALL CAPS, no emoji, no repeated words, no brand-name stuffing.
+
+TAGS (exactly 13, each max 20 characters):
+- Every tag is a buyer query. Prefer 2-3 word phrases over single words.
+- Cover distinct search intents: what it is, style, material, room or use, occasion,
+  recipient. Do not spend several tags on near-synonyms of the same phrase.
+- Do not repeat a phrase already used verbatim as another tag.
+- Lowercase, letters/numbers/spaces/hyphens only.
+
+DESCRIPTION (150-250 words, plain text, no HTML, no markdown):
+- First sentence must restate the main keyword phrase naturally — it is what Google shows
+  and what the buyer reads first.
+- Then cover, in short paragraphs: what it is and how it is handmade; exact dimensions;
+  how it fits a room or occasion; care instructions; that each piece varies slightly
+  because it is handmade.
+- Weave 3-5 secondary keyword phrases in as ordinary prose. Never list keywords, never
+  write a keyword block at the end.
+- Warm, concrete, specific. No hype adjectives, no invented claims.
+
+MATERIALS: 3-6 real material words, letters and spaces only.
 
 Return ONLY JSON, nothing else:
 {"title":"...","description":"...","tags":["..."],"materials":["..."]}`;
@@ -492,7 +610,7 @@ Return ONLY JSON, nothing else:
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': CLAUDE_KEY, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] }),
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2500, messages: [{ role: 'user', content: prompt }] }),
       });
       const data = await res.json();
       if (data.error) return json({ error: data.error.message }, 500);

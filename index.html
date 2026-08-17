@@ -741,6 +741,22 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
           <input type="text" id="f_etsyTags" placeholder="ceramic vase, handmade pottery, stoneware vase" oninput="updateEtsyTagCount()">
           <span style="font-size:12px;color:#aaa" id="etsyTagCount">0/13</span>
         </div>
+
+        <!-- Anahtar kelime araştırması -->
+        <div data-market="etsy" style="display:none;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+            <span style="font-size:13px;font-weight:600;color:#334155">🔍 Anahtar kelime araştırması</span>
+            <div style="flex:1"></div>
+            <input type="text" id="kwQuery" placeholder="ceramic vase" style="width:180px;padding:6px 10px;font-size:12px;border:1px solid #ddd;border-radius:7px;font-family:inherit;outline:none">
+            <button class="btn sm" onclick="runKeywordResearch()">Araştır</button>
+          </div>
+          <p class="muted" style="font-size:11px;margin:0 0 8px">
+            Etsy arama hacmi vermiyor. Bunun yerine bu terim için <strong>en üst sırada çıkan 100 ilanın</strong>
+            etiketleri sayılır — fiilen sıralamayı kazanan kelimeler. Tıklayarak etiketlerinize ekleyin.
+          </p>
+          <div id="kwSt"></div>
+          <div id="kwResults"></div>
+        </div>
         <div class="field" data-market="etsy" style="display:none">
           <label>Malzemeler <span style="font-size:12px;color:#aaa;font-weight:400">(serbest metin, virgülle ayır)</span></label>
           <input type="text" id="f_etsyMaterials" placeholder="stoneware, glaze, clay">
@@ -4934,6 +4950,93 @@ function etsyApi(action, opts) {
   }).then(function(r) { return r.json(); });
 }
 
+// ── ETSY: ANAHTAR KELIME ARASTIRMASI ──────────────────────────────────────
+// Etsy arama hacmi yayinlamiyor (Marketplace Insights API'de yok). En yakin
+// gercek veri: bir terim icin ust siradaki ilanlarin etiket frekansi.
+var kwData = null;
+
+function runKeywordResearch() {
+  var q = (gv('kwQuery') || gv('f_title') || '').trim();
+  if (!q) { setSt('kwSt','err','&#x26A0; Once aranacak terimi yazin'); return; }
+  document.getElementById('kwQuery').value = q;
+
+  setSt('kwSt','load','<span class="spin">&#x27F3;</span> Ust siradaki ilanlar taraniyor...');
+  document.getElementById('kwResults').innerHTML = '';
+
+  var query = '&q=' + encodeURIComponent(q);
+  if (etsyState.taxonomyId) query += '&taxonomyId=' + encodeURIComponent(etsyState.taxonomyId);
+
+  etsyApi('keyword-research', { query: query }).then(function(d) {
+    if (!d.ok) throw new Error(d.error || 'bilinmeyen hata');
+    kwData = d;
+    renderKeywordResults(d);
+    setSt('kwSt','ok','&#x2713; ' + d.analyzed + ' ilan incelendi — Etsy\'de toplam '
+      + (d.totalMatches != null ? d.totalMatches.toLocaleString('tr-TR') : '?') + ' sonuc'
+      + (d.avgPrice ? ' · ortalama fiyat ' + d.avgPrice + ' ' + eEsc(d.currency||'') : ''));
+  }).catch(function(e) {
+    setSt('kwSt','err','Arastirma basarisiz: ' + eEsc(e.message));
+  });
+}
+
+function renderKeywordResults(d) {
+  var chip = function(t, kind) {
+    var bg = kind === 'tag' ? '#eef2ff' : '#f0fdf4';
+    var fg = kind === 'tag' ? 'var(--primary)' : '#15803d';
+    return '<button onclick="addKeywordToTags(\'' + eEsc(t.term).replace(/'/g,"\\'") + '\')" '
+      + 'title="' + t.count + ' ilanda geciyor" '
+      + 'style="border:none;cursor:pointer;background:' + bg + ';color:' + fg + ';border-radius:20px;'
+      + 'padding:4px 10px;font-size:12px;font-weight:600;margin:0 5px 5px 0;font-family:inherit">'
+      + eEsc(t.term) + ' <span style="opacity:.55;font-weight:500">' + t.count + '</span></button>';
+  };
+
+  var html = '';
+  if ((d.topTags || []).length) {
+    html += '<div style="font-size:11px;color:#64748b;font-weight:600;margin:6px 0 4px">EN SIK KULLANILAN ETIKETLER</div>'
+      + '<div>' + d.topTags.slice(0, 20).map(function(t){ return chip(t, 'tag'); }).join('') + '</div>';
+  }
+  if ((d.topPhrases || []).length) {
+    html += '<div style="font-size:11px;color:#64748b;font-weight:600;margin:10px 0 4px">BASLIKLARDA EN SIK GECEN IKILILER</div>'
+      + '<div>' + d.topPhrases.slice(0, 14).map(function(t){ return chip(t, 'phrase'); }).join('') + '</div>';
+  }
+  if (!html) html = '<p class="muted" style="font-size:12px">Yeterli veri bulunamadi</p>';
+
+  html += '<div style="display:flex;gap:6px;margin-top:10px">'
+    + '<button class="btn sm" onclick="fillTagsFromKeywords()">En iyi 13 etiketi doldur</button>'
+    + '<button class="btn sm primary" onclick="etsyAiGenerate()">✦ Bu verilerle AI icerik uret</button>'
+    + '</div>';
+
+  document.getElementById('kwResults').innerHTML = html;
+}
+
+function currentTags() {
+  return gv('f_etsyTags').split(',').map(function(t){ return t.trim(); }).filter(Boolean);
+}
+
+function addKeywordToTags(term) {
+  var tags = currentTags();
+  if (tags.some(function(t){ return t.toLowerCase() === term.toLowerCase(); })) return;
+  if (tags.length >= 13) { setSt('kwSt','err','&#x26A0; En fazla 13 etiket olabilir'); return; }
+  if (term.length > 20)  { setSt('kwSt','err','&#x26A0; "'+eEsc(term)+'" 20 karakterden uzun'); return; }
+  tags.push(term);
+  document.getElementById('f_etsyTags').value = tags.join(', ');
+  updateEtsyTagCount();
+}
+
+// En sik gecen etiketlerden 13 karakter sinirina uyanlari secer.
+function fillTagsFromKeywords() {
+  if (!kwData) return;
+  var picked = [];
+  (kwData.topTags || []).concat(kwData.topPhrases || []).forEach(function(t) {
+    if (picked.length >= 13) return;
+    if (t.term.length > 20) return;
+    if (picked.some(function(p){ return p.toLowerCase() === t.term.toLowerCase(); })) return;
+    picked.push(t.term);
+  });
+  document.getElementById('f_etsyTags').value = picked.join(', ');
+  updateEtsyTagCount();
+  setSt('kwSt','ok','&#x2713; ' + picked.length + ' etiket dolduruldu — duzenleyebilirsiniz');
+}
+
 // ── ETSY: KATEGORI OZELLIKLERI ────────────────────────────────────────────
 // Ozellik listesi kategoriye gore degisir (vazoda Style var, duvar dekorunda
 // Mount type). Bu yuzden alanlari Etsy'den gelen tanima gore uretiyoruz.
@@ -5079,6 +5182,11 @@ function etsyAiGenerate() {
   if (btn) { btn.textContent = 'Olusturuluyor...'; btn.disabled = true; }
   setSt('aiSt','load','<span class="spin">&#x27F3;</span> Etsy icin Ingilizce icerik olusturuluyor...');
 
+  // Arastirma yapildiysa siralanan terimleri de gonder — prompt bunlari kullaniyor
+  var kws = kwData ? (kwData.topTags || []).concat(kwData.topPhrases || [])
+                       .slice(0, 30).map(function(t){ return t.term; })
+                   : [];
+
   etsyApi('ai-listing', { method:'POST', body: {
     title:       gv('f_title'),
     description: (gv('f_desc_hint') || gv('f_desc') || '').trim(),
@@ -5087,7 +5195,8 @@ function etsyAiGenerate() {
     material:    gv('f_material'),
     height:      gv('f_height'),
     width:       gv('f_width'),
-    weight:      gv('f_weight')
+    weight:      gv('f_weight'),
+    keywords:    kws
   }}).then(function(d) {
     if (!d.ok || !d.result) throw new Error(d.error || 'bilinmeyen hata');
     var r = d.result;
@@ -5724,7 +5833,9 @@ function etsyTranslateAll() {
     etsyApi('ai-listing', { method:'POST', body: {
       title: it.tr_title, description: it.tr_desc, category: it.category,
       color: it.color, material: it.material,
-      height: it.height, width: it.width, weight: it.weight
+      height: it.height, width: it.width, weight: it.weight,
+      keywords: kwData ? (kwData.topTags||[]).concat(kwData.topPhrases||[])
+                          .slice(0,30).map(function(t){ return t.term; }) : []
     }}).then(function(d) {
       if (d.ok && d.result) {
         it.title       = d.result.title || it.title;
