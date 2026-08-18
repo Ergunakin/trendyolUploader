@@ -1397,8 +1397,7 @@ function applyMarketUI() {
     else fillEtsyBgSelect();
   }
 
-  var cur = document.getElementById('etsyPriceCur');
-  if (cur) cur.textContent = ready ? etsyState.currency : 'USD';
+  if (ready) etsyApplyCurrencyLabels();
 
   updateTitleCount();
   if (etsy && ready) etsyInit();
@@ -5266,7 +5265,8 @@ var ETSY_PROXY = SUPA + '/functions/v1/etsy-proxy';
 var etsyState = {
   connected: false,
   shopId: null,
-  currency: 'TRY',
+  // Son bilinen dukkan para birimi; durum sorgusu donunce guncellenir.
+  currency: (function(){ try { return localStorage.getItem('etsyCurrency') || 'USD'; } catch (e) { return 'USD'; } })(),
   taxTimer: null,
   taxSeq: 0,
   queue: [],           // kuyruk kayitlari
@@ -6289,7 +6289,10 @@ function etsyCheckStatus(refresh) {
     show('etsyDefaultsCard',   !!d.connected);
     show('etsyQueueCard',      !!d.connected);
     if (d.connected) {
-      etsyState.currency = d.currency || 'TRY';
+      if (d.currency) {
+        etsyState.currency = d.currency;
+        try { localStorage.setItem('etsyCurrency', d.currency); } catch (e) {}
+      }
       etsyApplyCurrencyLabels();
       setSt('etsyConnSt','ok','&#x2713; Bagli — Dukkan: <strong>'+eEsc(d.shop_name||'?')+'</strong> (ID '+d.shop_id+') · Para birimi: <strong>'+eEsc(etsyState.currency)+'</strong>');
       etsyLoadRefData();
@@ -6311,6 +6314,9 @@ function etsyApplyCurrencyLabels() {
   if (mlbl) mlbl.textContent = 'Fiyat (' + c + ') *';
   var th = document.getElementById('etsyPriceTh');
   if (th) th.textContent = 'Fiyat ' + c;
+  // 3. adimdaki "Fiyat <birim>" etiketi de ayni kaynaktan beslenmeli
+  var cur = document.getElementById('etsyPriceCur');
+  if (cur) cur.textContent = c;
 }
 
 function etsyConnect() {
