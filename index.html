@@ -751,12 +751,14 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
             <span style="font-size:13px;font-weight:600;color:#334155">🔍 Anahtar kelime araştırması</span>
             <div style="flex:1"></div>
-            <input type="text" id="kwQuery" placeholder="ceramic vase" style="width:180px;padding:6px 10px;font-size:12px;border:1px solid #ddd;border-radius:7px;font-family:inherit;outline:none">
+            <input type="text" id="kwQuery" placeholder="otomatik" oninput="kwAutoFilled=false" style="width:180px;padding:6px 10px;font-size:12px;border:1px solid #ddd;border-radius:7px;font-family:inherit;outline:none">
             <button class="btn sm" onclick="runKeywordResearch()">Araştır</button>
           </div>
           <p class="muted" style="font-size:11px;margin:0 0 8px">
             Etsy arama hacmi vermiyor. Bunun yerine bu terim için <strong>en üst sırada çıkan 100 ilanın</strong>
             etiketleri sayılır — fiilen sıralamayı kazanan kelimeler. Tıklayarak etiketlerinize ekleyin.
+            <br><strong>"AI ile doldur"</strong> zaten önce bu araştırmayı yapar; terimi boş bırakırsanız
+            kategori ve malzemeden türetilir.
           </p>
           <div id="kwSt"></div>
           <div id="kwResults"></div>
@@ -4923,6 +4925,9 @@ function loadDesignFromCatalog(i) {
   // Trendyol kategorisi biliniyorsa tasi
   if (c.categoryId) { s.catId = c.categoryId; s.catName = c.categoryName || c.category || ''; }
 
+  // Onceki urunun arastirmasi bu urune ait degil
+  if (typeof kwInvalidate === 'function') kwInvalidate();
+
   closeNewDesign();
   goStep(1);
   setSt('uploadSt','ok','&#x2713; "'+eEsc(c.title)+'" katalogdan yuklendi — bilgiler ve gorseller duzenlenebilir');
@@ -4964,29 +4969,91 @@ function etsyApi(action, opts) {
 // ── ETSY: ANAHTAR KELIME ARASTIRMASI ──────────────────────────────────────
 // Etsy arama hacmi yayinlamiyor (Marketplace Insights API'de yok). En yakin
 // gercek veri: bir terim icin ust siradaki ilanlarin etiket frekansi.
-var kwData = null;
+var kwData = null;   // { ..., forKey } — hangi urun/terim icin cikarildigi
+
+// Arastirma terimi Ingilizce olmali, cunku Etsy aramasinda o dil aranir.
+// Taksonomi yolu zaten Ingilizce: son dugumu tekile cevirip malzemeyle birlestiriyoruz.
+var kwAutoFilled = false;   // kutudaki deger bizim turettigimiz mi, kullanici mi yazdi
+
+function etsyKeywordSeed() {
+  // Elle yazilan terim her zaman kazanir; otomatik doldurdugumuz deger degil,
+  // aksi halde kategori degistiginde eski terim yapisir kalirdi.
+  var typed = kwAutoFilled ? '' : (gv('kwQuery') || '').trim();
+  if (typed) return typed;
+
+  var leaf = (etsyState.taxonomyPath || '').split('>').pop().trim().toLowerCase();
+  // "Vases" -> "vase" (sadece -s duser), "Boxes" -> "box", "Supplies" -> "supply".
+  // -ses eki belirsizdir ("vases" hem "vase" hem "vas" olabilir); -s dusurmek
+  // Etsy kategori adlarinda dogru sonucu veriyor.
+  if (/ies$/.test(leaf))                 leaf = leaf.slice(0, -3) + 'y';
+  else if (/(xes|zes|ches|shes)$/.test(leaf)) leaf = leaf.slice(0, -2);
+  else if (/s$/.test(leaf))              leaf = leaf.slice(0, -1);
+
+  var mat = (gv('f_etsyMaterials').split(',')[0] || gv('f_material') || '').trim().toLowerCase();
+  if (mat && leaf) return mat + ' ' + leaf;
+  return leaf || '';
+}
+
+// Elimizdeki arastirma bu urune mi ait? Kategori ya da terim degistiyse bayat sayilir.
+function kwCurrentKey() {
+  return (etsyState.taxonomyId || '') + '|' + etsyKeywordSeed().toLowerCase();
+}
+
+function kwIsFresh() {
+  return !!(kwData && kwData.forKey === kwCurrentKey());
+}
+
+// Bayat veriyle icerik uretmeyi onlemek icin: urun degistiginde arastirmayi at.
+function kwInvalidate() {
+  kwData = null;
+  if (kwAutoFilled) {
+    var q = document.getElementById('kwQuery');
+    if (q) q.value = '';
+    kwAutoFilled = false;
+  }
+  var box = document.getElementById('kwResults');
+  if (box) box.innerHTML = '';
+  var st = document.getElementById('kwSt');
+  if (st) st.innerHTML = '';
+}
 
 function runKeywordResearch() {
-  var q = (gv('kwQuery') || gv('f_title') || '').trim();
-  if (!q) { setSt('kwSt','err','&#x26A0; Once aranacak terimi yazin'); return; }
+  var q = etsyKeywordSeed();
+  if (!q) {
+    setSt('kwSt','err','&#x26A0; Aranacak terimi yazin (ya da 2. adimda Etsy kategorisi secin)');
+    return Promise.resolve(null);
+  }
+  var typedByUser = !kwAutoFilled && (gv('kwQuery') || '').trim();
   document.getElementById('kwQuery').value = q;
+  kwAutoFilled = !typedByUser;
 
-  setSt('kwSt','load','<span class="spin">&#x27F3;</span> Ust siradaki ilanlar taraniyor...');
+  var key = kwCurrentKey();
+  setSt('kwSt','load','<span class="spin">&#x27F3;</span> "' + eEsc(q) + '" icin ust siradaki ilanlar taraniyor...');
   document.getElementById('kwResults').innerHTML = '';
 
   var query = '&q=' + encodeURIComponent(q);
   if (etsyState.taxonomyId) query += '&taxonomyId=' + encodeURIComponent(etsyState.taxonomyId);
 
-  etsyApi('keyword-research', { query: query }).then(function(d) {
+  return etsyApi('keyword-research', { query: query }).then(function(d) {
     if (!d.ok) throw new Error(d.error || 'bilinmeyen hata');
+    d.forKey = key;
     kwData = d;
     renderKeywordResults(d);
     setSt('kwSt','ok','&#x2713; ' + d.analyzed + ' ilan incelendi — Etsy\'de toplam '
       + (d.totalMatches != null ? d.totalMatches.toLocaleString('tr-TR') : '?') + ' sonuc'
       + (d.avgPrice ? ' · ortalama fiyat ' + d.avgPrice + ' ' + eEsc(d.currency||'') : ''));
+    return d;
   }).catch(function(e) {
     setSt('kwSt','err','Arastirma basarisiz: ' + eEsc(e.message));
+    return null;
   });
+}
+
+// Icerik uretiminden once arastirmanin guncel olmasini garanti eder.
+function ensureKeywordData() {
+  if (kwIsFresh()) return Promise.resolve(kwData);
+  if (!etsyKeywordSeed()) return Promise.resolve(null);
+  return runKeywordResearch();
 }
 
 function renderKeywordResults(d) {
@@ -5013,7 +5080,7 @@ function renderKeywordResults(d) {
 
   html += '<div style="display:flex;gap:6px;margin-top:10px">'
     + '<button class="btn sm" onclick="fillTagsFromKeywords()">En iyi 13 etiketi doldur</button>'
-    + '<button class="btn sm primary" onclick="etsyAiGenerate()">✦ Bu verilerle AI icerik uret</button>'
+    + '<button class="btn sm primary" onclick="etsyAiGenerate()">✦ Bu verilerle baslik, etiket ve aciklama uret</button>'
     + '</div>';
 
   document.getElementById('kwResults').innerHTML = html;
@@ -5188,17 +5255,30 @@ function collectEtsyProps() {
 
 // ── ETSY: 3. ADIM (URUN BILGISI) ──────────────────────────────────────────
 // Etsy modunda AI dogrudan Ingilizce ilan icerigi uretir.
+// Sira onemli: once anahtar kelime arastirmasi, sonra o veriyle icerik uretimi.
+// Arastirma olmadan uretmek, modeli tahmine birakir.
 function etsyAiGenerate() {
   var btn = document.querySelector('.ai-btn');
   if (btn) { btn.textContent = 'Olusturuluyor...'; btn.disabled = true; }
-  setSt('aiSt','load','<span class="spin">&#x27F3;</span> Etsy icin Ingilizce icerik olusturuluyor...');
+  var restore = function() { if (btn) { btn.textContent = '✦ AI ile doldur'; btn.disabled = false; } };
 
-  // Arastirma yapildiysa siralanan terimleri de gonder — prompt bunlari kullaniyor
-  var kws = kwData ? (kwData.topTags || []).concat(kwData.topPhrases || [])
-                       .slice(0, 30).map(function(t){ return t.term; })
-                   : [];
+  setSt('aiSt','load','<span class="spin">&#x27F3;</span> 1/2 — Anahtar kelimeler arastiriliyor...');
 
-  etsyApi('ai-listing', { method:'POST', body: {
+  ensureKeywordData().then(function(kw) {
+    setSt('aiSt','load','<span class="spin">&#x27F3;</span> 2/2 — '
+      + (kw ? 'Siralanan kelimelerle icerik yaziliyor...' : 'Icerik yaziliyor (anahtar kelime verisi yok)...'));
+    return etsyAiGenerateWith(kw);
+  }).catch(function(e) {
+    setSt('aiSt','err','AI hatasi: ' + eEsc(e.message));
+  }).then(restore);
+}
+
+function etsyAiGenerateWith(kw) {
+  var kws = kw ? (kw.topTags || []).concat(kw.topPhrases || [])
+                   .slice(0, 30).map(function(t){ return t.term; })
+               : [];
+
+  return etsyApi('ai-listing', { method:'POST', body: {
     title:       gv('f_title'),
     description: (gv('f_desc_hint') || gv('f_desc') || '').trim(),
     category:    etsyState.taxonomyPath || s.catName || '',
@@ -5218,11 +5298,9 @@ function etsyAiGenerate() {
     setv('f_etsyMaterials', (r.materials || []).join(', '));
     updateTitleCount();
     updateEtsyTagCount();
-    setSt('aiSt','ok','&#x2713; Ingilizce icerik hazir — duzenleyebilirsiniz');
-  }).catch(function(e) {
-    setSt('aiSt','err','AI hatasi: ' + eEsc(e.message));
-  }).then(function() {
-    if (btn) { btn.textContent = '✦ AI ile doldur'; btn.disabled = false; }
+    setSt('aiSt','ok','&#x2713; Ingilizce icerik hazir'
+      + (kws.length ? ' — ' + kws.length + ' siralanan anahtar kelime kullanildi' : ' (anahtar kelime verisi olmadan)')
+      + '. Duzenleyebilirsiniz.');
   });
 }
 
@@ -5568,8 +5646,8 @@ function etsyPickTaxonomy(id, path) {
   document.getElementById('e_taxResults').style.display = 'none';
   etsySaveDefaults(false);
 
-  // Ozellikler kategoriye bagli — kategori degistiyse secimler gecersiz kalir
-  if (changed) etsyPropValues = {};
+  // Ozellikler ve anahtar kelimeler kategoriye bagli — degistiyse ikisi de gecersiz
+  if (changed) { etsyPropValues = {}; kwInvalidate(); }
   loadEtsyProperties(true);
 }
 
@@ -5879,33 +5957,57 @@ function etsyTranslateAll() {
       setSt('etsyQueueSt','ok','&#x2713; '+targets.length+' urun icin Ingilizce icerik hazir');
       return;
     }
-    var it = targets[i];
-    setSt('etsyQueueSt','load','<span class="spin">&#x27F3;</span> '+(i+1)+'/'+targets.length+' cevriliyor: '+eEsc(it.tr_title||''));
-    etsyApi('ai-listing', { method:'POST', body: {
-      title: it.tr_title, description: it.tr_desc, category: it.category,
-      color: it.color, material: it.material,
-      height: it.height, width: it.width, weight: it.weight,
-      keywords: kwData ? (kwData.topTags||[]).concat(kwData.topPhrases||[])
-                          .slice(0,30).map(function(t){ return t.term; }) : []
-    }}).then(function(d) {
-      if (d.ok && d.result) {
-        it.title       = d.result.title || it.title;
-        it.description = d.result.description || '';
-        it.tags        = d.result.tags || [];
-        it.materials   = d.result.materials || it.materials;
-        it.status      = 'translated';
-        it.error       = '';
-      } else {
-        it.error = 'Ceviri hatasi: ' + (d.error || 'bilinmiyor');
-      }
-    }).catch(function(e) {
-      it.error = 'Ceviri hatasi: ' + e.message;
-    }).then(function() {
-      i++;
-      etsySaveQueue();
-      etsyRenderQueue();
-      next();
-    });
+    var it  = targets[i];
+    var pos = (i + 1) + '/' + targets.length;
+    setSt('etsyQueueSt','load','<span class="spin">&#x27F3;</span> '+pos+' arastiriliyor: '+eEsc(it.tr_title||''));
+
+    // Her urun kendi kategorisine gore aratilir; tek bir arastirmayi tum
+    // kuyruga uygulamak baska bir urunun kelimelerini uretirdi.
+    var seed = etsyKeywordSeed();
+    var research = seed
+      ? etsyApi('keyword-research', {
+          query: '&q=' + encodeURIComponent(seed)
+               + (etsyState.taxonomyId ? '&taxonomyId=' + encodeURIComponent(etsyState.taxonomyId) : '')
+        })
+        .then(function(d) {
+          return d.ok ? (d.topTags||[]).concat(d.topPhrases||[]).slice(0,30).map(function(t){ return t.term; }) : [];
+        })
+        .catch(function() { return []; })
+      : Promise.resolve([]);
+
+    research
+      .then(function(kws) {
+        it.keywords = kws;
+        setSt('etsyQueueSt','load','<span class="spin">&#x27F3;</span> '+pos+' cevriliyor: '+eEsc(it.tr_title||'')
+          + (kws.length ? ' <span style="color:#94a3b8">('+kws.length+' anahtar kelime)</span>' : ''));
+        return etsyApi('ai-listing', { method:'POST', body: {
+          title: it.tr_title, description: it.tr_desc, category: it.category,
+          color: it.color, material: it.material,
+          height: it.height, width: it.width, weight: it.weight,
+          keywords: kws
+        }});
+      })
+      .then(function(d) {
+        if (d.ok && d.result) {
+          it.title       = d.result.title || it.title;
+          it.description = d.result.description || '';
+          it.tags        = d.result.tags || [];
+          it.materials   = d.result.materials || it.materials;
+          it.status      = 'translated';
+          it.error       = '';
+        } else {
+          it.error = 'Ceviri hatasi: ' + (d.error || 'bilinmiyor');
+        }
+      })
+      .catch(function(e) {
+        it.error = 'Ceviri hatasi: ' + e.message;
+      })
+      .then(function() {
+        i++;
+        etsySaveQueue();
+        etsyRenderQueue();
+        next();
+      });
   };
   next();
 }
