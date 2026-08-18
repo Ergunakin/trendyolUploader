@@ -477,6 +477,10 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
           <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none" onclick="toggleSection('bgSection','bgChevron')">
             <div class="card-title" style="margin-bottom:0"><span class="icon">🖼</span> Arka Planlar <span id="bgCount" style="font-size:11px;color:#94a3b8;font-weight:400"></span></div>
             <div style="display:flex;align-items:center;gap:8px">
+              <input type="file" id="bgUploadFile" accept="image/png,image/jpeg,image/webp" multiple style="display:none" onchange="onBackgroundFilesPicked(event)">
+              <button class="btn xs" onclick="event.stopPropagation();document.getElementById('bgUploadFile').click()" title="Bilgisayardan arka plan yükle">
+                ⬆ Ekle
+              </button>
               <button class="btn xs" onclick="event.stopPropagation();loadBackgrounds()">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
                 Yükle
@@ -2236,9 +2240,62 @@ var bgAllFiles = [];
 var bgCurrentPage = 0;
 var BG_PER_PAGE = 8; // sağ kolon 4×2
 
+// Bilgisayardan arka plan yukleme — birden fazla dosya secilebilir.
+function onBackgroundFilesPicked(ev) {
+  var files = [].slice.call(ev.target.files || []);
+  ev.target.value = '';
+  if (!files.length) return;
+
+  var tooBig = files.filter(function(f) { return f.size > 8 * 1024 * 1024; });
+  if (tooBig.length) {
+    setSt('bgLoadSt','err','&#x26A0; 8 MB ustu dosya atlandi: ' + eEsc(tooBig.map(function(f){return f.name;}).join(', ')));
+    files = files.filter(function(f) { return f.size <= 8 * 1024 * 1024; });
+    if (!files.length) return;
+  }
+
+  setSt('bgLoadSt','load','<span class="spin">&#x27F3;</span> 0/' + files.length + ' arka plan yukleniyor...');
+
+  var done = 0, failed = 0, lastName = null;
+  var readAsDataUrl = function(file) {
+    return new Promise(function(res, rej) {
+      var fr = new FileReader();
+      fr.onload = function(){ res(fr.result); };
+      fr.onerror = rej;
+      fr.readAsDataURL(file);
+    });
+  };
+
+  files.reduce(function(chain, file) {
+    return chain.then(function() {
+      var safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      var name = Date.now() + '_' + safe;
+      return readAsDataUrl(file)
+        .then(function(dataUrl) { return uploadDataUrlToStorage(dataUrl, 'backgrounds/' + name, null); })
+        .then(function(url) {
+          if (url) { done++; lastName = name; } else { failed++; }
+          setSt('bgLoadSt','load','<span class="spin">&#x27F3;</span> ' + (done+failed) + '/' + files.length + ' yukleniyor...');
+        })
+        .catch(function() { failed++; });
+    });
+  }, Promise.resolve()).then(function() {
+    return loadBackgrounds();
+  }).then(function() {
+    // Tek dosya yuklendiyse dogrudan kullanima al
+    if (done === 1 && lastName) {
+      if (isEtsy()) {
+        var sel = document.getElementById('etsyBgSelect');
+        if (sel) { sel.value = lastName; saveEtsyBg(); }
+      }
+      loadImagePromise(bgUrlOf(lastName)).then(function(img) { bgImg = img; renderCanvas(); });
+    }
+    setSt('bgLoadSt', failed ? 'err' : 'ok',
+      '&#x2713; ' + done + ' arka plan eklendi' + (failed ? ', ' + failed + ' basarisiz' : ''));
+  });
+}
+
 function loadBackgrounds() {
   setSt('bgLoadSt','load','<span class="spin">&#x27F3;</span> Arka planlar yükleniyor...');
-  fetch(SUPA+'/storage/v1/object/list/trendyol', {
+  return fetch(SUPA+'/storage/v1/object/list/trendyol', {
     method:'POST',
     headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
     body: JSON.stringify({ prefix:'backgrounds/', limit:200, offset:0 })
@@ -3142,7 +3199,21 @@ function renderSavedPage() {
   }
 }
 
-function removeSaved(i) { savedImages.splice(i,1); updateSavedGrid(); }
+// Izgaradan cikarmak yetmez: yuklenmis kompozisyonlarin URL'i s.urls'te kalirdi
+// ve gorsel silinmis gorunmesine ragmen Etsy/Trendyol payload'ina giderdi.
+function removeSaved(i) {
+  var item = savedImages[i];
+  if (!item) return;
+
+  var url = item.url || (item.isGalleryItem ? item.dataUrl : null);
+  savedImages.splice(i, 1);
+
+  if (url) {
+    var k = s.urls.indexOf(url);
+    if (k !== -1) s.urls.splice(k, 1);
+  }
+  updateSavedGrid();
+}
 
 var savedDragSrcIdx = null;
 
@@ -3155,7 +3226,13 @@ function reorderSaved(from, to) {
 function loadSavedComposition(i) {
   var item = savedImages[i];
   if (!item || !item.snap) return;
-  var snap = item.snap;
+  restoreSnapToCanvas(item.snap);
+}
+
+// Snapshot'i editore geri yukler. Hem oturum icindeki kayitlar hem de
+// depodan cagrilan kompozisyonlar ayni yolu kullanir.
+function restoreSnapToCanvas(snap) {
+  if (!snap || !snap.product) return;
 
   function loadImg(src, cb) {
     if (!src) { cb(null); return; }
@@ -3199,6 +3276,29 @@ function loadSavedComposition(i) {
 }
 
 // ── UPLOAD SAVED ──────────────────────────────────────────────────────────
+// Depoya yalnizca duzlestirilmis JPEG gidiyordu; bu yuzden geri cagrilan
+// kompozisyon tek parca bir resim olarak geliyor, katmanlari duzenlenemiyordu.
+// Yani snapshot'i ayni ada sahip bir .json olarak yanina koyuyoruz.
+function snapPathFor(fname) {
+  return 'products/' + fname.replace(/\.[^.]+$/, '') + '.snap.json';
+}
+
+function saveSnapSidecar(fname, snap) {
+  if (!snap) return Promise.resolve();
+  var blob = new Blob([JSON.stringify(snap)], { type: 'application/json' });
+  return fetch(SUPA + '/storage/v1/object/trendyol/' + snapPathFor(fname), {
+    method:'POST',
+    headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'application/json','x-upsert':'true'},
+    body: blob
+  }).catch(function(){ /* snapshot opsiyonel — gorsel yine yuklendi */ });
+}
+
+function loadSnapSidecar(fname) {
+  return fetch(SUPA + '/storage/v1/object/public/trendyol/' + snapPathFor(fname))
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .catch(function(){ return null; });
+}
+
 function uploadSaved() {
   if (!savedImages.length) { setSt('uploadSt','err','Kaydedilmis gorsel yok'); return; }
   setSt('uploadSt','load','<span class="spin">&#x27F3;</span> Yukleniyor...');
@@ -3212,13 +3312,18 @@ function uploadSaved() {
     var b64   = dataUrl.split(',')[1];
     var bytes = Uint8Array.from(atob(b64), function(c) { return c.charCodeAt(0); });
     var blob  = new Blob([bytes], {type:'image/jpeg'});
-    var path  = 'trendyol/products/'+Date.now()+'_'+i+'.jpg';
+    var fname = Date.now()+'_'+i+'.jpg';
+    var path  = 'trendyol/products/'+fname;
     return fetch(SUPA+'/storage/v1/object/'+path, {
       method:'POST',
       headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'image/jpeg','x-upsert':'true'},
       body: blob
     }).then(function(res) {
-      if (res.ok) result[i] = SUPA+'/storage/v1/object/public/'+path;
+      if (!res.ok) return;
+      var url = SUPA+'/storage/v1/object/public/'+path;
+      result[i] = url;
+      item.url  = url;           // silme islemi bu URL'i s.urls'ten cikarabilsin
+      return saveSnapSidecar(fname, item.snap);   // depodan geri cagirinca katmanlar korunsun
     }).catch(function(e) { console.error(e); });
   });
   Promise.all(promises).then(function() {
@@ -4442,22 +4547,33 @@ function selectGalleryThumb(thumbEl, url, fname) {
   document.getElementById('galleryActionBar').classList.add('visible');
 }
 
+// Depodaki bir gorseli editore alir.
+// Kompozisyon olarak kaydedilmisse (snapshot'i varsa) katmanlarina ayirir;
+// aksi halde yeni bir urun katmani olarak ekler — mevcut urunun uzerine yazmaz.
+function addStorageImageToEditor(src, fname, statusId) {
+  setSt(statusId,'load','<span class="spin">&#x27F3;</span> Editore aliniyor...');
+
+  return loadSnapSidecar(fname || (src.split('/').pop() || '')).then(function(snap) {
+    if (snap) {
+      restoreSnapToCanvas(snap);
+      setSt(statusId,'ok','&#x2713; Kompozisyon katmanlariyla acildi — duzenleyebilirsiniz');
+      return;
+    }
+    return loadImagePromise(src + '?t=' + Date.now()).then(function(img) {
+      addProductToCanvas(img);
+      renderCanvas();
+      setSt(statusId,'ok','&#x2713; Yeni katman olarak eklendi');
+    });
+  }).catch(function(e) {
+    setSt(statusId,'err','Editore alinamadi: ' + eEsc(e.message));
+  });
+}
+
 function galleryBarAction(action) {
   if (!gallerySelectedInfo) return;
   var info = gallerySelectedInfo;
   if (action === 'editor') {
-    var img = new Image(); img.crossOrigin = 'anonymous';
-    img.onload = function() {
-      objs.product.img = img;
-      var ratio = img.width / img.height;
-      objs.product.h = Math.round(CH * 0.72);
-      objs.product.w = Math.round(objs.product.h * ratio);
-      objs.product.x = Math.round((CW - objs.product.w) / 2);
-      objs.product.y = Math.round(CH * 0.12);
-      renderCanvas();
-      setSt('gallerySt','ok','✓ Editöre yüklendi');
-    };
-    img.src = info.src + '?t=' + Date.now();
+    addStorageImageToEditor(info.src, info.fname, 'gallerySt');
   } else if (action === 'product') {
     if (s.urls.indexOf(info.src) === -1) {
       if (s.urls.length >= 8) { setSt('gallerySt','err','Maksimum 8 görsel'); return; }
