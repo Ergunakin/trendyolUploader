@@ -407,6 +407,12 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
               </div>
             </div>
 
+            <!-- Katmanlar paneli -->
+            <div class="toolbar-group">
+              <div class="toolbar-group-label">Katman Listesi</div>
+              <div id="layerList" style="display:flex;flex-direction:column;gap:3px;max-height:190px;overflow-y:auto"></div>
+            </div>
+
             <!-- Group 3: FX Ayarları -->
             <div class="toolbar-group">
               <div class="toolbar-group-label">FX Ayarları</div>
@@ -2718,6 +2724,8 @@ function drawObjWithFx(ctx, p, sx, sy, fx) {
 function renderCanvas() {
   var canvas = document.getElementById('editCanvas');
   if (!canvas) return;
+  // Katman listesi tuvalin aynasi — her cizimde birlikte guncellenir
+  if (typeof renderLayerList === 'function') renderLayerList();
   var ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, CW, CH);
 
@@ -2952,6 +2960,107 @@ function centerActive() {
   renderCanvas();
 }
 function toggleObj(key) { objs[key].visible = !objs[key].visible; renderCanvas(); }
+
+// ── KATMAN LISTESI ────────────────────────────────────────────────────────
+// Editorun her yerine dagilmis dugmeler yerine tek bir katman listesi:
+// secme, gizleme, sira degistirme ve silme buradan yapilir.
+var LAYER_LABELS = {
+  product:   ['📦', 'Ürün'],
+  accessory: ['✨', 'Süsleme'],
+  logo:      ['🔖', 'Logo'],
+  ruler_v:   ['📏', 'Dikey cetvel'],
+  ruler_h:   ['📐', 'Yatay cetvel']
+};
+
+function layerLabel(key) {
+  if (LAYER_LABELS[key]) return LAYER_LABELS[key];
+  if (isProductKey(key)) return ['📦', 'Ürün ' + key.replace('prod_', '#')];
+  return ['▫️', key];
+}
+
+function renderLayerList() {
+  var box = document.getElementById('layerList');
+  if (!box) return;
+
+  // Ustteki katman listede de ustte gorunsun
+  var rows = [];
+  zOrder.slice().reverse().forEach(function(key) {
+    var o = objs[key];
+    if (!o || !o.img) return;
+    rows.push({ key: key, obj: o, kind: 'obj' });
+  });
+  texts.slice().reverse().forEach(function(t) {
+    rows.push({ key: 'text_' + t.id, obj: t, kind: 'text' });
+  });
+
+  if (!rows.length) {
+    box.innerHTML = '<p style="font-size:10px;color:#94a3b8;margin:2px 0">Katman yok</p>';
+    return;
+  }
+
+  box.innerHTML = rows.map(function(r) {
+    var isText = r.kind === 'text';
+    var lab    = isText ? ['T', (r.obj.text || '').slice(0, 14)] : layerLabel(r.key);
+    var active = (activeObj === r.key);
+    var hidden = !isText && r.obj.visible === false;
+
+    return '<div onclick="selectLayer(\'' + r.key + '\')" '
+      + 'style="display:flex;align-items:center;gap:5px;padding:4px 6px;border-radius:6px;cursor:pointer;'
+      + 'border:1px solid ' + (active ? 'var(--primary)' : 'transparent') + ';'
+      + 'background:' + (active ? '#eef2ff' : '#fff') + ';opacity:' + (hidden ? '.45' : '1') + '">'
+      + '<span style="font-size:11px">' + lab[0] + '</span>'
+      + '<span style="flex:1;font-size:10px;font-weight:600;color:#334155;overflow:hidden;'
+      + 'text-overflow:ellipsis;white-space:nowrap">' + eEsc(lab[1]) + '</span>'
+      + (isText ? '' :
+          '<button onclick="event.stopPropagation();toggleLayer(\'' + r.key + '\')" title="Göster/gizle" '
+          + 'style="border:none;background:none;cursor:pointer;font-size:10px;padding:0 2px">'
+          + (hidden ? '🚫' : '👁') + '</button>')
+      + '<button onclick="event.stopPropagation();moveLayer(\'' + r.key + '\',1)" title="Öne" '
+      + 'style="border:none;background:none;cursor:pointer;font-size:9px;padding:0 1px;color:#64748b">▲</button>'
+      + '<button onclick="event.stopPropagation();moveLayer(\'' + r.key + '\',-1)" title="Arkaya" '
+      + 'style="border:none;background:none;cursor:pointer;font-size:9px;padding:0 1px;color:#64748b">▼</button>'
+      + '<button onclick="event.stopPropagation();deleteLayer(\'' + r.key + '\')" title="Sil" '
+      + 'style="border:none;background:none;cursor:pointer;font-size:11px;padding:0 2px;color:#dc2626">×</button>'
+      + '</div>';
+  }).join('');
+}
+
+function selectLayer(key) {
+  activeObj = key;
+  if (key.indexOf('text_') !== 0 && typeof loadFxFromObj === 'function') loadFxFromObj(key);
+  renderCanvas();
+}
+
+function toggleLayer(key) {
+  if (!objs[key]) return;
+  objs[key].visible = !objs[key].visible;
+  renderCanvas();
+}
+
+function moveLayer(key, dir) {
+  var i = zOrder.indexOf(key);
+  if (i === -1) return;
+  var j = i + dir;
+  if (j < 0 || j >= zOrder.length) return;
+  zOrder.splice(i, 1);
+  zOrder.splice(j, 0, key);
+  renderCanvas();
+}
+
+function deleteLayer(key) {
+  if (key.indexOf('text_') === 0) {
+    var tid = parseInt(key.replace('text_', ''), 10);
+    texts = texts.filter(function(t) { return t.id !== tid; });
+  } else if (key === 'product' || key === 'accessory' || key === 'logo') {
+    objs[key].img = null;      // sabit yuvalar silinmez, bosaltilir
+    objs[key].visible = true;
+  } else {
+    delete objs[key];
+    zOrder = zOrder.filter(function(k) { return k !== key; });
+  }
+  if (activeObj === key) activeObj = null;
+  renderCanvas();
+}
 function selectObj(key) {
   activeObj = key;
   loadFxFromObj(key);
