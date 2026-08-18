@@ -232,13 +232,42 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
             </button>
           </div>
 
+          <!-- Etsy: çok fotoğraflı ürün akışı -->
+          <div data-market="etsy" style="display:none;flex-direction:column;gap:8px;margin-bottom:12px;padding:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:9px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:11px;font-weight:700;color:#c2410c">ÜRÜN FOTOĞRAFLARI</span>
+              <span id="psCode" style="font-size:10px;font-weight:700;color:#9a3412;font-family:monospace"></span>
+            </div>
+
+            <input type="file" id="psFiles" accept="image/*" multiple style="display:none" onchange="onProductPhotosPicked(event)">
+            <button class="btn sm primary" onclick="document.getElementById('psFiles').click()" style="justify-content:center">
+              📷 Ürün fotoğraflarını yükle
+            </button>
+
+            <div id="psGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div>
+
+            <div style="display:flex;gap:5px">
+              <button class="btn xs" onclick="psPrepareSelected()" id="psPrepBtn" style="flex:1;justify-content:center">⚡ Hazırla</button>
+              <button class="btn xs" onclick="psSketchSelected()" id="psSketchBtn" style="flex:1;justify-content:center">✎ Sketch</button>
+            </div>
+
+            <div style="display:flex;gap:5px;align-items:center">
+              <span style="font-size:10px;color:#9a3412;white-space:nowrap">Arka plan</span>
+              <select id="etsyBgSelect" onchange="saveEtsyBg()" style="flex:1;padding:5px 7px;font-size:11px;border:1px solid #fed7aa;border-radius:6px;font-family:inherit;background:#fff"></select>
+            </div>
+
+            <button class="btn sm" onclick="psBuildPreviews()" id="psBuildBtn" style="justify-content:center;background:#c2410c;color:#fff;border-color:#c2410c">
+              🖼 Görsel hazırla
+            </button>
+
+            <div id="psSt"></div>
+          </div>
+
           <!-- Etsy: standart görsel üretimi -->
           <div data-market="etsy" style="display:none;flex-direction:column;gap:6px;margin-bottom:12px;padding:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:9px">
             <div style="font-size:11px;font-weight:700;color:#c2410c">ETSY STANDART GÖRSELLER</div>
             <div style="display:flex;gap:6px;align-items:center">
-              <span style="font-size:11px;color:#9a3412;white-space:nowrap">Arka plan</span>
-              <select id="etsyBgSelect" onchange="saveEtsyBg()" style="flex:1;padding:5px 8px;font-size:12px;border:1px solid #fed7aa;border-radius:6px;font-family:inherit;background:#fff"></select>
-              <button class="btn xs" onclick="previewEtsyBg()" title="Önizle">👁</button>
+              <button class="btn xs" onclick="previewEtsyBg()" style="flex:1">👁 Arka planı önizle</button>
             </div>
             <button class="btn sm primary" onclick="etsyGenerateImages()" id="etsyGenBtn" style="justify-content:center">
               ⚡ Etsy görsellerini üret
@@ -417,6 +446,15 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
             </div>
 
         </div>
+        <!-- Etsy: hazırlanan görsel önizlemeleri -->
+        <div data-market="etsy" id="psPreviewWrap" style="display:none;width:100%;border-top:1px solid var(--border);padding-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-size:12px;font-weight:700;color:#334155">🖼 Hazırlanan Görseller <span id="psPreviewCount" style="font-weight:400;color:#94a3b8"></span></span>
+            <span style="font-size:11px;color:#94a3b8">Düzenlemek için birine tıklayın</span>
+          </div>
+          <div id="psPreviewGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px"></div>
+        </div>
+
       </div><!-- /orta -->
 
       <!-- ▶ SAĞ RAY: katman ekle, katman listesi, efektler -->
@@ -3160,6 +3198,32 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
+// Tuvalin tam durumunu cikarir. Cetveller ve metin kutulari da dahil —
+// aksi halde olcu gorseli editore eksik doner.
+function buildSnapshot() {
+  var src = function(img) { return img ? img.src : null; };
+  var fixed = { product: 1, accessory: 1, logo: 1 };
+
+  var extras = [];
+  zOrder.forEach(function(key) {
+    if (fixed[key]) return;
+    var o = objs[key];
+    if (!o || !o.img) return;
+    extras.push({ key: key, src: src(o.img), x: o.x, y: o.y, w: o.w, h: o.h,
+                  visible: o.visible !== false, fx: cloneFx(o.fx || DEFAULT_FX) });
+  });
+
+  return {
+    bgSrc:     src(bgImg),
+    product:   { src: src(objs.product.img),   x: objs.product.x,   y: objs.product.y,   w: objs.product.w,   h: objs.product.h,   visible: objs.product.visible,   fx: cloneFx(objs.product.fx   || DEFAULT_FX) },
+    accessory: { src: src(objs.accessory.img), x: objs.accessory.x, y: objs.accessory.y, w: objs.accessory.w, h: objs.accessory.h, visible: objs.accessory.visible, fx: cloneFx(objs.accessory.fx || DEFAULT_FX) },
+    logo:      { src: src(objs.logo.img),      x: objs.logo.x,      y: objs.logo.y,      w: objs.logo.w,      h: objs.logo.h,      visible: objs.logo.visible },
+    extras:    extras,
+    texts:     texts.map(function(t) { return Object.assign({}, t); }),
+    zOrder:    zOrder.slice()
+  };
+}
+
 // ── SAVE COMPOSITION ─────────────────────────────────────────────────────
 function saveComposition() {
   if (!bgImg) { alert('Arka plan secilmeli'); return; }
@@ -3192,13 +3256,7 @@ function saveComposition() {
   });
   // State snapshot
   function imgSrc(img) { return img ? img.src : null; }
-  var snap = {
-    bgSrc:     imgSrc(bgImg),
-    product:   { src: imgSrc(objs.product.img),   x: objs.product.x,   y: objs.product.y,   w: objs.product.w,   h: objs.product.h,   visible: objs.product.visible,   fx: cloneFx(objs.product.fx   || DEFAULT_FX) },
-    accessory: { src: imgSrc(objs.accessory.img), x: objs.accessory.x, y: objs.accessory.y, w: objs.accessory.w, h: objs.accessory.h, visible: objs.accessory.visible, fx: cloneFx(objs.accessory.fx || DEFAULT_FX) },
-    logo:      { src: imgSrc(objs.logo.img),      x: objs.logo.x,      y: objs.logo.y,      w: objs.logo.w,      h: objs.logo.h,      visible: objs.logo.visible },
-    zOrder: zOrder.slice()
-  };
+  var snap = buildSnapshot();
   savedImages.push({ dataUrl: wc.toDataURL('image/jpeg', 0.93), snap: snap });
   updateSavedGrid();
 }
@@ -3393,11 +3451,29 @@ function restoreSnapToCanvas(snap) {
         objs.logo.w = snap.logo.w; objs.logo.h = snap.logo.h;
         objs.logo.visible = snap.logo.visible;
 
-        if (snap.zOrder) zOrder = snap.zOrder.slice();
-        activeObj = 'product';
-        loadFxFromObj('product');
-        renderCanvas();
-        document.getElementById('editCanvas').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Ek katmanlar (cetveller vb.) ve metin kutulari
+        texts = (snap.texts || []).map(function(t) { return Object.assign({}, t); });
+        texts.forEach(function(t) { if (t.id > textIdCounter) textIdCounter = t.id; });
+
+        var extras = snap.extras || [];
+        var pending = extras.length;
+
+        var finish = function() {
+          if (snap.zOrder) zOrder = snap.zOrder.slice();
+          activeObj = 'product';
+          loadFxFromObj('product');
+          renderCanvas();
+          document.getElementById('editCanvas').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+
+        if (!pending) { finish(); return; }
+        extras.forEach(function(ex) {
+          loadImg(ex.src, function(ei) {
+            objs[ex.key] = { img: ei, x: ex.x, y: ex.y, w: ex.w, h: ex.h,
+                             visible: ex.visible !== false, fx: cloneFx(ex.fx || DEFAULT_FX) };
+            if (--pending === 0) finish();
+          });
+        });
         }); // logo
       }); // accessory
     }); // product
@@ -5213,6 +5289,280 @@ function etsyApi(action, opts) {
     headers: opts.body ? { 'Content-Type': 'application/json' } : undefined,
     body: opts.body ? JSON.stringify(opts.body) : undefined
   }).then(function(r) { return r.json(); });
+}
+
+// ── ETSY: COK FOTOGRAFLI URUN AKISI ───────────────────────────────────────
+// Akis: yukle -> (coklu sec) Hazirla -> (tekli sec) Sketch -> Gorsel hazirla
+// Ham ve hazir dosyalar depoda urun koduyla saklanir.
+var PS_RAW_DIR = 'ham_urun_fotolari/';
+
+var photoSet = { code: null, items: [], sketch: null };
+var psPreviews = [];   // [{ dataUrl, snap, label }]
+
+// MAAT-250818-01 — tarih + o gunun sirasi. Sira sayaci depodaki koda gore artar.
+function newProductCode() {
+  var d = new Date();
+  var stamp = String(d.getFullYear()).slice(2)
+    + String(d.getMonth() + 1).padStart(2, '0')
+    + String(d.getDate()).padStart(2, '0');
+  var seq = 1;
+  try {
+    var k = 'psSeq_' + stamp;
+    seq = (parseInt(localStorage.getItem(k), 10) || 0) + 1;
+    localStorage.setItem(k, String(seq));
+  } catch (e) {}
+  return 'MAAT-' + stamp + '-' + String(seq).padStart(2, '0');
+}
+
+function psSetStatus(type, msg) { setSt('psSt', type, msg); }
+
+function readFileAsDataUrl(file) {
+  return new Promise(function(res, rej) {
+    var fr = new FileReader();
+    fr.onload = function(){ res(fr.result); };
+    fr.onerror = rej;
+    fr.readAsDataURL(file);
+  });
+}
+
+// 1) Yukleme — orijinaller depoya, thumbnail'ler panele
+function onProductPhotosPicked(ev) {
+  var files = [].slice.call(ev.target.files || []);
+  ev.target.value = '';
+  if (!files.length) return;
+
+  if (!photoSet.code) {
+    photoSet.code = newProductCode();
+    document.getElementById('psCode').textContent = photoSet.code;
+  }
+
+  psSetStatus('load','<span class="spin">&#x27F3;</span> 0/' + files.length + ' yukleniyor...');
+  var done = 0;
+
+  files.reduce(function(chain, file) {
+    return chain.then(function() {
+      return readFileAsDataUrl(file).then(function(dataUrl) {
+        var safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        var name = photoSet.code + '_' + safe;
+        var item = {
+          id: 'p' + Date.now() + Math.random().toString(36).slice(2,6),
+          name: name, rawDataUrl: dataUrl, rawUrl: null,
+          readyDataUrl: null, readyUrl: null, sketchDataUrl: null,
+          selected: false, readySelected: false
+        };
+        photoSet.items.push(item);
+        psRenderGrid();
+
+        return uploadDataUrlToStorage(dataUrl, PS_RAW_DIR + name, null).then(function(url) {
+          item.rawUrl = url || null;
+          done++;
+          psSetStatus('load','<span class="spin">&#x27F3;</span> ' + done + '/' + files.length + ' yukleniyor...');
+          psRenderGrid();
+        });
+      });
+    });
+  }, Promise.resolve()).then(function() {
+    psSetStatus('ok','&#x2713; ' + done + ' fotograf depoya kaydedildi (' + photoSet.code + '). Hazirlanacaklari secip Hazirla deyin.');
+  }).catch(function(e) {
+    psSetStatus('err','Yukleme hatasi: ' + eEsc(e.message));
+  });
+}
+
+function psRenderGrid() {
+  var box = document.getElementById('psGrid');
+  if (!box) return;
+  if (!photoSet.items.length) { box.innerHTML = ''; return; }
+
+  box.innerHTML = photoSet.items.map(function(it, i) {
+    var cell = '<div style="display:flex;flex-direction:column;gap:3px">';
+
+    // Ham fotograf — coklu secim (Hazirla icin)
+    cell += '<div onclick="psToggleRaw(' + i + ')" title="' + eEsc(it.name) + '" '
+      + 'style="position:relative;border:2px solid ' + (it.selected ? 'var(--primary)' : 'transparent')
+      + ';border-radius:6px;overflow:hidden;cursor:pointer;background:#fff">'
+      + '<img src="' + it.rawDataUrl + '" style="width:100%;aspect-ratio:1;object-fit:cover;display:block">'
+      + (it.rawUrl ? '' : '<span style="position:absolute;top:2px;right:3px;font-size:9px;color:#f59e0b">⏳</span>')
+      + '</div>';
+
+    // Hazir hali — tekli secim (Sketch icin)
+    if (it.readyDataUrl) {
+      cell += '<div onclick="psSelectReady(' + i + ')" title="Ready_' + eEsc(it.name) + '" '
+        + 'style="border:2px solid ' + (it.readySelected ? '#16a34a' : 'transparent')
+        + ';border-radius:6px;overflow:hidden;cursor:pointer;'
+        + 'background:repeating-conic-gradient(#eef1f5 0% 25%,#fff 0% 50%) 0 0/8px 8px">'
+        + '<img src="' + it.readyDataUrl + '" style="width:100%;aspect-ratio:1;object-fit:contain;display:block">'
+        + '</div>';
+    }
+    return cell + '</div>';
+  }).join('');
+}
+
+function psToggleRaw(i) {
+  photoSet.items[i].selected = !photoSet.items[i].selected;
+  psRenderGrid();
+}
+
+// Sketch tek gorsel icin uretilir — secim de tekli
+function psSelectReady(i) {
+  photoSet.items.forEach(function(it, j) { it.readySelected = (j === i); });
+  psRenderGrid();
+}
+
+// 2) Hazirla — sadece secili ham fotograflar: BG kaldir + kirp, Ready_ olarak kaydet
+function psPrepareSelected() {
+  var targets = photoSet.items.filter(function(it) { return it.selected; });
+  if (!targets.length) { psSetStatus('err','&#x26A0; Once hazirlanacak fotograflari secin'); return; }
+
+  var btn = document.getElementById('psPrepBtn');
+  if (btn) btn.disabled = true;
+
+  var done = 0, failed = 0;
+  targets.reduce(function(chain, it) {
+    return chain.then(function() {
+      psSetStatus('load','<span class="spin">&#x27F3;</span> ' + (done+failed+1) + '/' + targets.length + ' hazirlaniyor...');
+      // Sketch bu asamada uretilmiyor — sadece BG kaldirma ve kirpma
+      return prepareProductAssets({ dataUrl: it.rawDataUrl }, 'psSt')
+        .then(function(a) {
+          it.readyDataUrl = a.croppedUrl;
+          it.selected = false;
+          psRenderGrid();
+          return uploadDataUrlToStorage(a.croppedUrl, PS_RAW_DIR + 'Ready_' + it.name.replace(/\.[^.]+$/, '') + '.png', null);
+        })
+        .then(function(url) { it.readyUrl = url || null; done++; })
+        .catch(function() { failed++; });
+    });
+  }, Promise.resolve()).then(function() {
+    psRenderGrid();
+    psSetStatus(failed ? 'err' : 'ok',
+      '&#x2713; ' + done + ' gorsel hazirlandi ve Ready_ olarak kaydedildi'
+      + (failed ? ', ' + failed + ' basarisiz' : '') + '.');
+    if (btn) btn.disabled = false;
+  });
+}
+
+// 3) Sketch — yalnizca secili hazir gorsel icin
+function psSketchSelected() {
+  var it = photoSet.items.filter(function(x) { return x.readySelected && x.readyDataUrl; })[0];
+  if (!it) { psSetStatus('err','&#x26A0; Once bir hazir gorsel secin (yesil cerceve)'); return; }
+
+  psSetStatus('load','<span class="spin">&#x27F3;</span> Sketch olusturuluyor...');
+  loadImagePromise(it.readyDataUrl).then(function(img) {
+    it.sketchDataUrl = sketchImageToUrl(img);
+    photoSet.sketch = it.sketchDataUrl;
+    showProcCard('sketchPreview', it.sketchDataUrl);
+    psSetStatus('ok','&#x2713; Sketch hazir — "Gorsel hazirla" dediginizde olcu gorseli de olusacak');
+  }).catch(function(e) {
+    psSetStatus('err','Sketch hatasi: ' + eEsc(e.message));
+  });
+}
+
+// 4) Gorsel hazirla — her hazir foto icin bir canvas, sketch varsa +1 olcu canvasi
+function psBuildPreviews() {
+  var ready = photoSet.items.filter(function(it) { return it.readyDataUrl; });
+  if (!ready.length) { psSetStatus('err','&#x26A0; Once en az bir fotografi hazirlayin'); return; }
+
+  var bgFile = etsyBgFile();
+  if (!bgFile) { psSetStatus('err','&#x26A0; Once arka plan secin'); return; }
+
+  var btn = document.getElementById('psBuildBtn');
+  if (btn) btn.disabled = true;
+  psSetStatus('load','<span class="spin">&#x27F3;</span> Gorseller olusturuluyor...');
+
+  // Editorun mevcut durumunu bozmadan calisip sonunda geri yukluyoruz
+  var restore = buildSnapshot();
+  psPreviews = [];
+
+  loadImagePromise(bgUrlOf(bgFile)).then(function(bg) {
+    return ready.reduce(function(chain, it, i) {
+      return chain.then(function() {
+        return loadImagePromise(it.readyDataUrl).then(function(img) {
+          bgImg = bg;
+          resetCanvasWith(img, 2 / 3);
+          renderCanvas();
+          psPreviews.push({
+            dataUrl: renderWorkCanvas().toDataURL('image/jpeg', 0.85),
+            snap: buildSnapshot(),
+            label: 'Urun ' + (i + 1)
+          });
+        });
+      });
+    }, Promise.resolve());
+  }).then(function() {
+    if (!photoSet.sketch) return;
+    return loadImagePromise(photoSet.sketch).then(function(sk) {
+      resetCanvasWith(sk, 1 / 2);
+      psAddRulersAndLabels();
+      renderCanvas();
+      psPreviews.push({
+        dataUrl: renderWorkCanvas().toDataURL('image/jpeg', 0.85),
+        snap: buildSnapshot(),
+        label: 'Olcu'
+      });
+    });
+  }).then(function() {
+    restoreSnapToCanvas(restore);
+    psRenderPreviews();
+    psSetStatus('ok','&#x2713; ' + psPreviews.length + ' gorsel hazir — duzenlemek icin birine tiklayin');
+  }).catch(function(e) {
+    psSetStatus('err','Hata: ' + eEsc(e.message));
+  }).then(function() {
+    if (btn) btn.disabled = false;
+  });
+}
+
+// Olcu gorselinin cetvelleri ve "..... inches" metinleri
+function psAddRulersAndLabels() {
+  var p = objs.product;
+  var gap = Math.round(CW * 0.03);
+  var thick = Math.round(CW * 0.045);
+
+  var line = function(w, hgt) {
+    var c = document.createElement('canvas');
+    c.width = Math.max(1, w); c.height = Math.max(1, hgt);
+    var x = c.getContext('2d');
+    x.strokeStyle = '#334155'; x.lineWidth = 2;
+    if (hgt > w) {   // dikey
+      x.beginPath(); x.moveTo(w/2, 1); x.lineTo(w/2, hgt-1);
+      x.moveTo(1, 1); x.lineTo(w-1, 1); x.moveTo(1, hgt-1); x.lineTo(w-1, hgt-1);
+    } else {         // yatay
+      x.beginPath(); x.moveTo(1, hgt/2); x.lineTo(w-1, hgt/2);
+      x.moveTo(1, 1); x.lineTo(1, hgt-1); x.moveTo(w-1, 1); x.lineTo(w-1, hgt-1);
+    }
+    x.stroke();
+    var img = new Image(); img.src = c.toDataURL();
+    return img;
+  };
+
+  addRulerImage('ruler_v', line(thick, p.h), { x: p.x + p.w + gap, y: p.y, w: thick, h: p.h });
+  addRulerImage('ruler_h', line(p.w, thick), { x: p.x, y: p.y - gap - thick, w: p.w, h: thick });
+
+  addInchText(p.x + p.w + gap + thick + Math.round(gap/2), p.y + p.h/2 - 15, Math.round(CW * 0.30));
+  addInchText(p.x + p.w/2 - Math.round(CW * 0.15), p.y - gap - thick - 34, Math.round(CW * 0.30));
+}
+
+function psRenderPreviews() {
+  var wrap = document.getElementById('psPreviewWrap');
+  var grid = document.getElementById('psPreviewGrid');
+  if (!wrap || !grid) return;
+
+  wrap.style.display = psPreviews.length ? '' : 'none';
+  document.getElementById('psPreviewCount').textContent = psPreviews.length ? '(' + psPreviews.length + ')' : '';
+
+  grid.innerHTML = psPreviews.map(function(pv, i) {
+    return '<div onclick="psOpenPreview(' + i + ')" title="Editore al" '
+      + 'style="border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;background:#fff">'
+      + '<img src="' + pv.dataUrl + '" style="width:100%;aspect-ratio:1;object-fit:cover;display:block">'
+      + '<div style="font-size:9px;text-align:center;padding:3px;color:#64748b;font-weight:600">' + eEsc(pv.label) + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+// Onizlemeyi tum katmanlariyla ana editore alir
+function psOpenPreview(i) {
+  var pv = psPreviews[i];
+  if (!pv) return;
+  restoreSnapToCanvas(pv.snap);
+  psSetStatus('ok','&#x2713; "' + eEsc(pv.label) + '" editore alindi — duzenleyip Kaydet deyin');
 }
 
 // ── ETSY: STANDART GORSEL URETIMI ─────────────────────────────────────────
