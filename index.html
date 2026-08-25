@@ -217,8 +217,32 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
       <div class="editor-rail">
       <div style="display:flex;flex-direction:column;gap:12px">
 
+        <!-- Etsy: sade foto hazırlama (Ürün Görseli kartının dışında,
+             çünkü o kart Etsy modunda gizleniyor) -->
+          <div data-market="etsy" style="display:none;flex-direction:column;gap:8px;margin-bottom:12px;padding:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:9px">
+            <span style="font-size:11px;font-weight:700;color:#c2410c">ÜRÜN FOTOĞRAFI</span>
+
+            <input type="file" id="esFiles" accept="image/*" multiple style="display:none" onchange="esPickFiles(event)">
+            <button class="btn sm primary" onclick="document.getElementById('esFiles').click()" style="justify-content:center">
+              📷 Foto seç
+            </button>
+
+            <div id="esGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+
+            <div style="display:flex;gap:5px">
+              <button class="btn xs" onclick="esRemoveBg()" style="flex:1;justify-content:center">✂ Arka plan kaldır</button>
+              <button class="btn xs" onclick="esSketch()" style="flex:1;justify-content:center">✎ Sketch çiz</button>
+            </div>
+
+            <button class="btn sm" onclick="esAddToEditor()" style="justify-content:center;background:#c2410c;color:#fff;border-color:#c2410c">
+              ＋ Editöre ekle
+            </button>
+
+            <div id="esSt"></div>
+          </div>
+
         <!-- Ürün Görseli card -->
-        <div class="card" id="urunGorseliCard" style="padding:14px">
+        <div class="card" id="urunGorseliCard" data-market="trendyol" style="padding:14px">
           <div class="card-title"><span class="icon">📷</span> Ürün Görseli</div>
           <input type="file" id="fi" accept="image/*" style="display:none">
 
@@ -230,53 +254,6 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
             <button class="btn sm primary" onclick="hazirlaProduct()" id="hazirlaBtn" style="flex:1;justify-content:center">
               ⚡ Hazırla
             </button>
-          </div>
-
-          <!-- Etsy: çok fotoğraflı ürün akışı -->
-          <div data-market="etsy" style="display:none;flex-direction:column;gap:8px;margin-bottom:12px;padding:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:9px">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:11px;font-weight:700;color:#c2410c">ÜRÜN FOTOĞRAFLARI</span>
-              <span id="psCode" style="font-size:10px;font-weight:700;color:#9a3412;font-family:monospace"></span>
-            </div>
-
-            <input type="file" id="psFiles" accept="image/*" multiple style="display:none" onchange="onProductPhotosPicked(event)">
-            <button class="btn sm primary" onclick="document.getElementById('psFiles').click()" style="justify-content:center">
-              📷 Ürün fotoğraflarını yükle
-            </button>
-
-            <div id="psGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div>
-
-            <div style="display:flex;gap:5px">
-              <button class="btn xs" onclick="psPrepareSelected()" id="psPrepBtn" style="flex:1;justify-content:center">⚡ Hazırla</button>
-              <button class="btn xs" onclick="psSketchSelected()" id="psSketchBtn" style="flex:1;justify-content:center">✎ Sketch</button>
-            </div>
-
-            <div style="display:flex;gap:5px;align-items:center">
-              <span style="font-size:10px;color:#9a3412;white-space:nowrap">Arka plan</span>
-              <select id="etsyBgSelect" onchange="saveEtsyBg()" style="flex:1;padding:5px 7px;font-size:11px;border:1px solid #fed7aa;border-radius:6px;font-family:inherit;background:#fff"></select>
-            </div>
-
-            <button class="btn sm" onclick="psBuildPreviews()" id="psBuildBtn" style="justify-content:center;background:#c2410c;color:#fff;border-color:#c2410c">
-              🖼 Görsel hazırla
-            </button>
-
-            <div id="psSt"></div>
-          </div>
-
-          <!-- Etsy: standart görsel üretimi -->
-          <div data-market="etsy" style="display:none;flex-direction:column;gap:6px;margin-bottom:12px;padding:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:9px">
-            <div style="font-size:11px;font-weight:700;color:#c2410c">ETSY STANDART GÖRSELLER</div>
-            <div style="display:flex;gap:6px;align-items:center">
-              <button class="btn xs" onclick="previewEtsyBg()" style="flex:1">👁 Arka planı önizle</button>
-            </div>
-            <button class="btn sm primary" onclick="etsyGenerateImages()" id="etsyGenBtn" style="justify-content:center">
-              ⚡ Etsy görsellerini üret
-            </button>
-            <div style="font-size:10px;color:#9a3412;line-height:1.4">
-              Ürün görseli (2/3, logosuz) doğrudan kaydedilir. Ölçü görseli (1/2 + cetveller)
-              editörde açılır — inç değerlerine çift tıklayıp yazın, sonra Kaydet.
-            </div>
-            <div id="etsyGenSt"></div>
           </div>
 
           <!-- Row 1: Ham fotoğraf (ortada) -->
@@ -446,15 +423,6 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
             </div>
 
         </div>
-        <!-- Etsy: hazırlanan görsel önizlemeleri -->
-        <div data-market="etsy" id="psPreviewWrap" style="display:none;width:100%;border-top:1px solid var(--border);padding-top:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="font-size:12px;font-weight:700;color:#334155">🖼 Hazırlanan Görseller <span id="psPreviewCount" style="font-weight:400;color:#94a3b8"></span></span>
-            <span style="font-size:11px;color:#94a3b8">Düzenlemek için birine tıklayın</span>
-          </div>
-          <div id="psPreviewGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px"></div>
-        </div>
-
       </div><!-- /orta -->
 
       <!-- ▶ SAĞ RAY: katman ekle, katman listesi, efektler -->
@@ -1390,12 +1358,8 @@ function applyMarketUI() {
   // etsyState bu noktadan sonra tanimlaniyor — acilistaki ilk cagrida henuz yok.
   var ready = (typeof etsyState !== 'undefined') && !!etsyState;
 
-  // Etsy arka plan secicisi listeye ihtiyac duyar; kullaniciyi once "Yukle"
-  // demeye zorlamamak icin liste bossa kendimiz cekiyoruz.
-  if (etsy && typeof bgAllFiles !== 'undefined') {
-    if (!bgAllFiles.length) loadBackgrounds();
-    else fillEtsyBgSelect();
-  }
+  // Etsy modunda arka planlar sol raydan seciliyor; liste bossa kendimiz cekiyoruz.
+  if (etsy && typeof bgAllFiles !== 'undefined' && !bgAllFiles.length) loadBackgrounds();
 
   if (ready) etsyApplyCurrencyLabels();
 
@@ -2343,12 +2307,8 @@ function onBackgroundFilesPicked(ev) {
   }, Promise.resolve()).then(function() {
     return loadBackgrounds();
   }).then(function() {
-    // Tek dosya yuklendiyse dogrudan kullanima al
+    // Tek dosya yuklendiyse dogrudan tuvale uygula
     if (done === 1 && lastName) {
-      if (isEtsy()) {
-        var sel = document.getElementById('etsyBgSelect');
-        if (sel) { sel.value = lastName; saveEtsyBg(); }
-      }
       loadImagePromise(bgUrlOf(lastName)).then(function(img) { bgImg = img; renderCanvas(); });
     }
     setSt('bgLoadSt', failed ? 'err' : 'ok',
@@ -2367,7 +2327,6 @@ function loadBackgrounds() {
   .then(function(files) {
     document.getElementById('bgLoadSt').innerHTML = '';
     bgAllFiles = files.filter(function(f) { return f.name && /\.(jpg|jpeg|png|webp)$/i.test(f.name); });
-    if (typeof fillEtsyBgSelect === 'function') fillEtsyBgSelect();
     if (!bgAllFiles.length) { setSt('bgLoadSt','info','backgrounds/ klasörü boş'); return; }
     var countEl = document.getElementById('bgCount');
     if (countEl) countEl.textContent = '(' + bgAllFiles.length + ')';
@@ -5291,30 +5250,38 @@ function etsyApi(action, opts) {
   }).then(function(r) { return r.json(); });
 }
 
-// ── ETSY: COK FOTOGRAFLI URUN AKISI ───────────────────────────────────────
-// Akis: yukle -> (coklu sec) Hazirla -> (tekli sec) Sketch -> Gorsel hazirla
-// Ham ve hazir dosyalar depoda urun koduyla saklanir.
-var PS_RAW_DIR = 'ham_urun_fotolari/';
+// ── ETSY: SADE FOTO HAZIRLAMA ─────────────────────────────────────────────
+// Uc dugme, tek mantik: foto sec -> arka plan kaldir / sketch ciz -> editore ekle.
+// Her fotograf bir sutun: orijinal en ustte, turetilenler altinda.
+var esPhotos = [];        // [{ id, name, orig, nobg, sketch }]
+var esSelected = null;    // { i, kind } — kind: 'orig' | 'nobg' | 'sketch'
 
-var photoSet = { code: null, items: [], sketch: null };
-var psPreviews = [];   // [{ dataUrl, snap, label }]
+function esSetStatus(type, msg) { setSt('esSt', type, msg); }
 
-// MAAT-250818-01 — tarih + o gunun sirasi. Sira sayaci depodaki koda gore artar.
-function newProductCode() {
-  var d = new Date();
-  var stamp = String(d.getFullYear()).slice(2)
-    + String(d.getMonth() + 1).padStart(2, '0')
-    + String(d.getDate()).padStart(2, '0');
-  var seq = 1;
-  try {
-    var k = 'psSeq_' + stamp;
-    seq = (parseInt(localStorage.getItem(k), 10) || 0) + 1;
-    localStorage.setItem(k, String(seq));
-  } catch (e) {}
-  return 'MAAT-' + stamp + '-' + String(seq).padStart(2, '0');
+function esPickFiles(ev) {
+  var files = [].slice.call(ev.target.files || []);
+  ev.target.value = '';
+  if (!files.length) return;
+
+  esSetStatus('load','<span class="spin">&#x27F3;</span> Okunuyor...');
+  files.reduce(function(chain, file) {
+    return chain.then(function() {
+      return readFileAsDataUrl(file).then(function(dataUrl) {
+        esPhotos.push({
+          id: 'e' + Date.now() + Math.random().toString(36).slice(2,6),
+          name: file.name, orig: dataUrl, nobg: null, sketch: null
+        });
+        esRender();
+      });
+    });
+  }, Promise.resolve()).then(function() {
+    // Yeni eklenen ilk fotografi sec — hemen islem yapilabilsin
+    if (!esSelected) esSelect(esPhotos.length - files.length, 'orig');
+    esSetStatus('ok','&#x2713; ' + files.length + ' fotograf eklendi. Birini secip islem yapin.');
+  }).catch(function(e) {
+    esSetStatus('err','Okunamadi: ' + eEsc(e.message));
+  });
 }
-
-function psSetStatus(type, msg) { setSt('psSt', type, msg); }
 
 function readFileAsDataUrl(file) {
   return new Promise(function(res, rej) {
@@ -5325,291 +5292,98 @@ function readFileAsDataUrl(file) {
   });
 }
 
-// 1) Yukleme — orijinaller depoya, thumbnail'ler panele
-function onProductPhotosPicked(ev) {
-  var files = [].slice.call(ev.target.files || []);
-  ev.target.value = '';
-  if (!files.length) return;
-
-  if (!photoSet.code) {
-    photoSet.code = newProductCode();
-    document.getElementById('psCode').textContent = photoSet.code;
-  }
-
-  psSetStatus('load','<span class="spin">&#x27F3;</span> 0/' + files.length + ' yukleniyor...');
-  var done = 0;
-
-  files.reduce(function(chain, file) {
-    return chain.then(function() {
-      return readFileAsDataUrl(file).then(function(dataUrl) {
-        var safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        var name = photoSet.code + '_' + safe;
-        var item = {
-          id: 'p' + Date.now() + Math.random().toString(36).slice(2,6),
-          name: name, rawDataUrl: dataUrl, rawUrl: null,
-          readyDataUrl: null, readyUrl: null, sketchDataUrl: null,
-          selected: false, readySelected: false
-        };
-        photoSet.items.push(item);
-        psRenderGrid();
-
-        return uploadDataUrlToStorage(dataUrl, PS_RAW_DIR + name, null).then(function(url) {
-          item.rawUrl = url || null;
-          done++;
-          psSetStatus('load','<span class="spin">&#x27F3;</span> ' + done + '/' + files.length + ' yukleniyor...');
-          psRenderGrid();
-        });
-      });
-    });
-  }, Promise.resolve()).then(function() {
-    psSetStatus('ok','&#x2713; ' + done + ' fotograf depoya kaydedildi (' + photoSet.code + '). Hazirlanacaklari secip Hazirla deyin.');
-  }).catch(function(e) {
-    psSetStatus('err','Yukleme hatasi: ' + eEsc(e.message));
-  });
+function esSelect(i, kind) {
+  esSelected = { i: i, kind: kind };
+  esRender();
 }
 
-function psRenderGrid() {
-  var box = document.getElementById('psGrid');
+function esRemovePhoto(i) {
+  esPhotos.splice(i, 1);
+  if (esSelected && esSelected.i === i) esSelected = null;
+  else if (esSelected && esSelected.i > i) esSelected.i--;
+  esRender();
+}
+
+function esRender() {
+  var box = document.getElementById('esGrid');
   if (!box) return;
-  if (!photoSet.items.length) { box.innerHTML = ''; return; }
+  if (!esPhotos.length) { box.innerHTML = ''; return; }
 
-  box.innerHTML = photoSet.items.map(function(it, i) {
-    var cell = '<div style="display:flex;flex-direction:column;gap:3px">';
-
-    // Ham fotograf — coklu secim (Hazirla icin)
-    cell += '<div onclick="psToggleRaw(' + i + ')" title="' + eEsc(it.name) + '" '
-      + 'style="position:relative;border:2px solid ' + (it.selected ? 'var(--primary)' : 'transparent')
-      + ';border-radius:6px;overflow:hidden;cursor:pointer;background:#fff">'
-      + '<img src="' + it.rawDataUrl + '" style="width:100%;aspect-ratio:1;object-fit:cover;display:block">'
-      + (it.rawUrl ? '' : '<span style="position:absolute;top:2px;right:3px;font-size:9px;color:#f59e0b">⏳</span>')
+  var cell = function(i, kind, src, renk, baslik) {
+    var on = esSelected && esSelected.i === i && esSelected.kind === kind;
+    return '<div onclick="esSelect(' + i + ',\'' + kind + '\')" title="' + baslik + '" '
+      + 'style="border:2px solid ' + (on ? renk : 'transparent') + ';border-radius:6px;overflow:hidden;'
+      + 'cursor:pointer;background:repeating-conic-gradient(#eef1f5 0% 25%,#fff 0% 50%) 0 0/8px 8px">'
+      + '<img src="' + src + '" style="width:100%;aspect-ratio:1;object-fit:contain;display:block">'
       + '</div>';
-
-    // Hazir hali — tekli secim (Sketch icin)
-    if (it.readyDataUrl) {
-      cell += '<div onclick="psSelectReady(' + i + ')" title="Ready_' + eEsc(it.name) + '" '
-        + 'style="border:2px solid ' + (it.readySelected ? '#16a34a' : 'transparent')
-        + ';border-radius:6px;overflow:hidden;cursor:pointer;'
-        + 'background:repeating-conic-gradient(#eef1f5 0% 25%,#fff 0% 50%) 0 0/8px 8px">'
-        + '<img src="' + it.readyDataUrl + '" style="width:100%;aspect-ratio:1;object-fit:contain;display:block">'
-        + '</div>';
-    }
-    return cell + '</div>';
-  }).join('');
-}
-
-function psToggleRaw(i) {
-  photoSet.items[i].selected = !photoSet.items[i].selected;
-  psRenderGrid();
-}
-
-// Sketch tek gorsel icin uretilir — secim de tekli
-function psSelectReady(i) {
-  photoSet.items.forEach(function(it, j) { it.readySelected = (j === i); });
-  psRenderGrid();
-}
-
-// 2) Hazirla — sadece secili ham fotograflar: BG kaldir + kirp, Ready_ olarak kaydet
-function psPrepareSelected() {
-  var targets = photoSet.items.filter(function(it) { return it.selected; });
-  if (!targets.length) { psSetStatus('err','&#x26A0; Once hazirlanacak fotograflari secin'); return; }
-
-  var btn = document.getElementById('psPrepBtn');
-  if (btn) btn.disabled = true;
-
-  var done = 0, failed = 0;
-  targets.reduce(function(chain, it) {
-    return chain.then(function() {
-      psSetStatus('load','<span class="spin">&#x27F3;</span> ' + (done+failed+1) + '/' + targets.length + ' hazirlaniyor...');
-      // Sketch bu asamada uretilmiyor — sadece BG kaldirma ve kirpma
-      return prepareProductAssets({ dataUrl: it.rawDataUrl }, 'psSt')
-        .then(function(a) {
-          it.readyDataUrl = a.croppedUrl;
-          it.selected = false;
-          psRenderGrid();
-          return uploadDataUrlToStorage(a.croppedUrl, PS_RAW_DIR + 'Ready_' + it.name.replace(/\.[^.]+$/, '') + '.png', null);
-        })
-        .then(function(url) { it.readyUrl = url || null; done++; })
-        .catch(function() { failed++; });
-    });
-  }, Promise.resolve()).then(function() {
-    psRenderGrid();
-    psSetStatus(failed ? 'err' : 'ok',
-      '&#x2713; ' + done + ' gorsel hazirlandi ve Ready_ olarak kaydedildi'
-      + (failed ? ', ' + failed + ' basarisiz' : '') + '.');
-    if (btn) btn.disabled = false;
-  });
-}
-
-// 3) Sketch — yalnizca secili hazir gorsel icin
-function psSketchSelected() {
-  var it = photoSet.items.filter(function(x) { return x.readySelected && x.readyDataUrl; })[0];
-  if (!it) { psSetStatus('err','&#x26A0; Once bir hazir gorsel secin (yesil cerceve)'); return; }
-
-  psSetStatus('load','<span class="spin">&#x27F3;</span> Sketch olusturuluyor...');
-  loadImagePromise(it.readyDataUrl).then(function(img) {
-    it.sketchDataUrl = sketchImageToUrl(img);
-    photoSet.sketch = it.sketchDataUrl;
-    showProcCard('sketchPreview', it.sketchDataUrl);
-    psSetStatus('ok','&#x2713; Sketch hazir — "Gorsel hazirla" dediginizde olcu gorseli de olusacak');
-  }).catch(function(e) {
-    psSetStatus('err','Sketch hatasi: ' + eEsc(e.message));
-  });
-}
-
-// 4) Gorsel hazirla — her hazir foto icin bir canvas, sketch varsa +1 olcu canvasi
-function psBuildPreviews() {
-  var ready = photoSet.items.filter(function(it) { return it.readyDataUrl; });
-  if (!ready.length) { psSetStatus('err','&#x26A0; Once en az bir fotografi hazirlayin'); return; }
-
-  var bgFile = etsyBgFile();
-  if (!bgFile) { psSetStatus('err','&#x26A0; Once arka plan secin'); return; }
-
-  var btn = document.getElementById('psBuildBtn');
-  if (btn) btn.disabled = true;
-  psSetStatus('load','<span class="spin">&#x27F3;</span> Gorseller olusturuluyor...');
-
-  // Editorun mevcut durumunu bozmadan calisip sonunda geri yukluyoruz
-  var restore = buildSnapshot();
-  psPreviews = [];
-
-  loadImagePromise(bgUrlOf(bgFile)).then(function(bg) {
-    return ready.reduce(function(chain, it, i) {
-      return chain.then(function() {
-        return loadImagePromise(it.readyDataUrl).then(function(img) {
-          bgImg = bg;
-          resetCanvasWith(img, 2 / 3);
-          renderCanvas();
-          psPreviews.push({
-            dataUrl: renderWorkCanvas().toDataURL('image/jpeg', 0.85),
-            snap: buildSnapshot(),
-            label: 'Urun ' + (i + 1)
-          });
-        });
-      });
-    }, Promise.resolve());
-  }).then(function() {
-    if (!photoSet.sketch) return;
-    return loadImagePromise(photoSet.sketch).then(function(sk) {
-      resetCanvasWith(sk, 1 / 2);
-      psAddRulersAndLabels();
-      renderCanvas();
-      psPreviews.push({
-        dataUrl: renderWorkCanvas().toDataURL('image/jpeg', 0.85),
-        snap: buildSnapshot(),
-        label: 'Olcu'
-      });
-    });
-  }).then(function() {
-    restoreSnapToCanvas(restore);
-    psRenderPreviews();
-    psSetStatus('ok','&#x2713; ' + psPreviews.length + ' gorsel hazir — duzenlemek icin birine tiklayin');
-  }).catch(function(e) {
-    psSetStatus('err','Hata: ' + eEsc(e.message));
-  }).then(function() {
-    if (btn) btn.disabled = false;
-  });
-}
-
-// Olcu gorselinin cetvelleri ve "..... inches" metinleri
-function psAddRulersAndLabels() {
-  var p = objs.product;
-  var gap = Math.round(CW * 0.03);
-  var thick = Math.round(CW * 0.045);
-
-  var line = function(w, hgt) {
-    var c = document.createElement('canvas');
-    c.width = Math.max(1, w); c.height = Math.max(1, hgt);
-    var x = c.getContext('2d');
-    x.strokeStyle = '#334155'; x.lineWidth = 2;
-    if (hgt > w) {   // dikey
-      x.beginPath(); x.moveTo(w/2, 1); x.lineTo(w/2, hgt-1);
-      x.moveTo(1, 1); x.lineTo(w-1, 1); x.moveTo(1, hgt-1); x.lineTo(w-1, hgt-1);
-    } else {         // yatay
-      x.beginPath(); x.moveTo(1, hgt/2); x.lineTo(w-1, hgt/2);
-      x.moveTo(1, 1); x.lineTo(1, hgt-1); x.moveTo(w-1, 1); x.lineTo(w-1, hgt-1);
-    }
-    x.stroke();
-    var img = new Image(); img.src = c.toDataURL();
-    return img;
   };
 
-  addRulerImage('ruler_v', line(thick, p.h), { x: p.x + p.w + gap, y: p.y, w: thick, h: p.h });
-  addRulerImage('ruler_h', line(p.w, thick), { x: p.x, y: p.y - gap - thick, w: p.w, h: thick });
-
-  addInchText(p.x + p.w + gap + thick + Math.round(gap/2), p.y + p.h/2 - 15, Math.round(CW * 0.30));
-  addInchText(p.x + p.w/2 - Math.round(CW * 0.15), p.y - gap - thick - 34, Math.round(CW * 0.30));
-}
-
-function psRenderPreviews() {
-  var wrap = document.getElementById('psPreviewWrap');
-  var grid = document.getElementById('psPreviewGrid');
-  if (!wrap || !grid) return;
-
-  wrap.style.display = psPreviews.length ? '' : 'none';
-  document.getElementById('psPreviewCount').textContent = psPreviews.length ? '(' + psPreviews.length + ')' : '';
-
-  grid.innerHTML = psPreviews.map(function(pv, i) {
-    return '<div onclick="psOpenPreview(' + i + ')" title="Editore al" '
-      + 'style="border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;background:#fff">'
-      + '<img src="' + pv.dataUrl + '" style="width:100%;aspect-ratio:1;object-fit:cover;display:block">'
-      + '<div style="font-size:9px;text-align:center;padding:3px;color:#64748b;font-weight:600">' + eEsc(pv.label) + '</div>'
-      + '</div>';
+  box.innerHTML = esPhotos.map(function(ph, i) {
+    var col = '<div style="display:flex;flex-direction:column;gap:3px;position:relative">'
+      + '<button onclick="event.stopPropagation();esRemovePhoto(' + i + ')" title="Kaldır" '
+      + 'style="position:absolute;top:-4px;right:-4px;z-index:2;width:16px;height:16px;border:none;border-radius:50%;'
+      + 'background:rgba(220,38,38,.9);color:#fff;font-size:10px;line-height:1;cursor:pointer">×</button>'
+      + cell(i, 'orig', ph.orig, 'var(--primary)', 'Orijinal');
+    if (ph.nobg)   col += cell(i, 'nobg',   ph.nobg,   '#16a34a', 'Arka planı kaldırılmış');
+    if (ph.sketch) col += cell(i, 'sketch', ph.sketch, '#7c3aed', 'Sketch');
+    return col + '</div>';
   }).join('');
 }
 
-// Onizlemeyi tum katmanlariyla ana editore alir
-function psOpenPreview(i) {
-  var pv = psPreviews[i];
-  if (!pv) return;
-  restoreSnapToCanvas(pv.snap);
-  psSetStatus('ok','&#x2713; "' + eEsc(pv.label) + '" editore alindi — duzenleyip Kaydet deyin');
+function esCurrent() {
+  if (!esSelected) return null;
+  var ph = esPhotos[esSelected.i];
+  if (!ph) return null;
+  return { ph: ph, src: ph[esSelected.kind === 'orig' ? 'orig' : esSelected.kind] };
 }
 
-// ── ETSY: STANDART GORSEL URETIMI ─────────────────────────────────────────
-// Telefonla cekilmis fotograftan iki standart Etsy gorseli uretir:
-//   A) Urun, secilen arka planda, tuvalin 2/3'u, logosuz  -> dogrudan kaydedilir
-//   B) Dis ceper cizimi, tuvalin 1/2'si + cetveller + "..... inches" metinleri
-//      -> editorde birakilir, cunku olculeri kullanici yazacak
-var ETSY_BG_KEY = 'etsyBgFile';
+// Arka plan kaldirma. Saydam kenarlar da kirpilir — kirpilmamis bir kesit
+// devasa bos kenarlarla gelir ve kompozisyonda kullanilamaz.
+function esRemoveBg() {
+  var cur = esCurrent();
+  if (!cur) { esSetStatus('err','&#x26A0; Once bir fotograf secin'); return; }
 
-function etsyBgFile() {
-  var sel = document.getElementById('etsyBgSelect');
-  if (sel && sel.value) return sel.value;
-  try { return localStorage.getItem(ETSY_BG_KEY) || ''; } catch (e) { return ''; }
+  esSetStatus('load','<span class="spin">&#x27F3;</span> Arka plan kaldiriliyor...');
+  prepareProductAssets({ dataUrl: cur.ph.orig }, 'esSt')
+    .then(function(a) {
+      cur.ph.nobg = a.croppedUrl;
+      esSelect(esSelected.i, 'nobg');
+      esSetStatus('ok','&#x2713; Arka plan kaldirildi');
+    })
+    .catch(function(e) { esSetStatus('err','Hata: ' + eEsc(e.message)); });
 }
 
-function saveEtsyBg() {
-  try { localStorage.setItem(ETSY_BG_KEY, etsyBgFile()); } catch (e) {}
+// Sketch: arka plani kaldirilmis hali varsa ondan, yoksa orijinalden.
+function esSketch() {
+  var cur = esCurrent();
+  if (!cur) { esSetStatus('err','&#x26A0; Once bir fotograf secin'); return; }
+
+  var kaynak = cur.ph.nobg || cur.ph.orig;
+  esSetStatus('load','<span class="spin">&#x27F3;</span> Sketch ciziliyor...');
+  loadImagePromise(kaynak)
+    .then(function(img) {
+      cur.ph.sketch = sketchImageToUrl(img);
+      esSelect(esSelected.i, 'sketch');
+      esSetStatus('ok','&#x2713; Sketch hazir');
+    })
+    .catch(function(e) { esSetStatus('err','Hata: ' + eEsc(e.message)); });
 }
 
-function bgUrlOf(name) {
-  return SUPA + '/storage/v1/object/public/trendyol/backgrounds/' + name;
+// Secili gorseli editore yeni katman olarak ekler.
+function esAddToEditor() {
+  var cur = esCurrent();
+  if (!cur || !cur.src) { esSetStatus('err','&#x26A0; Once bir gorsel secin'); return; }
+
+  loadImagePromise(cur.src)
+    .then(function(img) {
+      addProductToCanvas(img);
+      renderCanvas();
+      var ad = { orig:'Orijinal', nobg:'Arka planı kaldırılmış', sketch:'Sketch' }[esSelected.kind];
+      esSetStatus('ok','&#x2713; ' + ad + ' editore eklendi');
+    })
+    .catch(function(e) { esSetStatus('err','Eklenemedi: ' + eEsc(e.message)); });
 }
 
-// Arka plan listesi yuklendikce secicimizi de doldur.
-function fillEtsyBgSelect() {
-  var sel = document.getElementById('etsyBgSelect');
-  if (!sel || !bgAllFiles.length) return;
-  var saved = '';
-  try { saved = localStorage.getItem(ETSY_BG_KEY) || ''; } catch (e) {}
-  sel.innerHTML = '<option value="">Seciniz...</option>'
-    + bgAllFiles.map(function(f) {
-        return '<option value="' + eEsc(f.name) + '">' + eEsc(f.name) + '</option>';
-      }).join('');
-  if (saved) sel.value = saved;
-}
-
-function previewEtsyBg() {
-  var f = etsyBgFile();
-  if (!f) { setSt('etsyGenSt','err','&#x26A0; Once arka plan secin'); return; }
-  loadImagePromise(bgUrlOf(f)).then(function(img) {
-    bgImg = img;
-    renderCanvas();
-    setSt('etsyGenSt','ok','Arka plan onizlendi: ' + eEsc(f));
-  }).catch(function() {
-    setSt('etsyGenSt','err','Arka plan yuklenemedi');
-  });
-}
 
 // Hazirla akisinin cekirdegi — hem Hazirla hem Etsy uretimi kullaniyor.
 async function prepareProductAssets(imgData, statusId) {
@@ -5691,67 +5465,6 @@ function addInchText(x, y, w) {
     fontSize: Math.max(12, Math.round(CW * 0.038)),
     color: '#333333'
   });
-}
-
-async function etsyGenerateImages() {
-  if (!isEtsy()) { setSt('etsyGenSt','err','&#x26A0; Bu ozellik Etsy modunda calisir'); return; }
-  if (!s.imgs.length) { setSt('etsyGenSt','err','&#x26A0; Once fotograf yukleyin'); return; }
-
-  var bgFile = etsyBgFile();
-  if (!bgFile) { setSt('etsyGenSt','err','&#x26A0; Once arka plan secin'); return; }
-
-  var btn = document.getElementById('etsyGenBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Uretiliyor...'; }
-
-  try {
-    var bg = await loadImagePromise(bgUrlOf(bgFile));
-    var a  = await prepareProductAssets(s.imgs[0], 'etsyGenSt');
-
-    showProcCard('processedPreview', a.croppedUrl);
-    showProcCard('sketchPreview', a.sketchUrl);
-
-    // ── A) Urun gorseli: 2/3, logosuz, dogrudan kaydedilir
-    setSt('etsyGenSt','load','<span class="spin">&#x27F3;</span> Urun gorseli olusturuluyor...');
-    bgImg = bg;
-    resetCanvasWith(a.croppedImg, 2 / 3);
-    renderCanvas();
-    saveComposition();
-
-    // ── B) Olcu gorseli: 1/2 + cetveller + inc metinleri
-    setSt('etsyGenSt','load','<span class="spin">&#x27F3;</span> Olcu gorseli hazirlaniyor...');
-    resetCanvasWith(a.sketchImg, 1 / 2);
-
-    var p   = objs.product;
-    var gap = Math.round(CW * 0.03);
-    var thick = Math.round(CW * 0.045);
-
-    var rulers = await Promise.all([
-      loadImagePromise(SUPA + '/storage/v1/object/public/trendyol/cetvel/cetvel_dikey.png').catch(function(){ return null; }),
-      loadImagePromise(SUPA + '/storage/v1/object/public/trendyol/cetvel/cetvel_yatay.png').catch(function(){ return null; })
-    ]);
-
-    // Dikey cetvel cizimin sagina, yatay cetvel ustune
-    if (rulers[0]) {
-      addRulerImage('ruler_v', rulers[0], { x: p.x + p.w + gap, y: p.y, w: thick, h: p.h });
-    }
-    if (rulers[1]) {
-      addRulerImage('ruler_h', rulers[1], { x: p.x, y: p.y - gap - thick, w: p.w, h: thick });
-    }
-
-    // Metinler: dikey cetvelin sagina, yatay cetvelin ustune
-    addInchText(p.x + p.w + gap + thick + Math.round(gap / 2), p.y + p.h / 2 - 15, Math.round(CW * 0.30));
-    addInchText(p.x + p.w / 2 - Math.round(CW * 0.15), p.y - gap - thick - 34, Math.round(CW * 0.30));
-
-    renderCanvas();
-    updateSavedGrid();
-
-    setSt('etsyGenSt','ok','&#x2713; Urun gorseli kaydedildi. Olcu gorseli editorde — '
-      + '"..... inches" yazilarina <strong>cift tiklayip</strong> olculeri yazin, sonra Kaydet.');
-  } catch (e) {
-    setSt('etsyGenSt','err','Hata: ' + eEsc(e.message));
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '⚡ Etsy gorsellerini uret'; }
-  }
 }
 
 // ── ETSY: ANAHTAR KELIME ARASTIRMASI ──────────────────────────────────────
