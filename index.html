@@ -1292,6 +1292,7 @@ function setMarket(m, opts) {
   }
 
   applyMarketUI();
+  if (changed && typeof depoMarketChanged === 'function') depoMarketChanged(); // depo klasoru pazaryerine bagli
   if (typeof renderCanvas === 'function') renderCanvas();
   if (changed && !opts.silent && typeof goStep === 'function') goStep(1);
 }
@@ -1900,7 +1901,7 @@ function depoYukleProc() {
   var el = document.getElementById(id);
   if (!el || !el._dataUrl) { setSt('hazirlaStatus','err','⚠ Önce Hazırla\'ya bas'); return; }
   var prefix = id === 'sketchPreview' ? 'sketch_' : 'cropped_';
-  uploadDataUrlToStorage(el._dataUrl, 'nobackground/' + prefix + Date.now() + '.png', 'hazirlaStatus');
+  uploadDataUrlToStorage(el._dataUrl, depoUploadPath(prefix + Date.now() + '.png'), 'hazirlaStatus');
 }
 
 function renderGrid() {
@@ -2130,6 +2131,115 @@ function removeBgClick() {
   .finally(function() { btn.textContent='Arka planı kaldır'; btn.disabled=false; });
 }
 
+// ── DEPO YOLLARI (PAZARYERINE GORE) ───────────────────────────────────────
+// Fotograf deposu tek bir bucket'ta durur ('trendyol' — tarihsel isim, pazaryeri
+// degil). Pazaryeri ayrimi bucket icindeki ust klasorle yapilir:
+//   trendyol/nobackground/...  ve  etsy/nobackground/...
+var DEPO_BUCKET = 'trendyol';
+// GEÇİŞ: pazaryeri ayrimindan onceki eski duzen — dosyalar bucket kokunde
+// 'nobackground/' altinda duruyor ve Trendyol'a ait sayiliyor. Supabase tarafinda
+// tasima bitince DEPO_LEGACY_PREFIX ve depoReadPrefixes()'teki eski dal silinebilir.
+var DEPO_LEGACY_PREFIX = 'nobackground/';
+
+function depoPrefix(market) {
+  return (market || MARKET) + '/nobackground/';
+}
+
+// Yukleme HER ZAMAN yeni yola gider; eski koke asla yazilmaz.
+function depoUploadPath(fname) {
+  return depoPrefix() + fname;
+}
+
+// GEÇİŞ: okuma tarafinda Trendyol icin eski kok klasor de taranir, sonuclar
+// birlestirilir. Etsy'de eski yol hic okunmaz (oradaki dosyalar Trendyol'un).
+function depoReadPrefixes() {
+  var list = [depoPrefix()];
+  if (!isEtsy()) list.push(DEPO_LEGACY_PREFIX);
+  return list;
+}
+
+// Bucket tum klasorler icin ortak — bu ucu depo disindaki yollar da kullanir.
+function depoListUrl()          { return SUPA + '/storage/v1/object/list/' + DEPO_BUCKET; }
+function supaObjectUrl(path)    { return SUPA + '/storage/v1/object/' + DEPO_BUCKET + '/' + path; }
+function supaPublicUrl(path)    { return SUPA + '/storage/v1/object/public/' + DEPO_BUCKET + '/' + path; }
+
+var DEPO_IMG_RE = /\.(png|jpg|jpeg|webp)$/i;
+
+// Tek bir prefix'i listeler; ogeleri { name, path, created_at, legacy } yapar.
+function depoListPrefix(prefix, optional) {
+  return fetch(depoListUrl(), {
+    method:'POST',
+    headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
+    body: JSON.stringify({ prefix: prefix, limit:200, offset:0, sortBy:{column:'created_at',order:'desc'} })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(files){
+    if (!Array.isArray(files)) {
+      var msg = (files && (files.message || files.error)) || 'Liste alinamadi';
+      if (optional) return [];
+      throw new Error(msg);
+    }
+    return files.filter(function(f){ return f.name && DEPO_IMG_RE.test(f.name); })
+      .map(function(f){
+        return { name: f.name, path: prefix + f.name, created_at: f.created_at,
+                 legacy: prefix === DEPO_LEGACY_PREFIX };
+      });
+  })
+  .catch(function(e){ if (optional) return []; throw e; });
+}
+
+// Aktif pazaryerinin deposunu listeler (GEÇİŞ: Trendyol'da eski kok klasor de dahil).
+function depoListFiles() {
+  var prefixes = depoReadPrefixes();
+  return Promise.all(prefixes.map(function(prefix, i) {
+    return depoListPrefix(prefix, i > 0); // ilk prefix zorunlu, eski yol opsiyonel
+  })).then(function(groups) {
+    var seen = {}, out = [];
+    groups.forEach(function(g) {
+      g.forEach(function(f) {
+        if (seen[f.name]) return; // ayni ad yeni yolda varsa eskisi atlanir
+        seen[f.name] = true;
+        out.push(f);
+      });
+    });
+    out.sort(function(a,b){
+      return (b.created_at || '').localeCompare(a.created_at || '');
+    });
+    return out;
+  });
+}
+
+// Pazaryeri degisince depo gorunumleri tazelenir; yanlis pazaryerinin gorselleri
+// ekranda kalmaz.
+function depoMarketChanged() {
+  noBgAllFiles = []; noBgCurrentPage = 0;
+  noBgSelectedInfo = null;
+  modalNoBgFiles = []; modalNoBgPage = 0;
+
+  var bar = document.getElementById('noBgActionBar');
+  if (bar) bar.classList.remove('visible');
+  var cnt = document.getElementById('noBgCount');
+  if (cnt) cnt.textContent = '';
+  var pager = document.getElementById('noBgPager');
+  if (pager) pager.style.display = 'none';
+  var grid = document.getElementById('noBgGrid');
+  var hadGrid = !!(grid && grid.children.length);
+  if (grid) grid.innerHTML = '';
+  var st = document.getElementById('noBgSt');
+  if (st) st.innerHTML = '';
+
+  if (hadGrid) loadNoBgGallery();   // acikti — yeni pazaryeriyle yeniden doldur
+
+  var modal = document.getElementById('fotoModal');
+  var depoTab = document.getElementById('fotoTabDepo');
+  if (modal && modal.style.display === 'flex' && depoTab && depoTab.style.display !== 'none') {
+    loadModalGallery();
+  } else {
+    var mg = document.getElementById('modalGalleryGrid');
+    if (mg) mg.innerHTML = '';
+  }
+}
+
 // ── NOBACKGROUND KAYDET ───────────────────────────────────────────────────
 function saveNoBgToStorage() {
   var saveBtn = document.getElementById('saveNoBgBtn');
@@ -2141,8 +2251,8 @@ function saveNoBgToStorage() {
   var bytes = Uint8Array.from(atob(b64), function(c){ return c.charCodeAt(0); });
   var blob  = new Blob([bytes], {type:'image/png'});
   var fname = 'nobg_' + Date.now() + '.png';
-  var path  = 'trendyol/nobackground/' + fname;
-  fetch(SUPA+'/storage/v1/object/'+path, {
+  var path  = depoUploadPath(fname);
+  fetch(supaObjectUrl(path), {
     method:'POST',
     headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'image/png','x-upsert':'true'},
     body: blob
@@ -2164,21 +2274,16 @@ var NOBG_PER_PAGE = 4; // sol kolon 2×2
 
 function loadNoBgGallery() {
   setSt('noBgSt','load','<span class="spin">&#x27F3;</span> Yükleniyor...');
-  fetch(SUPA+'/storage/v1/object/list/trendyol', {
-    method:'POST',
-    headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
-    body: JSON.stringify({ prefix:'nobackground/', limit:200, offset:0, sortBy:{column:'created_at',order:'desc'} })
-  })
-  .then(function(r){ return r.json(); })
+  depoListFiles()
   .then(function(files){
     document.getElementById('noBgSt').innerHTML = '';
-    noBgAllFiles = (files||[]).filter(function(f){ return f.name && /\.(png|jpg|jpeg|webp)$/i.test(f.name); });
-    if (!noBgAllFiles.length){ setSt('noBgSt','info','Henüz kaydedilmiş görsel yok'); return; }
+    noBgAllFiles = files || [];
+    if (!noBgAllFiles.length){ setSt('noBgSt','info','Henüz kaydedilmiş görsel yok ('+MARKETS[MARKET].label+' deposu)'); return; }
     var countEl = document.getElementById('noBgCount');
     if (countEl) countEl.textContent = '('+noBgAllFiles.length+')';
     noBgCurrentPage = 0;
     renderNoBgPage();
-    setSt('noBgSt','ok','&#x2713; '+noBgAllFiles.length+' görsel — editöre yüklemek için tıkla');
+    setSt('noBgSt','ok','&#x2713; '+noBgAllFiles.length+' görsel ('+MARKETS[MARKET].label+') — editöre yüklemek için tıkla');
   })
   .catch(function(e){ setSt('noBgSt','err','Hata: '+e.message); });
 }
@@ -2202,7 +2307,7 @@ function renderNoBgPage() {
   var pageFiles = noBgAllFiles.slice(start, start + NOBG_PER_PAGE);
 
   pageFiles.forEach(function(f){
-    var url = SUPA+'/storage/v1/object/public/trendyol/nobackground/'+f.name;
+    var url = supaPublicUrl(f.path);
     var wrap = document.createElement('div');
     wrap.className = 'gallery-thumb';
     wrap.style.cssText = 'position:relative;aspect-ratio:2/3;background:repeating-conic-gradient(#e5e5e5 0% 25%,#f5f5f5 0% 50%) 0 0/14px 14px';
@@ -2218,16 +2323,16 @@ function renderNoBgPage() {
     delBtn.className = 'thumb-del';
     delBtn.textContent = '×';
     delBtn.title = 'Sil';
-    delBtn.onclick = (function(fname, wrapEl) {
+    delBtn.onclick = (function(fname, fpath, wrapEl) {
       return function(e) {
         e.stopPropagation();
         if (!confirm('Sil: ' + fname + '?')) return;
-        supaDeleteFile('nobackground/' + fname).then(function(ok) {
+        supaDeleteFile(fpath).then(function(ok) {
           if (ok) { wrapEl.remove(); setSt('noBgSt','ok','✓ Silindi'); }
           else setSt('noBgSt','err','Silinemedi');
         });
       };
-    })(f.name, wrap);
+    })(f.name, f.path, wrap);
     wrap.appendChild(delBtn);
 
     if (f.created_at) {
@@ -2237,7 +2342,7 @@ function renderNoBgPage() {
       wrap.appendChild(info);
     }
 
-    wrap.onclick = (function(imgUrl, fname){ return function(){ selectNoBgThumb(wrap, imgUrl, fname); }; })(url, f.name);
+    wrap.onclick = (function(imgUrl, fname, fpath){ return function(){ selectNoBgThumb(wrap, imgUrl, fname, fpath); }; })(url, f.name, f.path);
 
     grid.appendChild(wrap);
   });
@@ -4580,7 +4685,7 @@ function checkTyBatch(batchId) {
 
 // ── SUPABASE DELETE ───────────────────────────────────────────────────────
 async function supaDeleteFile(path) {
-  var res = await fetch(SUPA + '/storage/v1/object/trendyol/' + path, {
+  var res = await fetch(supaObjectUrl(path), {
     method: 'DELETE',
     headers: { 'Authorization': 'Bearer ' + SKEY, 'apikey': SKEY }
   });
@@ -4642,7 +4747,8 @@ function procBarAction(action) {
     };
     img.src = info.dataUrl;
   } else if (action === 'upload') {
-    uploadDataUrlToStorage(info.dataUrl, info.folder + '/' + fname, 'saveNoBgSt');
+    uploadDataUrlToStorage(info.dataUrl,
+      info.folder === 'nobackground' ? depoUploadPath(fname) : info.folder + '/' + fname, 'saveNoBgSt');
   } else if (action === 'product') {
     s.urls.push(info.dataUrl);
     setSt('removeBgSt','ok','✓ Ürün görsellerine eklendi ('+s.urls.length+')');
@@ -4655,11 +4761,11 @@ function procBarAction(action) {
 // ── NOBG GALLERY SELECTION ────────────────────────────────────────────────
 var noBgSelectedInfo = null;
 
-function selectNoBgThumb(thumbEl, url, fname) {
+function selectNoBgThumb(thumbEl, url, fname, storagePath) {
   clearAllSelections();
   document.querySelectorAll('.action-bar').forEach(function(b){ b.classList.remove('visible'); });
   thumbEl.classList.add('img-selected');
-  noBgSelectedInfo = { src: url, storagePath: 'nobackground/' + fname, fname: fname };
+  noBgSelectedInfo = { src: url, storagePath: storagePath || depoUploadPath(fname), fname: fname };
   document.getElementById('noBgActionBar').classList.add('visible');
 }
 
@@ -4792,7 +4898,7 @@ function uploadDataUrlToStorage(dataUrl, path, statusId) {
   var mime = parts[0].split(':')[1].split(';')[0];
   var bytes = Uint8Array.from(atob(parts[1]), function(c){ return c.charCodeAt(0); });
   var blob = new Blob([bytes], {type: mime});
-  return fetch(SUPA + '/storage/v1/object/trendyol/' + path, {
+  return fetch(supaObjectUrl(path), {
     method: 'POST',
     headers: {'Authorization':'Bearer '+SKEY, 'Content-Type': mime, 'x-upsert':'true'},
     body: blob
@@ -4800,7 +4906,7 @@ function uploadDataUrlToStorage(dataUrl, path, statusId) {
   .then(function(r){ return r.json(); })
   .then(function(d){
     if (d.error) throw new Error(d.error);
-    var pubUrl = SUPA + '/storage/v1/object/public/trendyol/' + path;
+    var pubUrl = supaPublicUrl(path);
     if (statusId) setSt(statusId,'ok','✓ Yüklendi: ' + path.split('/').pop());
     return pubUrl;
   })
@@ -5031,14 +5137,11 @@ function closeFotoModal() {
 function loadModalGallery() {
   var grid = document.getElementById('modalGalleryGrid');
   grid.innerHTML = '<span style="color:#94a3b8;font-size:12px;padding:12px">Yükleniyor...</span>';
-  fetch(SUPA+'/storage/v1/object/list/trendyol', {
-    method:'POST',
-    headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
-    body: JSON.stringify({ prefix:'nobackground/', limit:200, offset:0, sortBy:{column:'created_at',order:'desc'} })
-  })
-  .then(function(r){ return r.json(); })
+  var hint = document.getElementById('modalDepoHint');
+  if (hint) hint.textContent = depoPrefix() + ' klasöründen seç';
+  depoListFiles()
   .then(function(files){
-    modalNoBgFiles = (files||[]).filter(function(f){ return f.name && /\.(png|jpg|jpeg|webp)$/i.test(f.name); });
+    modalNoBgFiles = files || [];
     modalNoBgPage = 0;
     renderModalGallery();
   })
@@ -5062,7 +5165,7 @@ function renderModalGallery() {
   document.getElementById('modalNextBtn').disabled = modalNoBgPage >= total - 1;
 
   pageFiles.forEach(function(f) {
-    var url = SUPA+'/storage/v1/object/public/trendyol/nobackground/'+f.name;
+    var url = supaPublicUrl(f.path);
     var card = document.createElement('div');
     card.style.cssText = 'position:relative;aspect-ratio:2/3;border-radius:8px;overflow:hidden;border:2px solid var(--border);background:repeating-conic-gradient(#e8ecf0 0% 25%,#f8fafc 0% 50%) 0 0/12px 12px;cursor:pointer;transition:border-color .15s';
     card.onmouseenter = function(){ card.style.borderColor='var(--primary)'; };
@@ -6740,7 +6843,7 @@ function etsyRetryFailed() {
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
           Yenile
         </button>
-        <span style="font-size:11px;color:#94a3b8">nobackground klasöründen seç</span>
+        <span id="modalDepoHint" style="font-size:11px;color:#94a3b8">nobackground klasöründen seç</span>
         <div style="flex:1"></div>
         <button id="modalPrevBtn" class="btn xs" onclick="modalChangePage(-1)" disabled>‹</button>
         <span id="modalPageInfo" style="font-size:11px;color:#64748b;white-space:nowrap"></span>
