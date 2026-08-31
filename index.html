@@ -173,19 +173,71 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
 }
 /* EXPORT BUTTONS GROUP */
 .export-group{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px;background:linear-gradient(135deg,#f8fafc,#f1f5f9);border-radius:10px;border:1px solid var(--border);margin-top:10px}
+/* PAZARYERI SECIM EKRANI (gate) */
+/* Secim yapilana kadar panelin hicbir parcasi gorunmez — flash olmamasi icin
+   kural stylesheet'te, JS beklemeden gecerli. */
+body:not(.market-ready) > *:not(#marketGate){display:none}
+body.market-ready #marketGate{display:none}
+#marketGate{position:fixed;inset:0;z-index:9500;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+.gate-inner{width:min(760px,100%);display:flex;flex-direction:column;align-items:center}
+.gate-brand{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.gate-sub{font-size:14px;color:var(--muted);margin:6px 0 22px;text-align:center}
+.gate-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%}
+.gate-card{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;
+  padding:30px 22px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-card);
+  box-shadow:var(--shadow);cursor:pointer;font-family:inherit;color:var(--text);transition:all .15s}
+.gate-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.gate-card:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(99,102,241,.28),var(--shadow-md)}
+.gate-icon{font-size:34px;line-height:1}
+.gate-name{font-size:17px;font-weight:700;letter-spacing:-.2px}
+.gate-desc{font-size:12.5px;color:var(--muted);line-height:1.5}
+.gate-last{font-size:10px;font-weight:700;letter-spacing:.3px;padding:2px 8px;border-radius:20px;background:#eef2ff;color:#4f46e5}
+.gate-note{font-size:12px;color:var(--muted);margin-top:22px;text-align:center;line-height:1.6}
+@media (max-width:640px){.gate-cards{grid-template-columns:1fr}}
+/* Baslikta secili pazaryeri rozeti */
+.mk-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#fff;
+  padding:4px 11px;border-radius:7px;letter-spacing:-.1px}
 </style>
 </head>
 <body>
+
+<!-- PAZARYERI SECIM EKRANI — her acilista gelir, secim yapilmadan panel acilmaz -->
+<div id="marketGate" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+  <div class="gate-inner">
+    <div class="gate-brand">🏺 MAAT SERAMİK</div>
+    <div class="gate-sub" id="gateTitle">Hangi pazaryerine ürün yükleyeceksiniz?</div>
+    <div class="gate-cards">
+      <button type="button" class="gate-card" id="gateCard_trendyol" onclick="chooseMarket('trendyol')">
+        <span class="gate-icon">🛒</span>
+        <span class="gate-name" style="color:#f97316">Trendyol</span>
+        <span class="gate-desc">2:3 dikey görsel, barkod ve model kodu,<br>Türkçe içerik, ₺ fiyatlandırma</span>
+        <span class="gate-last" id="gateLast_trendyol" style="display:none">SON SEÇİM</span>
+      </button>
+      <button type="button" class="gate-card" id="gateCard_etsy" onclick="chooseMarket('etsy')">
+        <span class="gate-icon">🛍️</span>
+        <span class="gate-name" style="color:#f56400">Etsy</span>
+        <span class="gate-desc">Kare görsel, etiket ve malzemeler,<br>İngilizce içerik, dükkan para birimi</span>
+        <span class="gate-last" id="gateLast_etsy" style="display:none">SON SEÇİM</span>
+      </button>
+    </div>
+    <div class="gate-note">
+      Panel tamamen seçtiğiniz pazaryerine göre açılır; diğerine ait alanlar görünmez.<br>
+      Pazaryerini sonradan başlıktaki <strong>Değiştir</strong> düğmesiyle değiştirebilirsiniz.
+    </div>
+  </div>
+</div>
+
 <div class="topbar">
   <h1>🏺 MAAT SERAMİK</h1>
   <span class="sub">·</span>
   <span style="font-size:13px;color:var(--muted)" id="marketSub">Trendyol Ürün Yükleme Paneli</span>
   <span class="badge indigo" id="brandBadge">Marka ID: 2922973</span>
-  <div style="display:flex;gap:2px;background:#f1f5f9;border:1px solid var(--border);border-radius:9px;padding:3px;margin-left:14px">
-    <button id="mkBtn_trendyol" onclick="setMarket('trendyol')"
-      style="padding:5px 14px;font-size:12px;border:none;border-radius:7px;cursor:pointer;font-family:inherit;transition:all .15s">Trendyol</button>
-    <button id="mkBtn_etsy" onclick="setMarket('etsy')"
-      style="padding:5px 14px;font-size:12px;border:none;border-radius:7px;cursor:pointer;font-family:inherit;transition:all .15s">Etsy</button>
+  <div style="display:flex;align-items:center;gap:8px;margin-left:14px">
+    <span class="mk-badge" id="marketBadge" title="Şu an seçili pazaryeri">Trendyol</span>
+    <button class="btn sm" id="marketSwitchBtn" onclick="openMarketGate()" title="Pazaryeri seçim ekranına dön">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
+      Değiştir
+    </button>
   </div>
   <div style="flex:1"></div>
   <button class="btn sm" onclick="openNewDesign()" style="gap:6px;color:#6366f1;border-color:#c7d2fe;background:#eef2ff">
@@ -219,7 +271,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
 
         <!-- Etsy: sade foto hazırlama (Ürün Görseli kartının dışında,
              çünkü o kart Etsy modunda gizleniyor) -->
-          <div data-market="etsy" style="display:none;flex-direction:column;gap:8px;margin-bottom:12px;padding:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:9px">
+          <div data-market="etsy" data-mdisp="flex" style="display:none;flex-direction:column;gap:8px;margin-bottom:12px;padding:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:9px">
             <span style="font-size:11px;font-weight:700;color:#c2410c">ÜRÜN FOTOĞRAFI</span>
 
             <input type="file" id="esFiles" accept="image/*" multiple style="display:none" onchange="esPickFiles(event)">
@@ -552,7 +604,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
     </div>
 
 
-    <!-- ALT: Trendyol'a Yüklenecek -->
+    <!-- ALT: Secili pazaryerine yuklenecek gorseller (baslik applyMarketUI'da) -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none" onclick="toggleSection('savedSection','savedChevron')">
         <div class="card-title" id="savedCardTitle" style="margin-bottom:0"><span class="icon">📤</span> Trendyol'a Yüklenecek Görseller <span id="savedCount" style="font-size:12px;color:#94a3b8;font-weight:400"></span></div>
@@ -591,7 +643,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
         </div>
       </div>
       <div id="gallerySection">
-        <p class="muted" style="margin:10px 0 6px;font-size:12px">Daha önce hazırlanmış görseller — tıkla veya sürükle → Trendyola Yüklenecek</p>
+        <p class="muted" id="galleryHint" style="margin:10px 0 6px;font-size:12px">Daha önce hazırlanmış görseller — tıkla veya sürükle → Trendyol'a Yüklenecek</p>
         <div id="gallerySt"></div>
         <div id="galleryGrid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:10px;margin-top:8px"></div>
         <div id="galleryPager" style="display:none;align-items:center;justify-content:center;gap:12px;margin-top:10px">
@@ -1003,7 +1055,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
     </div>
 
     <div class="btn-row">
-      <button class="btn" onclick="goStep(6)">← Trendyol</button>
+      <button class="btn" onclick="goStep(6)"><span id="p7BackLabel">← Trendyol</span></button>
     </div>
   </div>
 
@@ -1020,7 +1072,7 @@ h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--text)}
           🆕 Sıfırdan başla
         </button>
         <button class="btn" onclick="showCatalogSource()" style="flex:1;justify-content:center;padding:14px">
-          🗂 Trendyol kataloğundan seç
+          <span id="ndCatalogSrcLabel">🗂 Trendyol kataloğundan seç</span>
         </button>
       </div>
 
@@ -1250,9 +1302,14 @@ const MARKETS = {
   trendyol: { label: 'Trendyol', dative: "Trendyol'a", cw: 400, ch: 600, ew: 1200, eh: 1800, color: '#f97316' },
   etsy:     { label: 'Etsy',     dative: "Etsy'ye",     cw: 460, ch: 460, ew: 2000, eh: 2000, color: '#f56400' }
 };
+// Acilista panel HER ZAMAN secim ekraniyla baslar: yanlis pazaryerine urun
+// gonderilmesini onlemek icin kayitli deger paneli otomatik acmaz, yalnizca
+// secim ekraninda "son secim" olarak vurgulanir.
 var MARKET = 'trendyol';
-try { MARKET = localStorage.getItem('market') || 'trendyol'; } catch (e) {}
-if (!MARKETS[MARKET]) MARKET = 'trendyol';
+var LAST_MARKET = null;
+try { LAST_MARKET = localStorage.getItem('market'); } catch (e) {}
+if (!MARKETS[LAST_MARKET]) LAST_MARKET = null;
+var MARKET_CHOSEN = false;
 function isEtsy() { return MARKET === 'etsy'; }
 
 // Canvas boyutlari — moda gore degisir
@@ -1265,7 +1322,8 @@ function setMarket(m, opts) {
   if (!MARKETS[m]) return;
   var changed = (m !== MARKET);
   MARKET = m;
-  try { localStorage.setItem('market', m); } catch (e) {}
+  // opts.remember === false: acilis kurulumu — kullanicinin son secimini bozmaz
+  if (opts.remember !== false) { try { localStorage.setItem('market', m); } catch (e) {} }
 
   var cfg = MARKETS[m];
   CW = cfg.cw; CH = cfg.ch; EW = cfg.ew; EH = cfg.eh;
@@ -1304,14 +1362,11 @@ function applyMarketUI() {
   var sub = document.getElementById('marketSub');
   if (sub) sub.textContent = cfg.label + ' Ürün Yükleme Paneli';
 
-  ['trendyol','etsy'].forEach(function(m) {
-    var btn = document.getElementById('mkBtn_' + m);
-    if (!btn) return;
-    var on = (m === MARKET);
-    btn.style.background   = on ? MARKETS[m].color : 'transparent';
-    btn.style.color        = on ? '#fff' : '#94a3b8';
-    btn.style.fontWeight   = on ? '700' : '500';
-  });
+  var mkBadge = document.getElementById('marketBadge');
+  if (mkBadge) {
+    mkBadge.textContent      = cfg.label;
+    mkBadge.style.background = cfg.color;
+  }
 
   var badge = document.getElementById('brandBadge');
   if (badge) badge.textContent = etsy ? 'Etsy · MaatPottery' : 'Marka ID: 2922973';
@@ -1324,13 +1379,28 @@ function applyMarketUI() {
   var s6 = document.getElementById('s6');
   if (s6) s6.textContent = etsy ? '6 · Etsy Taslaklarım' : '6 · Trendyol';
 
+  // Adim 7'deki geri butonu 6. adimin guncel adini gostersin
+  var p7b = document.getElementById('p7BackLabel');
+  if (p7b) p7b.textContent = etsy ? '← Etsy Taslaklarım' : '← Trendyol';
+
+  // Hazir gorseller ipucu ve Yeni Tasarim katalog kaynagi
+  var gh = document.getElementById('galleryHint');
+  if (gh) gh.textContent = 'Daha önce hazırlanmış görseller — tıkla veya sürükle → '
+    + cfg.dative + ' Yüklenecek';
+
+  var nd = document.getElementById('ndCatalogSrcLabel');
+  if (nd) nd.textContent = '🗂 ' + cfg.label + ' kataloğundan seç';
+
   // Kosullu acilan kart — data-market ile zorla gosterilmemeli
   var tp = document.getElementById('tyProductsCard');
   if (tp && etsy) tp.style.display = 'none';
 
-  // Etsy'ye ozel / Trendyol'a ozel alanlari goster-gizle
+  // Etsy'ye ozel / Trendyol'a ozel alanlari goster-gizle.
+  // data-mdisp verilmisse gizlemeden onceki display degeri odur (ornegin flex).
   document.querySelectorAll('[data-market]').forEach(function(el) {
-    el.style.display = (el.getAttribute('data-market') === MARKET) ? '' : 'none';
+    el.style.display = (el.getAttribute('data-market') === MARKET)
+      ? (el.getAttribute('data-mdisp') || '')
+      : 'none';
   });
 
   var fmt = document.getElementById('imgFormatNote');
@@ -1409,8 +1479,59 @@ let savedImages = [];
 s.brandId = 2922973; s.brandName = 'MAAT SERAMİK';
 document.getElementById('brandBadge').textContent = 'Marka ID: 2922973';
 
-// Kayitli pazaryeri modunu uygula (tuval orani, etiketler, alan gorunurlugu)
-setMarket(MARKET, { silent: true });
+// ── PAZARYERI SECIM EKRANI ────────────────────────────────────────────────
+// Panel varsayilan modda kurulur ama gorunmez; kullanici secim yapana kadar
+// body'de .market-ready yok, dolayisiyla topbar ve container gizli.
+setMarket(MARKET, { silent: true, remember: false });
+
+// Son secimi secim ekraninda vurgula ve klavye odagini ona ver
+function syncGateHighlight() {
+  ['trendyol','etsy'].forEach(function(m) {
+    var tag  = document.getElementById('gateLast_' + m);
+    var card = document.getElementById('gateCard_' + m);
+    var on   = (m === LAST_MARKET);
+    if (tag)  tag.style.display = on ? '' : 'none';
+    if (card) card.style.borderColor = on ? MARKETS[m].color : '';
+  });
+  var focusCard = document.getElementById('gateCard_' + (LAST_MARKET || 'trendyol'));
+  if (focusCard) focusCard.focus();
+}
+syncGateHighlight();
+
+// Secim ekranindan pazaryeri secilir — panel ancak bundan sonra gorunur.
+function chooseMarket(m) {
+  if (!MARKETS[m]) return;
+  setMarket(m, { silent: true });
+  LAST_MARKET = m;
+  MARKET_CHOSEN = true;
+  document.body.classList.add('market-ready');
+  goStep(1);
+}
+
+// Panelde is var mi? (mod degistirmeden once uyarmak icin)
+function marketHasWork() {
+  try {
+    if (objs && (objs.product.img || objs.accessory.img)) return true;
+    if (Object.keys(objs).some(function(k){ return k.indexOf('prod_') === 0 && objs[k].img; })) return true;
+    if (typeof texts !== 'undefined' && texts.length) return true;
+    if (typeof savedImages !== 'undefined' && savedImages.length) return true;
+    if (gv('f_title').trim() || gv('f_desc').trim()) return true;
+  } catch (e) {}
+  return false;
+}
+
+// Basliktaki "Degistir" — secim ekranina geri doner.
+function openMarketGate() {
+  if (marketHasWork() && !confirm(
+      'Pazaryeri seçim ekranına dönülecek.\n\n'
+    + 'Formdaki bilgiler silinmez, ancak yeni pazaryerinde geçerli olmayan alanlar '
+    + '(barkod, fiyat, etiketler gibi) gizlenir ve gönderime dahil edilmez. '
+    + 'Tuval oranı değişirse hazırladığınız görseldeki nesneler yeniden ortalanır.\n\n'
+    + 'Devam edilsin mi?')) return;
+  document.body.classList.remove('market-ready');
+  MARKET_CHOSEN = false;
+  syncGateHighlight();
+}
 
 // Efekt kontrolleri — değişimde activeObj.fx'e kaydet + canvas yenile
 function isProductKey(k) { return k === 'product' || (k && k.startsWith('prod_')); }
@@ -3148,6 +3269,7 @@ function deleteActive() {
 }
 
 document.addEventListener('keydown', function(e) {
+  if (!MARKET_CHOSEN) return; // secim ekrani acikken tuval kisayollari calismaz
   if ((e.key === 'Delete' || e.key === 'Backspace') && activeObj) {
     var tag = document.activeElement && document.activeElement.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
