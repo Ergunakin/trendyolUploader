@@ -2131,31 +2131,21 @@ function removeBgClick() {
   .finally(function() { btn.textContent='Arka planı kaldır'; btn.disabled=false; });
 }
 
-// ── DEPO YOLLARI (PAZARYERINE GORE) ───────────────────────────────────────
+// ── DEPO YOLLARI (PAZARYERINE GORE) ───────────────────────────
 // Fotograf deposu tek bir bucket'ta durur ('trendyol' — tarihsel isim, pazaryeri
 // degil). Pazaryeri ayrimi bucket icindeki ust klasorle yapilir:
 //   trendyol/nobackground/...  ve  etsy/nobackground/...
+// Prefix HER ZAMAN tam verilir (`<market>/nobackground/`); bucket kokunu veya
+// `etsy/` kokunu listeleyen/silen kod yok — orada Etsy token dosyasi duruyor.
 var DEPO_BUCKET = 'trendyol';
-// GEÇİŞ: pazaryeri ayrimindan onceki eski duzen — dosyalar bucket kokunde
-// 'nobackground/' altinda duruyor ve Trendyol'a ait sayiliyor. Supabase tarafinda
-// tasima bitince DEPO_LEGACY_PREFIX ve depoReadPrefixes()'teki eski dal silinebilir.
-var DEPO_LEGACY_PREFIX = 'nobackground/';
 
 function depoPrefix(market) {
   return (market || MARKET) + '/nobackground/';
 }
 
-// Yukleme HER ZAMAN yeni yola gider; eski koke asla yazilmaz.
+// Yukleme de okuma da ayni yoldan gecer.
 function depoUploadPath(fname) {
   return depoPrefix() + fname;
-}
-
-// GEÇİŞ: okuma tarafinda Trendyol icin eski kok klasor de taranir, sonuclar
-// birlestirilir. Etsy'de eski yol hic okunmaz (oradaki dosyalar Trendyol'un).
-function depoReadPrefixes() {
-  var list = [depoPrefix()];
-  if (!isEtsy()) list.push(DEPO_LEGACY_PREFIX);
-  return list;
 }
 
 // Bucket tum klasorler icin ortak — bu ucu depo disindaki yollar da kullanir.
@@ -2165,8 +2155,9 @@ function supaPublicUrl(path)    { return SUPA + '/storage/v1/object/public/' + D
 
 var DEPO_IMG_RE = /\.(png|jpg|jpeg|webp)$/i;
 
-// Tek bir prefix'i listeler; ogeleri { name, path, created_at, legacy } yapar.
-function depoListPrefix(prefix, optional) {
+// Aktif pazaryerinin deposunu listeler; ogeler { name, path, created_at }.
+function depoListFiles() {
+  var prefix = depoPrefix();
   return fetch(depoListUrl(), {
     method:'POST',
     headers:{'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
@@ -2175,37 +2166,12 @@ function depoListPrefix(prefix, optional) {
   .then(function(r){ return r.json(); })
   .then(function(files){
     if (!Array.isArray(files)) {
-      var msg = (files && (files.message || files.error)) || 'Liste alinamadi';
-      if (optional) return [];
-      throw new Error(msg);
+      throw new Error((files && (files.message || files.error)) || 'Liste alinamadi');
     }
     return files.filter(function(f){ return f.name && DEPO_IMG_RE.test(f.name); })
       .map(function(f){
-        return { name: f.name, path: prefix + f.name, created_at: f.created_at,
-                 legacy: prefix === DEPO_LEGACY_PREFIX };
+        return { name: f.name, path: prefix + f.name, created_at: f.created_at };
       });
-  })
-  .catch(function(e){ if (optional) return []; throw e; });
-}
-
-// Aktif pazaryerinin deposunu listeler (GEÇİŞ: Trendyol'da eski kok klasor de dahil).
-function depoListFiles() {
-  var prefixes = depoReadPrefixes();
-  return Promise.all(prefixes.map(function(prefix, i) {
-    return depoListPrefix(prefix, i > 0); // ilk prefix zorunlu, eski yol opsiyonel
-  })).then(function(groups) {
-    var seen = {}, out = [];
-    groups.forEach(function(g) {
-      g.forEach(function(f) {
-        if (seen[f.name]) return; // ayni ad yeni yolda varsa eskisi atlanir
-        seen[f.name] = true;
-        out.push(f);
-      });
-    });
-    out.sort(function(a,b){
-      return (b.created_at || '').localeCompare(a.created_at || '');
-    });
-    return out;
   });
 }
 
@@ -2278,7 +2244,7 @@ function loadNoBgGallery() {
   .then(function(files){
     document.getElementById('noBgSt').innerHTML = '';
     noBgAllFiles = files || [];
-    if (!noBgAllFiles.length){ setSt('noBgSt','info','Henüz kaydedilmiş görsel yok ('+MARKETS[MARKET].label+' deposu)'); return; }
+    if (!noBgAllFiles.length){ setSt('noBgSt','info',MARKETS[MARKET].label+' deposunda henüz görsel yok'); return; }
     var countEl = document.getElementById('noBgCount');
     if (countEl) countEl.textContent = '('+noBgAllFiles.length+')';
     noBgCurrentPage = 0;
@@ -4747,8 +4713,8 @@ function procBarAction(action) {
     };
     img.src = info.dataUrl;
   } else if (action === 'upload') {
-    uploadDataUrlToStorage(info.dataUrl,
-      info.folder === 'nobackground' ? depoUploadPath(fname) : info.folder + '/' + fname, 'saveNoBgSt');
+    // Hazirlanan gorsel her zaman aktif pazaryerinin deposuna gider.
+    uploadDataUrlToStorage(info.dataUrl, depoUploadPath(fname), 'saveNoBgSt');
   } else if (action === 'product') {
     s.urls.push(info.dataUrl);
     setSt('removeBgSt','ok','✓ Ürün görsellerine eklendi ('+s.urls.length+')');
@@ -5153,7 +5119,7 @@ function renderModalGallery() {
   var info = document.getElementById('modalPageInfo');
   grid.innerHTML = '';
   if (!modalNoBgFiles.length) {
-    grid.innerHTML = '<span style="color:#94a3b8;font-size:12px;padding:12px">Depoda görsel yok</span>';
+    grid.innerHTML = '<span style="color:#94a3b8;font-size:12px;padding:12px">'+MARKETS[MARKET].label+' deposunda henüz görsel yok</span>';
     if (info) info.textContent = '';
     return;
   }
@@ -6843,7 +6809,7 @@ function etsyRetryFailed() {
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
           Yenile
         </button>
-        <span id="modalDepoHint" style="font-size:11px;color:#94a3b8">nobackground klasöründen seç</span>
+        <span id="modalDepoHint" style="font-size:11px;color:#94a3b8">depo klasöründen seç</span>
         <div style="flex:1"></div>
         <button id="modalPrevBtn" class="btn xs" onclick="modalChangePage(-1)" disabled>‹</button>
         <span id="modalPageInfo" style="font-size:11px;color:#64748b;white-space:nowrap"></span>
